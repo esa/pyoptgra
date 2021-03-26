@@ -11,7 +11,7 @@ extern"C" {
 	void ogderi_(int * dervar, double *pervar);
 	void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
 	 	void (*)(double*, double*), void (*)(double*, double*, double*));
-	void ogexec_(double * valvar, double * valcon, int * finopt,
+	void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
 		void (*)(double*, double*, int*), void (*)(double*, double*, double*));
 	void oginit_(int * varnum, int * connum);
 }
@@ -59,7 +59,8 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 	ogderi_(&dervar, pervar.data());
 
 	int finopt = 0;
-	ogexec_(valvar.data(), valcon.data(), &finopt, fitness, gradient);
+	int finite = 0;
+	ogexec_(valvar.data(), valcon.data(), &finopt, &finite, fitness, gradient);
 	ogclos_();
 	return std::make_tuple(valvar, valcon, finopt);
 }
