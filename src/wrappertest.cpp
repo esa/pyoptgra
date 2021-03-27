@@ -44,7 +44,7 @@ int main(int argn, char** argc)
 	int dim = initial_x.size();
 	std::vector<double> bestx, bestf;
 	int finopt;
-	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0}, f, g, false);
+	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false);
 
 	cout << "Best x:";
 	for (int i = 0; i < dim; i++) {

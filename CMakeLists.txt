@@ -3,10 +3,12 @@ cmake_minimum_required(VERSION 3.5)
 project( fortranTest )
 
 enable_language(Fortran)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+find_package(Pagmo REQUIRED)
 
 message("Cmake build type is ${CMAKE_BUILD_TYPE}")
 
@@ -36,6 +38,9 @@ set (OPTGRAFILES
  )
 
 add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/src/wrapper.hpp" ${OPTGRAFILES})
+target_link_libraries(optgra PUBLIC Pagmo::pagmo)
+
+
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/src/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
