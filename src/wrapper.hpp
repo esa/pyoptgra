@@ -7,7 +7,7 @@
 
 extern"C" {
 	void ogclos_();
-	void ogctyp_(int * contyp);
+	void ogctyp_(const int* contyp);
 	void ogderi_(int * dervar, double *pervar);
 	void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
 	 	void (*)(double*, double*), void (*)(double*, double*, double*));
@@ -36,6 +36,7 @@ struct optgra_raii {
         }
         oginit_(&num_variables, &num_constraints);
         ogderi_(&difftype, autodiff_deltas.data());
+        ogctyp_(constraint_types.data());
     }
 
     std::tuple<std::vector<double>, std::vector<double>, int> exec(std::vector<double> initial_x,
@@ -66,7 +67,7 @@ private:
 };
 
 struct problem_wrapper {
-
+    // TODO: set mutex to ensure thread-safety
     static void set_problem(pagmo::problem &prob) {
 
         if (prob.get_nobj() != 1u) {
