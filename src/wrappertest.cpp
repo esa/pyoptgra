@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include <pagmo/problems/ackley.hpp>
 
 #include "wrapper.hpp"
 
@@ -54,6 +55,25 @@ int main(int argn, char** argc)
 
 	cout << "Best f:";
 	for (int i = 0; i < 1 + 1; i++) {
+		cout << bestf[i] << " ";
+	}
+	cout << endl;
+
+	cout << "Testing pagmo problem" << endl;
+
+	pagmo::problem test_prob(pagmo::ackley{10});
+	initial_x = std::vector<double>(10,1);
+
+	std::tie(bestx, bestf) = optimize(test_prob, initial_x);
+
+	cout << "Best x:";
+	for (int i = 0; i < bestx.size(); i++) {
+		cout << bestx[i] << " ";
+	}
+	cout << endl;
+
+	cout << "Best f:";
+	for (int i = 0; i < bestf.size(); i++) {
 		cout << bestf[i] << " ";
 	}
 	cout << endl;

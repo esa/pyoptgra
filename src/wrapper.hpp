@@ -68,7 +68,7 @@ private:
 
 struct problem_wrapper {
     // TODO: set mutex to ensure thread-safety
-    static void set_problem(pagmo::problem &prob) {
+    static void set_problem(pagmo::problem &problem) {
 
         if (prob.get_nobj() != 1u) {
             throw(std::invalid_argument("Multiple objectives detected in " + prob.get_name() + " instance. Optgra cannot deal with them"));
@@ -77,8 +77,8 @@ struct problem_wrapper {
             throw(std::invalid_argument("The problem appears to be stochastic. Optgra cannot deal with it"));
         }
 
-        // get problem dimension
-        prob = prob;
+        // set problem, get problem dimension
+        prob = problem;
         dim = prob.get_nx();
 
         const auto bounds = prob.get_bounds();
@@ -163,7 +163,9 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem prob, const std::vector<double> &initial_x) {
     problem_wrapper::set_problem(prob);
     auto result_tuple = optimize(initial_x, problem_wrapper::get_constraint_types(), problem_wrapper::fitness,
-    problem_wrapper::gradient, prob.has_gradient());
+    problem_wrapper::gradient, false);
+
+    // TODO: reorder merit/constraints into format used by pagmo
     return std::make_tuple(std::get<0>(result_tuple), std::get<1>(result_tuple));
 }
 
