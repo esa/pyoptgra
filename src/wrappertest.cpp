@@ -8,6 +8,8 @@ using std::cout;
 using std::endl;
 using std::vector;
 
+using namespace optgra;
+
 void f(double* x, double *con, int *flag) {
 	con[0] = 0;
 	con[1] = 0;
