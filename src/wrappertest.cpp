@@ -4,6 +4,7 @@
 #include <pagmo/problems/ackley.hpp>
 #include <pagmo/problems/griewank.hpp>
 #include <pagmo/problems/luksan_vlcek1.hpp>
+#include <pagmo/problems/hock_schittkowsky_71.hpp>
 
 #include "wrapper.hpp"
 
@@ -63,8 +64,8 @@ int main(int argn, char** argc)
 
 	cout << "Testing pagmo problem" << endl;
 
-	pagmo::problem test_prob(pagmo::luksan_vlcek1{10});
-	initial_x = std::vector<double>(10,2);
+	pagmo::problem test_prob(pagmo::hock_schittkowsky_71{});
+	initial_x = std::vector<double>(4,2);
 
 	std::tie(bestx, bestf) = optimize(test_prob, initial_x);
 
