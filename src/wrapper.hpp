@@ -9,13 +9,15 @@
 extern"C" {
     void ogclos_();
     void ogctyp_(const int* contyp);
-    void ogderi_(int * dervar, double *pervar);
+    void ogderi_(int * dervar, double * pervar);
+    void ogdist_(double * maxvar, double * sndvar);
     void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
          void (*)(double*, double*), void (*)(double*, double*, double*));
     void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
+    void ogcsca_(double * scacon);
 }
 
 namespace optgra {
@@ -48,14 +50,26 @@ struct optgra_raii {
         num_constraints = constraint_types.size() - 1;
         if (params.autodiff_deltas.size() == 0) {
             params.autodiff_deltas = std::vector<double>(num_variables, 0.001);
+        } else if (params.autodiff_deltas.size() != num_variables) {
+        	throw(std::invalid_argument("Size mismatch."));
         }
+
+        if (params.convergence_thresholds.size() == 0) {
+        	params.convergence_thresholds = std::vector<double>(num_constraints+1, 1);
+        } else if (params.convergence_thresholds.size() != constraint_types.size()) {
+        	throw(std::invalid_argument("Size mismatch."));
+        }
+
         oginit_(&num_variables, &num_constraints);
+        ogcsca_(params.convergence_thresholds.data());
+        ogctyp_(constraint_types.data());
+        ogderi_(&params.derivatives_computation, params.autodiff_deltas.data());
+        ogdist_(&params.max_distance_per_iteration, &params.perturbation_for_snd_order_derivatives);
 
         // Haven't figured out what the others do, but maxiter is an upper bound anyway
-        int otheriters = 0; // this does not seem to have an effect TODO: figure out what it does.
+        int otheriters = params.max_iterations; // TODO: figure out what it does.
         ogiter_(&params.max_iterations, &params.max_correction_iterations, &otheriters, &otheriters, &otheriters);
-        ogderi_(&params.derivatives_computation, params.autodiff_deltas.data());
-        ogctyp_(constraint_types.data());
+        
     }
 
     std::tuple<std::vector<double>, std::vector<double>, int> exec(std::vector<double> initial_x,
