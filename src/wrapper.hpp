@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <vector>
 #include <tuple>
+#include <iostream>
 #include <pagmo/problem.hpp>
 
 extern"C" {
@@ -14,6 +15,7 @@ extern"C" {
     void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
     void oginit_(int * varnum, int * connum);
+    void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
 }
 
 namespace optgra {
@@ -22,20 +24,37 @@ namespace optgra {
 
     typedef void (*gradient_callback)(double*, double*, double*);
 
+struct parameters {
+	int max_iterations = 10; // MAXITE
+	int max_correction_iterations = 10; // CORITE
+	double max_distance_per_iteration = 10; // VARMAX
+	double perturbation_for_snd_order_derivatives = 1; // VARSND
+	std::vector<double> convergence_thresholds;
+	std::vector<std::string> variable_names;
+	std::vector<std::string> constraint_names;
+	int optimization_method = 2; // OPTMET
+	int derivatives_computation = 1;//VARDER
+	std::vector<double> autodiff_deltas;
+};
+
 struct optgra_raii {
 
     optgra_raii() = delete;
     // TODO: Use a mutex to ensure that at most one object can be created concurrently
 
     optgra_raii(int num_variables, const std::vector<int> &constraint_types,
-     int difftype, std::vector<double> autodiff_deltas = {}) : num_variables(num_variables)
+     parameters params) : num_variables(num_variables)
     {
         num_constraints = constraint_types.size() - 1;
-        if (autodiff_deltas.size() == 0) {
-            autodiff_deltas = std::vector<double>(num_variables, 0.1);
+        if (params.autodiff_deltas.size() == 0) {
+            params.autodiff_deltas = std::vector<double>(num_variables, 0.001);
         }
         oginit_(&num_variables, &num_constraints);
-        ogderi_(&difftype, autodiff_deltas.data());
+
+        // Haven't figured out what the others do, but maxiter is an upper bound anyway
+        int otheriters = 0; // this does not seem to have an effect TODO: figure out what it does.
+        ogiter_(&params.max_iterations, &params.max_correction_iterations, &otheriters, &otheriters, &otheriters);
+        ogderi_(&params.derivatives_computation, params.autodiff_deltas.data());
         ogctyp_(constraint_types.data());
     }
 
@@ -64,16 +83,6 @@ struct optgra_raii {
 private:
     int num_variables;
     int num_constraints;
-};
-
-struct parameters {
-	int max_iterations = 10; // MAXITE
-	double max_distance_per_iteration = 10; // VARMAX
-	double perturbation_for_snd_order_derivatives = 1; // VARSND
-	std::vector<double> convergence_thresholds;
-	std::vector<std::string> variable_names;
-	std::vector<std::string> constraint_names;
-	int optimization_method = 2; // OPTMET
 };
 
 struct problem_wrapper {
@@ -192,23 +201,19 @@ std::vector<int> problem_wrapper::constraint_types;
 
 template<class F, class G>
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
- const std::vector<int> &constraint_types, F fitness, G gradient, bool has_gradient, double autodiff_epsilon=0.1,
- const parameters params = {}
+ const std::vector<int> &constraint_types, F fitness, G gradient, bool has_gradient,
+ parameters params = {}
  ) {
 
     // initialization
     int num_variables = initial_x.size();
 
-    int difftype; // user-defined gradient
-    if (!has_gradient) {
-        difftype = 3; // numeric differentiation
-    } else {
-        difftype = 1;
+    if (params.derivatives_computation == 1 && !has_gradient) {
+    	std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
+    	params.derivatives_computation = 3;
     }
 
-    std::vector<double> autodiff_deltas(num_variables, autodiff_epsilon);
-
-    optgra_raii raii_object = optgra_raii(num_variables, constraint_types, difftype, autodiff_deltas);
+    optgra_raii raii_object = optgra_raii(num_variables, constraint_types, params);
 
     return raii_object.exec(initial_x, fitness, gradient);
 }
@@ -217,7 +222,7 @@ std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem pro
     const parameters params = {}) {
     problem_wrapper::set_problem(prob);
     auto result_tuple = optimize(initial_x, problem_wrapper::get_constraint_types(), problem_wrapper::fitness,
-    problem_wrapper::gradient, prob.has_gradient(), 0.1, params);
+    problem_wrapper::gradient, prob.has_gradient(), params);
 
     std::vector<double> best_x = std::get<0>(result_tuple);
     std::vector<double> best_f = std::get<1>(result_tuple);
