@@ -66,6 +66,16 @@ private:
     int num_constraints;
 };
 
+struct parameters {
+	int max_iterations = 10; // MAXITE
+	double max_distance_per_iteration = 10; // VARMAX
+	double perturbation_for_snd_order_derivatives = 1; // VARSND
+	std::vector<double> convergence_thresholds;
+	std::vector<std::string> variable_names;
+	std::vector<std::string> constraint_names;
+	int optimization_method = 2; // OPTMET
+};
+
 struct problem_wrapper {
     // TODO: set mutex to ensure thread-safety
     static void set_problem(pagmo::problem &problem) {
@@ -182,7 +192,9 @@ std::vector<int> problem_wrapper::constraint_types;
 
 template<class F, class G>
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
- const std::vector<int> &constraint_types, F fitness, G gradient, bool has_gradient, double autodiff_epsilon=0.1) {
+ const std::vector<int> &constraint_types, F fitness, G gradient, bool has_gradient, double autodiff_epsilon=0.1,
+ const parameters params = {}
+ ) {
 
     // initialization
     int num_variables = initial_x.size();
@@ -201,10 +213,11 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     return raii_object.exec(initial_x, fitness, gradient);
 }
 
-std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem prob, const std::vector<double> &initial_x) {
+std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem prob, const std::vector<double> &initial_x,
+    const parameters params = {}) {
     problem_wrapper::set_problem(prob);
     auto result_tuple = optimize(initial_x, problem_wrapper::get_constraint_types(), problem_wrapper::fitness,
-    problem_wrapper::gradient, false);
+    problem_wrapper::gradient, prob.has_gradient(), 0.1, params);
 
     std::vector<double> best_x = std::get<0>(result_tuple);
     std::vector<double> best_f = std::get<1>(result_tuple);
@@ -226,11 +239,11 @@ std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem pro
 
 /**
  * oginit.F : Allocates and zeroes vectors, sets parameter values in common block to hardcoded defaults
- * ogvsca.F : Define variable scale factor
- * ogvstr.F : Set variable names
+ * ogvsca.F : Define variable scale factor - int[numvar]
+ * ogvstr.F : Set variable names - str[numvar]
  * ogctyp.F : Sets types of constraints and merit function in common block
- * ogcpri.F : Sets constraint priorities in common block
- * ogcsca.F : Sets convergence thresholds of constraints and merit function in common block
+ * ogcpri.F : Sets constraint priorities in common block int[numcon+1]
+ * ogcsca.F : Sets convergence thresholds of constraints and merit function in common block - double[NUMCON+1]
  * ogcstr.F : Sets names of constraints and merit function in common block
  * 
  * ogderi.F : Sets parameters for type of derivative computation in common block
