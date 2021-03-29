@@ -2,6 +2,8 @@
 #include <vector>
 #include <tuple>
 #include <pagmo/problems/ackley.hpp>
+#include <pagmo/problems/griewank.hpp>
+#include <pagmo/problems/luksan_vlcek1.hpp>
 
 #include "wrapper.hpp"
 
@@ -61,8 +63,8 @@ int main(int argn, char** argc)
 
 	cout << "Testing pagmo problem" << endl;
 
-	pagmo::problem test_prob(pagmo::ackley{10});
-	initial_x = std::vector<double>(10,1);
+	pagmo::problem test_prob(pagmo::luksan_vlcek1{10});
+	initial_x = std::vector<double>(10,2);
 
 	std::tie(bestx, bestf) = optimize(test_prob, initial_x);
 
@@ -75,6 +77,13 @@ int main(int argn, char** argc)
 	cout << "Best f:";
 	for (int i = 0; i < bestf.size(); i++) {
 		cout << bestf[i] << " ";
+	}
+	cout << endl;
+
+	cout << "problem.fitness(best_x):";
+	std::vector<double> real_fitness = test_prob.fitness(bestx);
+	for (int i = 0; i < real_fitness.size(); i++) {
+		cout << real_fitness[i] << " ";
 	}
 	cout << endl;
 

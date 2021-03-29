@@ -6,14 +6,14 @@
 #include <pagmo/problem.hpp>
 
 extern"C" {
-	void ogclos_();
-	void ogctyp_(const int* contyp);
-	void ogderi_(int * dervar, double *pervar);
-	void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
-	 	void (*)(double*, double*), void (*)(double*, double*, double*));
-	void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
-		void (*)(double*, double*, int*), void (*)(double*, double*, double*));
-	void oginit_(int * varnum, int * connum);
+    void ogclos_();
+    void ogctyp_(const int* contyp);
+    void ogderi_(int * dervar, double *pervar);
+    void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
+         void (*)(double*, double*), void (*)(double*, double*, double*));
+    void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
+        void (*)(double*, double*, int*), void (*)(double*, double*, double*));
+    void oginit_(int * varnum, int * connum);
 }
 
 namespace optgra {
@@ -118,14 +118,55 @@ struct problem_wrapper {
                 + " but expected " + std::to_string(constraint_types.size())));
         }
 
+        // pagmo has fitness first, followed by constraints
+        // optgra has constraints first and fitness last
+        // we rotate to fit
         std::copy(fitness_vector.begin()+1, fitness_vector.end(), out_f);
         out_f[f_length-1] = fitness_vector[0];
     }
 
+    static bool has_gradient() {
+        return prob.has_gradient();
+    }
+
     static void gradient(double * x, double * out_f, double * out_derivatives) {
+        if (!has_gradient()) {
+            throw(std::logic_error("Problem " + prob.get_name() +
+                " has no gradient, but the gradient function was called. This is probably a state inconsistency of the problem wrapper."));
+        }
         fitness(x, out_f, 0);
 
-        // TODO unpack gradient
+        std::vector<double> x_vector(dim);
+        std::copy(x, x+dim, x_vector.begin());
+
+        unsigned num_con = constraint_types.size()-1;
+        // Zero out derivatives
+        // The gradient structure of optgra is DERCON(NUMCON+1,NUMVAR)
+        // Internally, optgra allocates some additional rows as working memory,
+        // but we will not concern ourselves with zeroing them.
+        std::fill(out_derivatives, (out_derivatives+(num_con+1)*dim), 0);
+
+        pagmo::sparsity_pattern gs_map = prob.gradient_sparsity();
+        static std::vector<double> compressed_gradient = prob.gradient(x_vector);
+
+        //already checked by pagmo, more a reminder for myself
+        assert(gs_map.size() == compressed_gradient.size());
+
+        // copy gradient into dense array of optgra
+        for (unsigned i = 0; i < gs_map.size(); i++) {
+            int xi, fi, target_fi;
+            std::tie(xi, fi) = gs_map[i];
+
+            // again, have to rotate the gradients, as pagmo has fitness first, while optgra has fitness last
+            if (fi == 0) {
+                target_fi = num_con; // last element of array of size num_con+1, in 0 indexing
+            } else {
+                target_fi = fi - 1;
+            }
+
+            // TODO: check that row/column ordering is translated correctly to fortran.
+            out_derivatives[target_fi*dim+xi] = compressed_gradient[i];
+        }
     }
 
     static pagmo::problem& prob;
@@ -142,7 +183,7 @@ std::vector<int> problem_wrapper::constraint_types;
 template<class F, class G>
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
  const std::vector<int> &constraint_types, F fitness, G gradient, bool has_gradient, double autodiff_epsilon=0.1) {
-	
+
     // initialization
     int num_variables = initial_x.size();
 
@@ -165,8 +206,20 @@ std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem pro
     auto result_tuple = optimize(initial_x, problem_wrapper::get_constraint_types(), problem_wrapper::fitness,
     problem_wrapper::gradient, false);
 
-    // TODO: reorder merit/constraints into format used by pagmo
-    return std::make_tuple(std::get<0>(result_tuple), std::get<1>(result_tuple));
+    std::vector<double> best_x = std::get<0>(result_tuple);
+    std::vector<double> best_f = std::get<1>(result_tuple);
+    int n_out = best_f.size();
+
+    // reorder merit/constraints into format used by pagmo. That means fitness first, constraints then.
+    // Alas, we need a right rotation, not a left one, which is why we cannot use std::rotate. Maybe move_backward?
+
+    double fitness = best_f[n_out-1];
+    for (int i = n_out-1; i > 0; i--) {
+        best_f[i] = best_f[i-1];
+    }
+    best_f[0] = fitness;
+
+    return std::make_tuple(best_x, best_f);
 }
 
 }
@@ -189,10 +242,6 @@ std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem pro
  * ogwmat.F : Something with writing to Matlab
  * ogwtab.F : writes units and verbosity(?) options for tabular output into the common block defined in ogdata.inc
 
-
-C INP | TYPCON(NUMCON+1) | I*4 | CONSTRAINTS TYPE (1:NUMCON)
-C     |                  |     | -> 1=GTE -1=LTE 0=EQU -2=DERIVED DATA
-C     |                  |     | MERIT       TYPE (1+NUMCON)
-C     |                  |     | -> 1=MAX -1=MIN
+ Prioritize: convergence thresholds
 
 */
