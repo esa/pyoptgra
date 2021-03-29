@@ -67,7 +67,8 @@ int main(int argn, char** argc)
 	pagmo::problem test_prob(pagmo::hock_schittkowsky_71{});
 	initial_x = std::vector<double>(4,2);
 
-	std::tie(bestx, bestf) = optimize(test_prob, initial_x);
+	parameters params;
+	std::tie(bestx, bestf) = optimize(test_prob, initial_x, params);
 
 	cout << "Best x:";
 	for (int i = 0; i < bestx.size(); i++) {
