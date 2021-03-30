@@ -33,6 +33,7 @@ set (OPTGRAFILES
  "${CMAKE_CURRENT_SOURCE_DIR}/src/ogcorr.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/src/ogvsca.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/src/ogvstr.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/src/ogwlog.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/src/ogwrit.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/src/ogdata.inc"
  )

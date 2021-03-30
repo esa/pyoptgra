@@ -8,6 +8,7 @@
 
 extern"C" {
     void ogclos_();
+    void ogcsca_(double * scacon);
     void ogctyp_(const int* contyp);
     void ogderi_(int * dervar, double * pervar);
     void ogdist_(double * maxvar, double * sndvar);
@@ -17,7 +18,8 @@ extern"C" {
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
-    void ogcsca_(double * scacon);
+    void ogomet_(int * metopt);
+    void ogwlog_(int * lunlog, int * levlog);
 }
 
 namespace optgra {
@@ -37,6 +39,7 @@ struct parameters {
 	int optimization_method = 2; // OPTMET
 	int derivatives_computation = 1;//VARDER
 	std::vector<double> autodiff_deltas;
+	int log_level = 1;
 };
 
 struct optgra_raii {
@@ -51,14 +54,18 @@ struct optgra_raii {
         if (params.autodiff_deltas.size() == 0) {
             params.autodiff_deltas = std::vector<double>(num_variables, 0.001);
         } else if (params.autodiff_deltas.size() != num_variables) {
-        	throw(std::invalid_argument("Size mismatch."));
+        	throw(std::invalid_argument("Got " + std::to_string(params.autodiff_deltas.size())
+        	 + " autodiff deltas for " + std::to_string(num_variables) + " variables."));
         }
 
         if (params.convergence_thresholds.size() == 0) {
         	params.convergence_thresholds = std::vector<double>(num_constraints+1, 1);
         } else if (params.convergence_thresholds.size() != constraint_types.size()) {
-        	throw(std::invalid_argument("Size mismatch."));
+        	throw(std::invalid_argument("Got " + std::to_string(params.convergence_thresholds.size())
+        	 + " convergence thresholds for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
         }
+
+        // TODO: more sanity checks for parameters.
 
         oginit_(&num_variables, &num_constraints);
         ogcsca_(params.convergence_thresholds.data());
@@ -69,6 +76,11 @@ struct optgra_raii {
         // Haven't figured out what the others do, but maxiter is an upper bound anyway
         int otheriters = params.max_iterations; // TODO: figure out what it does.
         ogiter_(&params.max_iterations, &params.max_correction_iterations, &otheriters, &otheriters, &otheriters);
+
+        ogomet_(&params.optimization_method);
+
+        int log_unit = 6;
+        ogwlog_(&log_unit, &params.log_level);
         
     }
 
