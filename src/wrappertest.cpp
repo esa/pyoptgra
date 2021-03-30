@@ -48,7 +48,10 @@ int main(int argn, char** argc)
 	int dim = initial_x.size();
 	std::vector<double> bestx, bestf;
 	int finopt;
-	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false);
+	parameters params;
+	params.max_iterations = 100;
+	params.convergence_thresholds = {0.01,0.01};
+	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false, params);
 
 	cout << "Best x:";
 	for (int i = 0; i < dim; i++) {
@@ -67,7 +70,10 @@ int main(int argn, char** argc)
 	pagmo::problem test_prob(pagmo::hock_schittkowsky_71{});
 	initial_x = std::vector<double>(4,2);
 
-	parameters params;
+	//parameters params;
+	//params.max_iterations = 100;
+	params.convergence_thresholds = {0.01,0.01,0.01};
+	params.derivatives_computation = 3;
 	std::tie(bestx, bestf) = optimize(test_prob, initial_x, params);
 
 	cout << "Best x:";
