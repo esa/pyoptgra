@@ -5,6 +5,7 @@
 #include <tuple>
 #include <iostream>
 #include <pagmo/problem.hpp>
+#include <functional>
 
 extern"C" {
     void ogclos_();
@@ -28,9 +29,9 @@ extern"C" {
 
 namespace optgra {
 
-    typedef void (*fitness_callback)(double*, double*, int*);
+    typedef std::function<void(double*,double*,int*)> fitness_callback;
 
-    typedef void (*gradient_callback)(double*, double*, double*);
+    typedef std::function<void(double*,double*,double*)> gradient_callback;
 
 struct parameters {
 	int max_iterations = 10; // MAXITE
@@ -47,6 +48,36 @@ struct parameters {
 	std::vector<double> autodiff_deltas;
 	int log_level = 1;
 };
+
+/** This struct is just to connect the std::functions passed from python
+ *  to the unholy mess of static function pointers, which are requried by Fortran.
+ *  It is emphatically not thread safe.
+ */
+
+struct static_callable_store {
+
+    static void fitness(double * x, double * out_f, int * inapplicable_flag) {
+        f_callable(x, out_f, inapplicable_flag);
+    }
+
+    static void gradient(double * x, double * out_f, double * out_derivatives) {
+        g_callable(x, out_f, out_derivatives);
+    }
+
+    static void set_fitness_callable(std::function<void(double*,double*,int*)> f) {
+        f_callable = f;
+    }
+
+    static void set_gradient_callable(std::function<void(double*,double*,double*)> g) {
+        g_callable = g;
+    }
+
+    static std::function<void(double*,double*,int*)> f_callable;
+    static std::function<void(double*,double*,double*)> g_callable;
+};
+// static initialization
+std::function<void(double*,double*,int*)> static_callable_store::f_callable;
+std::function<void(double*,double*,double*)> static_callable_store::g_callable;
 
 struct optgra_raii {
 
@@ -121,9 +152,13 @@ struct optgra_raii {
         std::vector<double> valvar(initial_x);
         std::vector<double> valcon(num_constraints+1);
 
+        static_callable_store::set_fitness_callable(fitness);
+        static_callable_store::set_gradient_callable(gradient);
+
         int finopt = 0;
         int finite = 0;
-        ogexec_(valvar.data(), valcon.data(), &finopt, &finite, fitness, gradient);
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
 
         return std::make_tuple(valvar, valcon, finopt);
     }
@@ -140,7 +175,7 @@ private:
 
 struct problem_wrapper {
     // TODO: set mutex to ensure thread-safety
-    static void set_problem(pagmo::problem &problem) {
+    problem_wrapper(pagmo::problem &problem) {
 
         if (prob.get_nobj() != 1u) {
             throw(std::invalid_argument("Multiple objectives detected in " + prob.get_name() + " instance. Optgra cannot deal with them"));
@@ -150,8 +185,8 @@ struct problem_wrapper {
         }
 
         // set problem, get problem dimension
-        prob = problem;
-        dim = prob.get_nx();
+        this->prob = problem;
+        this->dim = prob.get_nx();
 
         const auto bounds = prob.get_bounds();
         const auto &lb = bounds.first;
@@ -159,35 +194,35 @@ struct problem_wrapper {
 
         // add equality constraints
         for (unsigned i = 0; i < prob.get_nec(); i++) {
-            constraint_types.push_back(0);
+            this->constraint_types.push_back(0);
         }
 
         // add inequality constraints
         for (unsigned i = 0; i < prob.get_nic(); i++) {
-            constraint_types.push_back(-1);
+            this->constraint_types.push_back(-1);
         }
 
         //TODO: add box bounds
 
         // fitness function is the last and pagmo problems always minimize
-        constraint_types.push_back(-1); 
+        this->constraint_types.push_back(-1); 
 
     }
 
-    static const std::vector<int>& get_constraint_types() {
-        return constraint_types;
+    const std::vector<int>& get_constraint_types() {
+        return this->constraint_types;
     }
 
-    static void fitness(double * x, double * out_f, int * inapplicable_flag) {
-        std::vector<double> x_vector(dim);
+    void fitness(double * x, double * out_f, int * inapplicable_flag) {
+        std::vector<double> x_vector(this->dim);
         std::copy(x, x+dim, x_vector.begin());
 
-        std::vector<double> fitness_vector = prob.fitness(x_vector);
+        std::vector<double> fitness_vector = this->prob.fitness(x_vector);
         unsigned f_length = fitness_vector.size();
 
-        if (f_length != constraint_types.size()) {
+        if (f_length != this->constraint_types.size()) {
             throw(std::runtime_error("Fitness returned " + std::to_string(f_length) 
-                + " but expected " + std::to_string(constraint_types.size())));
+                + " but expected " + std::to_string(this->constraint_types.size())));
         }
 
         // pagmo has fitness first, followed by constraints
@@ -197,16 +232,16 @@ struct problem_wrapper {
         out_f[f_length-1] = fitness_vector[0];
     }
 
-    static bool has_gradient() {
-        return prob.has_gradient();
+    bool has_gradient() {
+        return this->prob.has_gradient();
     }
 
-    static void gradient(double * x, double * out_f, double * out_derivatives) {
-        if (!has_gradient()) {
+    void gradient(double * x, double * out_f, double * out_derivatives) {
+        if (!this->has_gradient()) {
             throw(std::logic_error("Problem " + prob.get_name() +
                 " has no gradient, but the gradient function was called. This is probably a state inconsistency of the problem wrapper."));
         }
-        fitness(x, out_f, 0);
+        this->fitness(x, out_f, 0);
 
         std::vector<double> x_vector(dim);
         std::copy(x, x+dim, x_vector.begin());
@@ -219,7 +254,7 @@ struct problem_wrapper {
         std::fill(out_derivatives, (out_derivatives+(num_con+1)*dim), 0);
 
         pagmo::sparsity_pattern gs_map = prob.gradient_sparsity();
-        static std::vector<double> compressed_gradient = prob.gradient(x_vector);
+        std::vector<double> compressed_gradient = prob.gradient(x_vector);
 
         //already checked by pagmo, more a reminder for myself
         assert(gs_map.size() == compressed_gradient.size());
@@ -241,20 +276,15 @@ struct problem_wrapper {
         }
     }
 
-    static pagmo::problem& prob;
-    static unsigned dim;
-    static std::vector<int> constraint_types;
+private:
+    pagmo::problem null_prob = pagmo::problem();
+    pagmo::problem& prob = null_prob;
+    unsigned dim;
+    std::vector<int> constraint_types;
 };
 
-// static initialization, this is horrible.
-pagmo::problem null_prob = pagmo::problem();
-pagmo::problem& problem_wrapper::prob = null_prob;
-unsigned problem_wrapper::dim;
-std::vector<int> problem_wrapper::constraint_types;
-
-template<class F, class G>
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
- const std::vector<int> &constraint_types, F fitness, G gradient, bool has_gradient,
+ const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
  parameters params = {}
  ) {
 
@@ -273,9 +303,12 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 
 std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem prob, const std::vector<double> &initial_x,
     const parameters params = {}) {
-    problem_wrapper::set_problem(prob);
-    auto result_tuple = optimize(initial_x, problem_wrapper::get_constraint_types(), problem_wrapper::fitness,
-    problem_wrapper::gradient, prob.has_gradient(), params);
+    problem_wrapper p_wrapper(prob);
+
+    auto result_tuple = optimize(initial_x, p_wrapper.get_constraint_types(),
+        std::bind(&problem_wrapper::fitness, &p_wrapper, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+        std::bind(&problem_wrapper::gradient, &p_wrapper, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+        prob.has_gradient(), params);
 
     std::vector<double> best_x = std::get<0>(result_tuple);
     std::vector<double> best_f = std::get<1>(result_tuple);
