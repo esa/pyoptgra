@@ -10,6 +10,7 @@ extern"C" {
     void ogclos_();
     void ogcsca_(double * scacon);
     void ogctyp_(const int* contyp);
+    void ogcpri_(int * pricon);
     void ogderi_(int * dervar, double * pervar);
     void ogdist_(double * maxvar, double * sndvar);
     void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
@@ -19,6 +20,8 @@ extern"C" {
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
+    void ogvstr_(char ** strvar, int * lenvar);
+    void ogcstr_(char ** strcon, int * lencon);
     void ogvsca_(double * scavar);
     void ogwlog_(int * lunlog, int * levlog);
 }
@@ -36,10 +39,11 @@ struct parameters {
 	double perturbation_for_snd_order_derivatives = 1; // VARSND
 	std::vector<double> convergence_thresholds;
 	std::vector<double> variable_scaling_factors;
+	std::vector<int> constraint_priorities;
 	std::vector<std::string> variable_names;
 	std::vector<std::string> constraint_names;
 	int optimization_method = 2; // OPTMET
-	int derivatives_computation = 1;//VARDER
+	int derivatives_computation = 1; //VARDER
 	std::vector<double> autodiff_deltas;
 	int log_level = 1;
 };
@@ -60,24 +64,9 @@ struct optgra_raii {
         	 + " autodiff deltas for " + std::to_string(num_variables) + " variables."));
         }
 
-        if (params.variable_scaling_factors.size() == 0) {
-            params.variable_scaling_factors = std::vector<double>(num_variables, 1);
-        } else if (params.variable_scaling_factors.size() != num_variables) {
-        	throw(std::invalid_argument("Got " + std::to_string(params.variable_scaling_factors.size())
-        	 + " scaling factors for " + std::to_string(num_variables) + " variables."));
-        }
-
-        if (params.convergence_thresholds.size() == 0) {
-        	params.convergence_thresholds = std::vector<double>(num_constraints+1, 1);
-        } else if (params.convergence_thresholds.size() != constraint_types.size()) {
-        	throw(std::invalid_argument("Got " + std::to_string(params.convergence_thresholds.size())
-        	 + " convergence thresholds for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
-        }
-
         // TODO: more sanity checks for parameters.
 
         oginit_(&num_variables, &num_constraints);
-        ogcsca_(params.convergence_thresholds.data());
         ogctyp_(constraint_types.data());
         ogderi_(&params.derivatives_computation, params.autodiff_deltas.data());
         ogdist_(&params.max_distance_per_iteration, &params.perturbation_for_snd_order_derivatives);
@@ -87,10 +76,38 @@ struct optgra_raii {
         ogiter_(&params.max_iterations, &params.max_correction_iterations, &otheriters, &otheriters, &otheriters);
 
         ogomet_(&params.optimization_method);
-        ogvsca_(params.variable_scaling_factors.data());
+        
 
         int log_unit = 6;
         ogwlog_(&log_unit, &params.log_level);
+
+        if (params.variable_scaling_factors.size() > 0) {
+        	if (params.variable_scaling_factors.size() != num_variables) {
+        		throw(std::invalid_argument("Got " + std::to_string(params.variable_scaling_factors.size())
+        		 + " scaling factors for " + std::to_string(num_variables) + " variables."));
+        	}
+
+        	ogvsca_(params.variable_scaling_factors.data());
+        }
+
+        if (params.convergence_thresholds.size() > 0) {
+        	if (params.convergence_thresholds.size() != constraint_types.size()) {
+	        	throw(std::invalid_argument("Got " + std::to_string(params.convergence_thresholds.size())
+	        	 + " convergence thresholds for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
+	        }
+	        ogcsca_(params.convergence_thresholds.data());
+	    }
+
+	    if (params.constraint_priorities.size() > 0) {
+        	if (params.constraint_priorities.size() != constraint_types.size()) {
+        		//TODO: Find out what the last priority is for!
+	        	throw(std::invalid_argument("Got " + std::to_string(params.constraint_priorities.size())
+	        	 + " constraint priorities for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
+	        }
+	        ogcpri_(params.constraint_priorities.data());
+	    }
+
+        //TODO: figure out how string arrays are passed to fortran for variable names
         
     }
 
