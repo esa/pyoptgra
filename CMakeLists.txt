@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
 
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Debug CACHE STRING
+		"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+	FORCE)
+endif()
+
 project( fortranTest )
 
 enable_language(Fortran)
@@ -8,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Pagmo REQUIRED)
+find_package(pybind11 REQUIRED)
 
 message("Cmake build type is ${CMAKE_BUILD_TYPE}")
 
@@ -39,11 +45,12 @@ set (OPTGRAFILES
  )
 
 add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/src/wrapper.hpp" ${OPTGRAFILES})
-target_link_libraries(optgra PUBLIC Pagmo::pagmo)
-
+target_link_libraries(optgra PUBLIC)
 
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/src/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
+pybind11_add_module(pyoptgra "${CMAKE_CURRENT_SOURCE_DIR}/src/pybindwrapper.cpp")
+target_link_libraries(pyoptgra PRIVATE optgra)
 
 enable_testing()

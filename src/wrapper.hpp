@@ -4,7 +4,6 @@
 #include <vector>
 #include <tuple>
 #include <iostream>
-#include <pagmo/problem.hpp>
 #include <functional>
 #include <mutex>
 
@@ -30,9 +29,11 @@ extern"C" {
 
 namespace optgra {
 
-    typedef std::function<void(double*,double*,int*)> fitness_callback;
+    typedef std::function<std::vector<double>(std::vector<double>)> fitness_callback;
 
-    typedef std::function<void(double*,double*,double*)> gradient_callback;
+    typedef std::function<std::vector<std::vector<double>>(std::vector<double>)> gradient_callback;
+
+    using std::vector, std::tuple, std::function;
 
 struct parameters {
 	int max_iterations = 10; // MAXITE
@@ -58,27 +59,48 @@ struct parameters {
 struct static_callable_store {
 
     static void fitness(double * x, double * out_f, int * inapplicable_flag) {
-        f_callable(x, out_f, inapplicable_flag);
+        std::vector<double> x_vector(x_dim);
+        std::copy(x, x+x_dim, x_vector.begin());
+
+        std::vector<double> fitness_vector = f_callable(x_vector);
+
+        std::copy(fitness_vector.begin(), fitness_vector.end(), out_f);
     }
 
     static void gradient(double * x, double * out_f, double * out_derivatives) {
-        g_callable(x, out_f, out_derivatives);
+        fitness(x, out_f, 0); // this can probably be optimized
+
+        std::vector<double> x_vector(x_dim);
+        std::copy(x, x+x_dim, x_vector.begin());
+
+        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector);
+
+        for (unsigned i = 0; i < gradient_vector.size(); i++) {
+            unsigned row_length = gradient_vector[i].size();
+            std::copy(gradient_vector[i].begin(), gradient_vector[i].end(), out_derivatives+(i*x_dim));
+        }
     }
 
-    static void set_fitness_callable(std::function<void(double*,double*,int*)> f) {
+    static void set_fitness_callable(fitness_callback f) {
         f_callable = f;
     }
 
-    static void set_gradient_callable(std::function<void(double*,double*,double*)> g) {
+    static void set_gradient_callable(gradient_callback g) {
         g_callable = g;
     }
 
-    static std::function<void(double*,double*,int*)> f_callable;
-    static std::function<void(double*,double*,double*)> g_callable;
+    static void set_x_dim(int dim) {
+        x_dim = dim;
+    }
+
+    static fitness_callback f_callable;
+    static gradient_callback g_callable;
+    static int x_dim;
 };
 // static initialization
-std::function<void(double*,double*,int*)> static_callable_store::f_callable;
-std::function<void(double*,double*,double*)> static_callable_store::g_callable;
+fitness_callback static_callable_store::f_callable;
+gradient_callback static_callable_store::g_callable;
+int static_callable_store::x_dim;
 
 struct optgra_raii {
 
@@ -157,6 +179,7 @@ struct optgra_raii {
 
         static_callable_store::set_fitness_callable(fitness);
         static_callable_store::set_gradient_callable(gradient);
+        static_callable_store::set_x_dim(initial_x.size());
 
         int finopt = 0;
         int finite = 0;
@@ -181,120 +204,10 @@ private:
 
 std::mutex optgra_raii::optgra_mutex;
 
-struct problem_wrapper {
-    problem_wrapper(pagmo::problem &problem) {
-
-        if (prob.get_nobj() != 1u) {
-            throw(std::invalid_argument("Multiple objectives detected in " + prob.get_name() + " instance. Optgra cannot deal with them"));
-        }
-        if (prob.is_stochastic()) {
-            throw(std::invalid_argument("The problem appears to be stochastic. Optgra cannot deal with it"));
-        }
-
-        // set problem, get problem dimension
-        this->prob = problem;
-        this->dim = prob.get_nx();
-
-        const auto bounds = prob.get_bounds();
-        const auto &lb = bounds.first;
-        const auto &ub = bounds.second;
-
-        // add equality constraints
-        for (unsigned i = 0; i < prob.get_nec(); i++) {
-            this->constraint_types.push_back(0);
-        }
-
-        // add inequality constraints
-        for (unsigned i = 0; i < prob.get_nic(); i++) {
-            this->constraint_types.push_back(-1);
-        }
-
-        //TODO: add box bounds
-
-        // fitness function is the last and pagmo problems always minimize
-        this->constraint_types.push_back(-1); 
-
-    }
-
-    const std::vector<int>& get_constraint_types() {
-        return this->constraint_types;
-    }
-
-    void fitness(double * x, double * out_f, int * inapplicable_flag) {
-        std::vector<double> x_vector(this->dim);
-        std::copy(x, x+dim, x_vector.begin());
-
-        std::vector<double> fitness_vector = this->prob.fitness(x_vector);
-        unsigned f_length = fitness_vector.size();
-
-        if (f_length != this->constraint_types.size()) {
-            throw(std::runtime_error("Fitness returned " + std::to_string(f_length) 
-                + " but expected " + std::to_string(this->constraint_types.size())));
-        }
-
-        // pagmo has fitness first, followed by constraints
-        // optgra has constraints first and fitness last
-        // we rotate to fit
-        std::copy(fitness_vector.begin()+1, fitness_vector.end(), out_f);
-        out_f[f_length-1] = fitness_vector[0];
-    }
-
-    bool has_gradient() {
-        return this->prob.has_gradient();
-    }
-
-    void gradient(double * x, double * out_f, double * out_derivatives) {
-        if (!this->has_gradient()) {
-            throw(std::logic_error("Problem " + prob.get_name() +
-                " has no gradient, but the gradient function was called. This is probably a state inconsistency of the problem wrapper."));
-        }
-        this->fitness(x, out_f, 0);
-
-        std::vector<double> x_vector(dim);
-        std::copy(x, x+dim, x_vector.begin());
-
-        unsigned num_con = constraint_types.size()-1;
-        // Zero out derivatives
-        // The gradient structure of optgra is DERCON(NUMCON+1,NUMVAR)
-        // Internally, optgra allocates some additional rows as working memory,
-        // but we will not concern ourselves with zeroing them.
-        std::fill(out_derivatives, (out_derivatives+(num_con+1)*dim), 0);
-
-        pagmo::sparsity_pattern gs_map = prob.gradient_sparsity();
-        std::vector<double> compressed_gradient = prob.gradient(x_vector);
-
-        //already checked by pagmo, more a reminder for myself
-        assert(gs_map.size() == compressed_gradient.size());
-
-        // copy gradient into dense array of optgra
-        for (unsigned i = 0; i < gs_map.size(); i++) {
-            int xi, fi, target_fi;
-            std::tie(xi, fi) = gs_map[i];
-
-            // again, have to rotate the gradients, as pagmo has fitness first, while optgra has fitness last
-            if (fi == 0) {
-                target_fi = num_con; // last element of array of size num_con+1, in 0 indexing
-            } else {
-                target_fi = fi - 1;
-            }
-
-            // TODO: check that row/column ordering is translated correctly to fortran.
-            out_derivatives[target_fi*dim+xi] = compressed_gradient[i];
-        }
-    }
-
-private:
-    pagmo::problem null_prob = pagmo::problem();
-    pagmo::problem& prob = null_prob;
-    unsigned dim;
-    std::vector<int> constraint_types;
-};
-
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
  const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
  parameters params = {}
  ) {
-
     // initialization
     int num_variables = initial_x.size();
 
@@ -306,31 +219,6 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     optgra_raii raii_object = optgra_raii(num_variables, constraint_types, params);
 
     return raii_object.exec(initial_x, fitness, gradient);
-}
-
-std::tuple<std::vector<double>, std::vector<double>> optimize(pagmo::problem prob, const std::vector<double> &initial_x,
-    const parameters params = {}) {
-    problem_wrapper p_wrapper(prob);
-
-    auto result_tuple = optimize(initial_x, p_wrapper.get_constraint_types(),
-        std::bind(&problem_wrapper::fitness, &p_wrapper, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-        std::bind(&problem_wrapper::gradient, &p_wrapper, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-        prob.has_gradient(), params);
-
-    std::vector<double> best_x = std::get<0>(result_tuple);
-    std::vector<double> best_f = std::get<1>(result_tuple);
-    int n_out = best_f.size();
-
-    // reorder merit/constraints into format used by pagmo. That means fitness first, constraints then.
-    // Alas, we need a right rotation, not a left one, which is why we cannot use std::rotate. Maybe move_backward?
-
-    double fitness = best_f[n_out-1];
-    for (int i = n_out-1; i > 0; i--) {
-        best_f[i] = best_f[i-1];
-    }
-    best_f[0] = fitness;
-
-    return std::make_tuple(best_x, best_f);
 }
 
 }
