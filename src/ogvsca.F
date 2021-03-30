@@ -3,7 +3,7 @@ C ======================================================================
 C NEAR-LINEAR OPTIMISATION TOOL TAILORED FOR S/C TRAJECTORY DESIGN:
 C DEFINE VARIABLE SCALE FACTOR
 C ======================================================================
-C INP | SCAVAR(NUMVAR)   | I*4 | VARIABLES SCALE FACTOR
+C INP | SCAVAR(NUMVAR)   | R*8 | VARIABLES SCALE FACTOR
 C ======================================================================
 C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================

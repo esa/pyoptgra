@@ -19,6 +19,7 @@ extern"C" {
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
+    void ogvsca_(double * scavar);
     void ogwlog_(int * lunlog, int * levlog);
 }
 
@@ -34,6 +35,7 @@ struct parameters {
 	double max_distance_per_iteration = 10; // VARMAX
 	double perturbation_for_snd_order_derivatives = 1; // VARSND
 	std::vector<double> convergence_thresholds;
+	std::vector<double> variable_scaling_factors;
 	std::vector<std::string> variable_names;
 	std::vector<std::string> constraint_names;
 	int optimization_method = 2; // OPTMET
@@ -58,6 +60,13 @@ struct optgra_raii {
         	 + " autodiff deltas for " + std::to_string(num_variables) + " variables."));
         }
 
+        if (params.variable_scaling_factors.size() == 0) {
+            params.variable_scaling_factors = std::vector<double>(num_variables, 1);
+        } else if (params.variable_scaling_factors.size() != num_variables) {
+        	throw(std::invalid_argument("Got " + std::to_string(params.variable_scaling_factors.size())
+        	 + " scaling factors for " + std::to_string(num_variables) + " variables."));
+        }
+
         if (params.convergence_thresholds.size() == 0) {
         	params.convergence_thresholds = std::vector<double>(num_constraints+1, 1);
         } else if (params.convergence_thresholds.size() != constraint_types.size()) {
@@ -78,6 +87,7 @@ struct optgra_raii {
         ogiter_(&params.max_iterations, &params.max_correction_iterations, &otheriters, &otheriters, &otheriters);
 
         ogomet_(&params.optimization_method);
+        ogvsca_(params.variable_scaling_factors.data());
 
         int log_unit = 6;
         ogwlog_(&log_unit, &params.log_level);
