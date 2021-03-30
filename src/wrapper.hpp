@@ -6,6 +6,7 @@
 #include <iostream>
 #include <pagmo/problem.hpp>
 #include <functional>
+#include <mutex>
 
 extern"C" {
     void ogclos_();
@@ -82,7 +83,6 @@ std::function<void(double*,double*,double*)> static_callable_store::g_callable;
 struct optgra_raii {
 
     optgra_raii() = delete;
-    // TODO: Use a mutex to ensure that at most one object can be created concurrently
 
     optgra_raii(int num_variables, const std::vector<int> &constraint_types,
      parameters params) : num_variables(num_variables)
@@ -96,6 +96,9 @@ struct optgra_raii {
         }
 
         // TODO: more sanity checks for parameters.
+
+        // Ensure that at most one optgra_raii object is active at the same time
+        optgra_mutex.lock();
 
         oginit_(&num_variables, &num_constraints);
         ogctyp_(constraint_types.data());
@@ -166,15 +169,19 @@ struct optgra_raii {
     ~optgra_raii()
     {
         ogclos_();
+        optgra_mutex.unlock();
     }
 
 private:
     int num_variables;
     int num_constraints;
+
+    static std::mutex optgra_mutex;
 };
 
+std::mutex optgra_raii::optgra_mutex;
+
 struct problem_wrapper {
-    // TODO: set mutex to ensure thread-safety
     problem_wrapper(pagmo::problem &problem) {
 
         if (prob.get_nobj() != 1u) {
