@@ -45,12 +45,11 @@ set (OPTGRAFILES
  )
 
 add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/src/wrapper.hpp" ${OPTGRAFILES})
-target_link_libraries(optgra PUBLIC)
 
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/src/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
-pybind11_add_module(pyoptgra "${CMAKE_CURRENT_SOURCE_DIR}/src/pybindwrapper.cpp")
+pybind11_add_module(pyoptgra "${CMAKE_CURRENT_SOURCE_DIR}/src/bindings.cpp")
 target_link_libraries(pyoptgra PRIVATE optgra)
 
 enable_testing()
