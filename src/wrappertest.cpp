@@ -46,10 +46,10 @@ int main(int argn, char** argc)
 	int dim = initial_x.size();
 	std::vector<double> bestx, bestf;
 	int finopt;
-	parameters params;
-	params.max_iterations = 100;
-	params.convergence_thresholds = {0.01,0.01};
-	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false, params);
+	//parameters params;
+	//params.max_iterations = 100;
+	//params.convergence_thresholds = {0.01,0.01};
+	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false);
 
 	cout << "Best x:";
 	for (int i = 0; i < dim; i++) {

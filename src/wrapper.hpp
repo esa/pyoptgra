@@ -36,19 +36,7 @@ namespace optgra {
     using std::vector, std::tuple, std::function;
 
 struct parameters {
-	int max_iterations = 10; // MAXITE
-	int max_correction_iterations = 10; // CORITE
-	double max_distance_per_iteration = 10; // VARMAX
-	double perturbation_for_snd_order_derivatives = 1; // VARSND
-	std::vector<double> convergence_thresholds;
-	std::vector<double> variable_scaling_factors;
-	std::vector<int> constraint_priorities;
-	std::vector<std::string> variable_names;
-	std::vector<std::string> constraint_names;
-	int optimization_method = 2; // OPTMET
-	int derivatives_computation = 1; //VARDER
-	std::vector<double> autodiff_deltas;
-	int log_level = 1;
+	
 };
 
 /** This struct is just to connect the std::functions passed from python
@@ -107,13 +95,26 @@ struct optgra_raii {
     optgra_raii() = delete;
 
     optgra_raii(int num_variables, const std::vector<int> &constraint_types,
-     parameters params) : num_variables(num_variables)
+	    int max_iterations = 10, // MAXITE
+		int max_correction_iterations = 10, // CORITE
+		double max_distance_per_iteration = 10, // VARMAX
+		double perturbation_for_snd_order_derivatives = 1, // VARSND
+		std::vector<double> convergence_thresholds = {},
+		std::vector<double> variable_scaling_factors = {},
+		std::vector<int> constraint_priorities = {},
+		std::vector<std::string> variable_names = {},
+		std::vector<std::string> constraint_names = {},
+		int optimization_method = 2, // OPTMET
+		int derivatives_computation = 1, //VARDER
+		std::vector<double> autodiff_deltas = {},
+		int log_level = 1
+	) : num_variables(num_variables)
     {
         num_constraints = constraint_types.size() - 1;
-        if (params.autodiff_deltas.size() == 0) {
-            params.autodiff_deltas = std::vector<double>(num_variables, 0.001);
-        } else if (params.autodiff_deltas.size() != num_variables) {
-        	throw(std::invalid_argument("Got " + std::to_string(params.autodiff_deltas.size())
+        if (autodiff_deltas.size() == 0) {
+            autodiff_deltas = std::vector<double>(num_variables, 0.001);
+        } else if (autodiff_deltas.size() != num_variables) {
+        	throw(std::invalid_argument("Got " + std::to_string(autodiff_deltas.size())
         	 + " autodiff deltas for " + std::to_string(num_variables) + " variables."));
         }
 
@@ -124,43 +125,43 @@ struct optgra_raii {
 
         oginit_(&num_variables, &num_constraints);
         ogctyp_(constraint_types.data());
-        ogderi_(&params.derivatives_computation, params.autodiff_deltas.data());
-        ogdist_(&params.max_distance_per_iteration, &params.perturbation_for_snd_order_derivatives);
+        ogderi_(&derivatives_computation, autodiff_deltas.data());
+        ogdist_(&max_distance_per_iteration, &perturbation_for_snd_order_derivatives);
 
         // Haven't figured out what the others do, but maxiter is an upper bound anyway
-        int otheriters = params.max_iterations; // TODO: figure out what it does.
-        ogiter_(&params.max_iterations, &params.max_correction_iterations, &otheriters, &otheriters, &otheriters);
+        int otheriters = max_iterations; // TODO: figure out what it does.
+        ogiter_(&max_iterations, &max_correction_iterations, &otheriters, &otheriters, &otheriters);
 
-        ogomet_(&params.optimization_method);
+        ogomet_(&optimization_method);
         
 
         int log_unit = 6;
-        ogwlog_(&log_unit, &params.log_level);
+        ogwlog_(&log_unit, &log_level);
 
-        if (params.variable_scaling_factors.size() > 0) {
-        	if (params.variable_scaling_factors.size() != num_variables) {
-        		throw(std::invalid_argument("Got " + std::to_string(params.variable_scaling_factors.size())
+        if (variable_scaling_factors.size() > 0) {
+        	if (variable_scaling_factors.size() != num_variables) {
+        		throw(std::invalid_argument("Got " + std::to_string(variable_scaling_factors.size())
         		 + " scaling factors for " + std::to_string(num_variables) + " variables."));
         	}
 
-        	ogvsca_(params.variable_scaling_factors.data());
+        	ogvsca_(variable_scaling_factors.data());
         }
 
-        if (params.convergence_thresholds.size() > 0) {
-        	if (params.convergence_thresholds.size() != constraint_types.size()) {
-	        	throw(std::invalid_argument("Got " + std::to_string(params.convergence_thresholds.size())
+        if (convergence_thresholds.size() > 0) {
+        	if (convergence_thresholds.size() != constraint_types.size()) {
+	        	throw(std::invalid_argument("Got " + std::to_string(convergence_thresholds.size())
 	        	 + " convergence thresholds for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
 	        }
-	        ogcsca_(params.convergence_thresholds.data());
+	        ogcsca_(convergence_thresholds.data());
 	    }
 
-	    if (params.constraint_priorities.size() > 0) {
-        	if (params.constraint_priorities.size() != constraint_types.size()) {
+	    if (constraint_priorities.size() > 0) {
+        	if (constraint_priorities.size() != constraint_types.size()) {
         		//TODO: Find out what the last priority is for!
-	        	throw(std::invalid_argument("Got " + std::to_string(params.constraint_priorities.size())
+	        	throw(std::invalid_argument("Got " + std::to_string(constraint_priorities.size())
 	        	 + " constraint priorities for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
 	        }
-	        ogcpri_(params.constraint_priorities.data());
+	        ogcpri_(constraint_priorities.data());
 	    }
 
         //TODO: figure out how string arrays are passed to fortran for variable names
@@ -206,17 +207,42 @@ std::mutex optgra_raii::optgra_mutex;
 
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
  const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
- parameters params = {}
+ 	    int max_iterations = 10, // MAXITE
+		int max_correction_iterations = 10, // CORITE
+		double max_distance_per_iteration = 10, // VARMAX
+		double perturbation_for_snd_order_derivatives = 1, // VARSND
+		std::vector<double> convergence_thresholds = {},
+		std::vector<double> variable_scaling_factors = {},
+		std::vector<int> constraint_priorities = {},
+		std::vector<std::string> variable_names = {},
+		std::vector<std::string> constraint_names = {},
+		int optimization_method = 2, // OPTMET
+		int derivatives_computation = 1, //VARDER
+		std::vector<double> autodiff_deltas = {},
+		int log_level = 1
  ) {
     // initialization
     int num_variables = initial_x.size();
 
-    if (params.derivatives_computation == 1 && !has_gradient) {
+    if (derivatives_computation == 1 && !has_gradient) {
     	std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
-    	params.derivatives_computation = 3;
+    	derivatives_computation = 3;
     }
 
-    optgra_raii raii_object = optgra_raii(num_variables, constraint_types, params);
+    optgra_raii raii_object = optgra_raii(num_variables, constraint_types,
+    	max_iterations, // MAXITE
+		max_correction_iterations, // CORITE
+		max_distance_per_iteration, // VARMAX
+		perturbation_for_snd_order_derivatives, // VARSND
+		convergence_thresholds,
+		variable_scaling_factors,
+		constraint_priorities,
+		variable_names,
+		constraint_names,
+		optimization_method, // OPTMET
+		derivatives_computation, //VARDER
+		autodiff_deltas,
+		log_level);
 
     return raii_object.exec(initial_x, fitness, gradient);
 }
