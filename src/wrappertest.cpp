@@ -46,9 +46,7 @@ int main(int argn, char** argc)
 	int dim = initial_x.size();
 	std::vector<double> bestx, bestf;
 	int finopt;
-	//parameters params;
-	//params.max_iterations = 100;
-	//params.convergence_thresholds = {0.01,0.01};
+	
 	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false);
 
 	cout << "Best x:";
@@ -62,38 +60,6 @@ int main(int argn, char** argc)
 		cout << bestf[i] << " ";
 	}
 	cout << endl;
-
-	/**
-	cout << "Testing pagmo problem" << endl;
-
-	pagmo::problem test_prob(pagmo::hock_schittkowsky_71{});
-	initial_x = std::vector<double>(4,2);
-
-	parameters params;
-	params.max_iterations = 100;
-	params.convergence_thresholds = {0.01,0.01,0.01};
-	params.derivatives_computation = 3;
-	std::tie(bestx, bestf) = optimize(test_prob, initial_x, params);
-
-	cout << "Best x:";
-	for (int i = 0; i < bestx.size(); i++) {
-		cout << bestx[i] << " ";
-	}
-	cout << endl;
-
-	cout << "Best f:";
-	for (int i = 0; i < bestf.size(); i++) {
-		cout << bestf[i] << " ";
-	}
-	cout << endl;
-
-	cout << "problem.fitness(best_x):";
-	std::vector<double> real_fitness = test_prob.fitness(bestx);
-	for (int i = 0; i < real_fitness.size(); i++) {
-		cout << real_fitness[i] << " ";
-	}
-	cout << endl;
-	**/
 
    return 0;
 }

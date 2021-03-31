@@ -6,9 +6,8 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pyoptgra, m) {
-    m.doc() = "A python wrapper including Optgra"; // optional module docstring
-
+PYBIND11_MODULE(core, m) {
+    m.doc() = "A python wrapper including Optgra";
 
     m.def("optimize", &optgra::optimize, "Optimize using optgra",
     	py::arg("initial_x"), py::arg("constraint_types"), py::arg("fitness_callback"), py::arg("gradient_callback"),
