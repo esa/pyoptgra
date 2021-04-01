@@ -63,10 +63,16 @@ struct static_callable_store {
 
         std::vector<std::vector<double>> gradient_vector = g_callable(x_vector);
 
-        for (unsigned i = 0; i < gradient_vector.size(); i++) {
-            unsigned row_length = gradient_vector[i].size();
-            std::copy(gradient_vector[i].begin(), gradient_vector[i].end(), out_derivatives+(i*x_dim));
+        int num_constraints = gradient_vector.size();
+
+        for ( int i = 0; i < num_constraints; i++) {
+            for (int j = 0; j < x_dim; j++) {
+                //std::cout << "Writing " << gradient_vector[i][j] << " to " << j*num_constraints+i;
+                out_derivatives[j*num_constraints+i] = gradient_vector[i][j];
+                //std::cout << " ... done" << std::endl;
+            }
         }
+        //std::cout << "All done" << std::endl;
     }
 
     static void set_fitness_callable(fitness_callback f) {

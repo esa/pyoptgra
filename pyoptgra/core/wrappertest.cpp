@@ -26,16 +26,18 @@ std::vector<double> f(std::vector<double> x) {
 
 std::vector<std::vector<double>> g(std::vector<double> x) {
 	cout << "g called with ";
+	int x_dim = x.size();
+	int num_constraints = 2;
 	std::vector<std::vector<double>> der(2);
-	der[0].resize(5);
-	der[1].resize(5);
+	der[0].resize(x_dim);
+	der[1].resize(x_dim);
 
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < x_dim; i++) {
 		der[0][i] = 2*(x[i]-i);
 		der[1][i] = 1;
 		cout << x[i] << " ";
 	}
-	//std::vector<double> dercon(num_variables * (num_constraints+1));
+	
 	cout << endl;
 	return der;
 }
@@ -47,7 +49,7 @@ int main(int argn, char** argc)
 	std::vector<double> bestx, bestf;
 	int finopt;
 	
-	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, false);
+	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, true);
 
 	cout << "Best x:";
 	for (int i = 0; i < dim; i++) {
@@ -60,6 +62,13 @@ int main(int argn, char** argc)
 		cout << bestf[i] << " ";
 	}
 	cout << endl;
+
+	cout << "f(best_x):";
+	auto best_orig = f(bestx);
+	for (int i = 0; i < 1 + 1; i++) {
+		cout << best_orig[i] << " ";
+	}
+	cout << endl;	
 
    return 0;
 }

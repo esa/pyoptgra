@@ -19,37 +19,37 @@ find_package(pybind11 REQUIRED)
 message("Cmake build type is ${CMAKE_BUILD_TYPE}")
 
 set (OPTGRAFILES 
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogclos.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogcpri.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogcsca.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogcstr.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogctyp.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogderi.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogdist.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogeval.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogexcl.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogexec.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogincl.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/oginit.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogiter.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogleft.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogrigt.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogomet.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogopti.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogcorr.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogvsca.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogvstr.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogwlog.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogwrit.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/src/ogdata.inc"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogclos.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcpri.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcsca.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcstr.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogctyp.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogderi.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogdist.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogeval.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogexcl.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogexec.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogincl.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/oginit.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogiter.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogleft.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogrigt.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogomet.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogopti.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcorr.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvsca.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvstr.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwlog.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwrit.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogdata.inc"
  )
 
-add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/src/wrapper.hpp" ${OPTGRAFILES})
+add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrapper.hpp" ${OPTGRAFILES})
 
-add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/src/wrappertest.cpp")
+add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
-pybind11_add_module(pyoptgra "${CMAKE_CURRENT_SOURCE_DIR}/src/bindings.cpp")
+pybind11_add_module(pyoptgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(pyoptgra PRIVATE optgra)
 
 enable_testing()
