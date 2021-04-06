@@ -18,6 +18,12 @@ find_package(pybind11 REQUIRED)
 
 message("Cmake build type is ${CMAKE_BUILD_TYPE}")
 
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/_install" CACHE PATH "Prefix prepended to install directories" FORCE)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
+set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir got godot shared objects when using SKBUILD
+
 set (OPTGRAFILES 
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogclos.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcpri.F"
@@ -49,7 +55,9 @@ add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrapper.hpp" ${OPT
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
-pybind11_add_module(pyoptgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
-target_link_libraries(pyoptgra PRIVATE optgra)
+pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
+target_link_libraries(core PRIVATE optgra)
+
+install(TARGETS core optgra LIBRARY DESTINATION .)
 
 enable_testing()
