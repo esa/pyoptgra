@@ -2,15 +2,19 @@ from collections import deque
 
 from pyoptgra.core import optimize
 
+from typing import List
+
+from pygmo import s_policy, select_best
+
+
 class optgra:
     """
     This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written in Fortran.
 
     """
-    
+
     @staticmethod
     def _wrap_fitness_func(problem):
-
         def wrapped_fitness(x):
             result = deque(problem.fitness(x))
 
@@ -32,7 +36,8 @@ class optgra:
 
             nnz = len(sparse_values)
 
-            result = numpy.zeros(shape)
+            result = ([0] * shape[1]) * shape[0]
+
             for i in range(nnz):
                 fIndex, xIndex = sparsity_pattern[i]
 
@@ -45,20 +50,29 @@ class optgra:
                 result[fIndex][xIndex] = sparse_values[i]
 
             return result
-            
+
         return wrapped_gradient
 
-    def __init__(self, max_iterations: int = 10, max_correction_iterations: int = 10,
-        max_distance_per_iteration: int = 10, perturbation_for_snd_order_derivatives: int = 10,
-        convergence_thresholds: List[float] = [], variable_scaling_factors: List[float] = [],
-        constraint_priorities: List[int] = [], optimization_method: int = 2,
+    def __init__(
+        self,
+        max_iterations: int = 10,
+        max_correction_iterations: int = 10,
+        max_distance_per_iteration: int = 10,
+        perturbation_for_snd_order_derivatives: int = 10,
+        convergence_thresholds: List[float] = [],
+        variable_scaling_factors: List[float] = [],
+        constraint_priorities: List[int] = [],
+        optimization_method: int = 2,
         derivatives_computation: int = 1,
-        selection: s_policy = s_policy(select_best(rate=1))):
+        selection: s_policy = s_policy(select_best(rate=1)),
+    ):
 
         self.max_iterations = max_iterations
         self.max_correction_iterations = max_correction_iterations
         self.max_distance_per_iteration = max_distance_per_iteration
-        self.perturbation_for_snd_order_derivatives = perturbation_for_snd_order_derivatives
+        self.perturbation_for_snd_order_derivatives = (
+            perturbation_for_snd_order_derivatives
+        )
         self.convergence_thresholds = convergence_thresholds
         self.variable_scaling_factors = variable_scaling_factors
         self.constraint_priorities = constraint_priorities
@@ -95,26 +109,30 @@ class optgra:
 
         idx = list(population.get_ID()).index(selected[0][0])
 
-
-        fitness_func = _wrap_fitness_func(problem)
+        fitness_func = optgra._wrap_fitness_func(problem)
         grad_func = None
         if problem.has_gradient():
-            grad = _wrap_gradient_func(problem)
+            grad_func = optgra._wrap_gradient_func(problem)
 
-        constraint_types = [0]*problem.get_nec() + [-1]*problem.get_nic() + [-1]
+        # 0 for equality constraints, -1 for inequality constraints, -1 for fitness
+        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + [-1]
 
-        result = optimize(initial_x=population.get_x()[idx], constraint_types=constraint_types, fitness_callback=fitness_func,
-        gradient_callback=grad_func, has_gradient=problem.has_gradient(),
-        max_iterations = self.max_iterations,
-        max_correction_iterations = self.max_correction_iterations,
-        max_distance_per_iteration = self.max_distance_per_iteration,
-        perturbation_for_snd_order_derivatives = self.perturbation_for_snd_order_derivatives,
-        convergence_thresholds = self.convergence_thresholds,
-        variable_scaling_factors = self.variable_scaling_factors,
-        constraint_priorities = self.constraint_priorities,
-        optimization_method = self.optimization_method,
-        derivatives_computation = self.derivatives_computation,
-        log_level = self.log_level
+        result = optimize(
+            initial_x=population.get_x()[idx],
+            constraint_types=constraint_types,
+            fitness_callback=fitness_func,
+            gradient_callback=grad_func,
+            has_gradient=problem.has_gradient(),
+            max_iterations=self.max_iterations,
+            max_correction_iterations=self.max_correction_iterations,
+            max_distance_per_iteration=self.max_distance_per_iteration,
+            perturbation_for_snd_order_derivatives=self.perturbation_for_snd_order_derivatives,
+            convergence_thresholds=self.convergence_thresholds,
+            variable_scaling_factors=self.variable_scaling_factors,
+            constraint_priorities=self.constraint_priorities,
+            optimization_method=self.optimization_method,
+            derivatives_computation=self.derivatives_computation,
+            log_level=self.log_level,
         )
 
         # still to set: variable_names, constraint_names, autodiff_deltas
