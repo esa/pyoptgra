@@ -273,6 +273,4 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
  * ogwmat.F : Something with writing to Matlab
  * ogwtab.F : writes units and verbosity(?) options for tabular output into the common block defined in ogdata.inc
 
- Prioritize: convergence thresholds
-
 */
