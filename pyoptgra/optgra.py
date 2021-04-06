@@ -1,6 +1,6 @@
 from collections import deque
 
-from pyoptgra.core import optimize
+from .core.core import optimize
 
 from typing import List
 
@@ -117,6 +117,10 @@ class optgra:
         # 0 for equality constraints, -1 for inequality constraints, -1 for fitness
         constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + [-1]
 
+        variable_names : List[str] = []
+        constraint_names : List[str] = []
+        autodiff_deltas : List[float] = []
+
         result = optimize(
             initial_x=population.get_x()[idx],
             constraint_types=constraint_types,
@@ -130,8 +134,11 @@ class optgra:
             convergence_thresholds=self.convergence_thresholds,
             variable_scaling_factors=self.variable_scaling_factors,
             constraint_priorities=self.constraint_priorities,
+            variable_names = variable_names,
+            constraint_names = constraint_names,
             optimization_method=self.optimization_method,
             derivatives_computation=self.derivatives_computation,
+            autodiff_deltas = autodiff_deltas,
             log_level=self.log_level,
         )
 
