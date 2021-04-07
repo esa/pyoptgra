@@ -193,6 +193,10 @@ struct optgra_raii {
         ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
          static_callable_store::fitness, static_callable_store::gradient);
 
+        // resetting callables to make sure that passed handles go out of scope
+        static_callable_store::set_fitness_callable(fitness_callback());
+        static_callable_store::set_gradient_callable(gradient_callback());
+
         return std::make_tuple(valvar, valcon, finopt);
     }
 
