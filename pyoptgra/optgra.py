@@ -29,14 +29,14 @@ class optgra:
 
         sparsity_pattern = problem.gradient_sparsity()
 
-        shape = (problem.get_nx(), problem.get_nf())
+        shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
             sparse_values = problem.gradient(x)
 
             nnz = len(sparse_values)
 
-            result = ([0] * shape[1]) * shape[0]
+            result = [[0 for j in range(shape[1])] for i in range(shape[0])]
 
             for i in range(nnz):
                 fIndex, xIndex = sparsity_pattern[i]
@@ -45,7 +45,7 @@ class optgra:
                 if fIndex == 0:
                     fIndex = problem.get_nf() - 1
                 else:
-                    fIndex -= 1
+                    fIndex = int(findex - 1)
 
                 result[fIndex][xIndex] = sparse_values[i]
 
