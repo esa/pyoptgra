@@ -45,7 +45,7 @@ class optgra:
                 if fIndex == 0:
                     fIndex = problem.get_nf() - 1
                 else:
-                    fIndex = int(findex - 1)
+                    fIndex = int(fIndex - 1)
 
                 result[fIndex][xIndex] = sparse_values[i]
 
