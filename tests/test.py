@@ -66,7 +66,9 @@ class pygmo_test(unittest.TestCase):
 
 	def gradient_with_constraints_test(self):
 		prob = pygmo.problem(luksan_vlcek())
-		algo = pygmo.algorithm(pyoptgra.optgra(optimization_method=1,max_iterations=200,max_correction_iterations=200,derivatives_computation=1,convergence_thresholds=[1e-6]*prob.get_nf(), max_distance_per_iteration=10))
+		og = pyoptgra.optgra(optimization_method=1,max_iterations=1,max_correction_iterations=1,derivatives_computation=1,convergence_thresholds=[1e-6]*prob.get_nf(), max_distance_per_iteration=10)
+		og.set_verbosity(3)
+		algo = pygmo.algorithm(og)
 		pop = pygmo.population(prob, size=0, seed=1)  # empty population
 		pop.push_back( [0,0,0,0,0,0] )             # add initial guess
 		pop.problem.c_tol = [1E-6] * 6
