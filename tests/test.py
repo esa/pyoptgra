@@ -10,7 +10,7 @@ class luksan_vlcek:
     def fitness(self, x):
         obj = 0
         for i in range(3):
-            obj += (x[2*i-2]-3)**2 / 1000. - (x[2*i-2]-x[2*i-1]) + math.exp(20.*(x[2*i - 2]-x[2*i-1]))
+            obj += (x[2*i-2]-3)**2 / 1000. - (x[2*i-2]-x[2*i-1]) # + math.exp(20.*(x[2*i - 2]-x[2*i-1]))
         ce1 = 4*(x[0]-x[1])**2+x[1]-x[2]**2+x[2]-x[3]**2
         ce2 = 8*x[1]*(x[1]**2-x[0])-2*(1-x[1])+4*(x[1]-x[2])**2+x[0]**2+x[2]-x[3]**2+x[3]-x[4]**2
         ce3 = 8*x[2]*(x[2]**2-x[1])-2*(1-x[2])+4*(x[2]-x[3])**2+x[1]**2-x[0]+x[3]-x[4]**2+x[0]**2+x[4]-x[5]**2
@@ -66,7 +66,7 @@ class pygmo_test(unittest.TestCase):
 
 	def gradient_with_constraints_test(self):
 		prob = pygmo.problem(luksan_vlcek())
-		og = pyoptgra.optgra(optimization_method=1,max_iterations=1,max_correction_iterations=1,derivatives_computation=1,convergence_thresholds=[1e-6]*prob.get_nf(), max_distance_per_iteration=10)
+		og = pyoptgra.optgra(optimization_method=1,max_iterations=100,max_correction_iterations=100,derivatives_computation=1,convergence_thresholds=[1e-6]*prob.get_nf(), max_distance_per_iteration=10)
 		og.set_verbosity(3)
 		algo = pygmo.algorithm(og)
 		pop = pygmo.population(prob, size=0, seed=1)  # empty population
@@ -84,7 +84,7 @@ class pygmo_test(unittest.TestCase):
 			self.assertAlmostEqual(pop.champion_f[i], 0.0, 6)
 
 		# inequality constraints
-		for i in [6, 7]:
+		for i in [5, 6]:
 			self.assertLess(pop.champion_f[i], 1e-6)
 
 
