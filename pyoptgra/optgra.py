@@ -45,7 +45,7 @@ class optgra:
                 if fIndex == 0:
                     fIndex = problem.get_nf() - 1
                 else:
-                    fIndex = int(findex - 1)
+                    fIndex = int(fIndex - 1)
 
                 result[fIndex][xIndex] = sparse_values[i]
 
@@ -146,6 +146,8 @@ class optgra:
         # still to set: variable_names, constraint_names, autodiff_deltas
         best_x, best_f, finopt = result
 
-        population.set_xf(idx, best_x, best_f)
+        best_f = deque(best_f)
+        best_f.rotate(+1)
+        population.set_xf(idx, best_x, list(best_f))
 
         return population
