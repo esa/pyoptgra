@@ -59,12 +59,13 @@ class optgra:
         max_correction_iterations: int = 10,
         max_distance_per_iteration: int = 10,
         perturbation_for_snd_order_derivatives: int = 10,
-        convergence_thresholds: List[float] = [],
+        convergence_thresholds: List[float] = [], # this should be replaced with c_tol
         variable_scaling_factors: List[float] = [],
         constraint_priorities: List[int] = [],
         optimization_method: int = 2,
         derivatives_computation: int = 1,
         selection: s_policy = s_policy(select_best(rate=1)),
+        verbosity: int = 0
     ):
 
         self.max_iterations = max_iterations
@@ -80,7 +81,7 @@ class optgra:
         self.derivatives_computation = derivatives_computation
         self.selection = selection
 
-        self.log_level = 0
+        self.log_level = verbosity
 
     def set_verbosity(self, level: int) -> None:
 
