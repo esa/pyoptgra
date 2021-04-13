@@ -59,13 +59,13 @@ class optgra:
         max_correction_iterations: int = 10,
         max_distance_per_iteration: int = 10,
         perturbation_for_snd_order_derivatives: int = 10,
-        convergence_thresholds: List[float] = [], # this should be replaced with c_tol
+        convergence_thresholds: List[float] = [],  # this should be replaced with c_tol
         variable_scaling_factors: List[float] = [],
         constraint_priorities: List[int] = [],
         optimization_method: int = 2,
         derivatives_computation: int = 1,
         selection: s_policy = s_policy(select_best(rate=1)),
-        verbosity: int = 0
+        verbosity: int = 0,
     ):
 
         self.max_iterations = max_iterations
@@ -118,9 +118,9 @@ class optgra:
         # 0 for equality constraints, -1 for inequality constraints, -1 for fitness
         constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + [-1]
 
-        variable_names : List[str] = []
-        constraint_names : List[str] = []
-        autodiff_deltas : List[float] = []
+        variable_names: List[str] = []
+        constraint_names: List[str] = []
+        autodiff_deltas: List[float] = []
 
         result = optimize(
             initial_x=population.get_x()[idx],
@@ -135,11 +135,11 @@ class optgra:
             convergence_thresholds=self.convergence_thresholds,
             variable_scaling_factors=self.variable_scaling_factors,
             constraint_priorities=self.constraint_priorities,
-            variable_names = variable_names,
-            constraint_names = constraint_names,
+            variable_names=variable_names,
+            constraint_names=constraint_names,
             optimization_method=self.optimization_method,
             derivatives_computation=self.derivatives_computation,
-            autodiff_deltas = autodiff_deltas,
+            autodiff_deltas=autodiff_deltas,
             log_level=self.log_level,
         )
 
