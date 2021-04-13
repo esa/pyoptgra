@@ -1,10 +1,9 @@
 from collections import deque
-
-from .core.core import optimize
-
 from typing import List
 
 from pygmo import s_policy, select_best
+
+from .core.core import optimize
 
 
 class optgra:

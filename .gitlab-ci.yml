@@ -14,4 +14,5 @@ static:
     - mypy --ignore-missing-imports pyoptgra/*.py
     - black --check pyoptgra/*.py
     - flake8 --max-line-length 120 pyoptgra/*.py
+    - isort --check pyoptgra
 
