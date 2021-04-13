@@ -1,6 +1,6 @@
 stages:
-  - test
   - static analysis
+  - test
   
   
 # check the code adheres to the coding standards
@@ -22,10 +22,12 @@ test:
   image: python:3.8
   allow_failure: false
   before_script:  # install this project's dependencies using the requirements.txt file
+    - apt install gfortran
     - pip install --extra-index-url https://gitlab-ci-token:$CI_BUILD_TOKEN@gitlab.esa.int/api/v4/projects/2014/packages/pypi/simple -r requirements.txt
   script:
     - python setup.py install --user
     - pip install pytest-cov coverage
-    - cd tests && pytest --cov pyoptgra --cov-report term-missing test.py # move into test directory to ensure that the installed package is tested, not the source
+    - cd tests # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=99
 
