@@ -3,7 +3,7 @@ from typing import List
 
 from pygmo import s_policy, select_best
 
-from .core.core import optimize
+from .core import optimize
 
 
 class optgra:
