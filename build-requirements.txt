@@ -1,0 +1,3 @@
+scikit-build
+pybind11
+cmake
