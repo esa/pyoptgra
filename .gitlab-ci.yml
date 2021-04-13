@@ -22,7 +22,7 @@ test:
   image: python:3.8
   allow_failure: false
   before_script:  # install this project's dependencies using the requirements.txt file
-    - apt update && apt install gfortran
+    - apt update && apt install gfortran --yes
     - pip install --extra-index-url https://gitlab-ci-token:$CI_BUILD_TOKEN@gitlab.esa.int/api/v4/projects/2014/packages/pypi/simple -r requirements.txt
   script:
     - python setup.py install --user
