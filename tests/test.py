@@ -20,80 +20,88 @@ class luksan_vlcek:
         return [obj, ce1,ce2,ce3,ce4,ci1,ci2]
 
     def get_bounds(self):
-        return ([-5]*6,[5]*6)
+        return ([-5] * 6, [5] * 6)
+
     def get_nic(self):
         return 2
+
     def get_nec(self):
         return 4
+
     def gradient(self, x):
         return pygmo.estimate_gradient_h(lambda x: self.fitness(x), x)
 
-		
 
 class pygmo_test(unittest.TestCase):
+    def runTest(self):
+        self.basic_no_gradient_test()
+        self.gradient_no_constraints_test()
+        self.gradient_with_constraints_test()
 
-	def runTest(self):
-		self.basic_no_gradient_test()
-		self.gradient_no_constraints_test()
-		self.gradient_with_constraints_test()
+    def basic_no_gradient_test(self):
+        # Basic test that the call works and the result changes. No constraints, not gradients.
 
-	def basic_no_gradient_test(self):
-		# Basic test that the call works and the result changes. No constraints, not gradients.
+        algo = pygmo.algorithm(pyoptgra.optgra())
+        prob = pygmo.problem(pygmo.schwefel(30))
 
-		algo = pygmo.algorithm(pyoptgra.optgra())
-		prob = pygmo.problem(pygmo.schwefel(30))
+        # Check that empty population is rejected
+        empty_pop = pygmo.population(prob, 0)
+        with self.assertRaises(ValueError):
+            empty_pop = algo.evolve(empty_pop)
 
-		# Check that empty population is rejected
-		empty_pop = pygmo.population(prob, 0)
-		with self.assertRaises(ValueError):
-			pop = algo.evolve(pop)
+        # Prepare normal population
+        pop = pygmo.population(prob, 1)
+        previous_best = pop.champion_f
 
-		# Prepare normal population
-		pop = pygmo.population(prob, 1)
-		previous_best = pop.champion_f
+        # Calling optgra
+        pop = algo.evolve(pop)
+        new_best = pop.champion_f
 
-		# Calling optgra
-		pop = algo.evolve(pop)
-		new_best = pop.champion_f
+        self.assertLess(new_best, previous_best)
 
-		self.assertLess(new_best, previous_best)
+    def gradient_no_constraints_test(self):
 
-	def gradient_no_constraints_test(self):
+        algo = pygmo.algorithm(pyoptgra.optgra())
+        prob = pygmo.problem(pygmo.rosenbrock(30))
+        pop = pygmo.population(prob, 1)
+        previous_best = pop.champion_f
 
-		algo = pygmo.algorithm(pyoptgra.optgra())
-		prob = pygmo.problem(pygmo.rosenbrock(30))
-		pop = pygmo.population(prob, 1)
-		previous_best = pop.champion_f
+        # Calling optgra
+        pop = algo.evolve(pop)
+        new_best = pop.champion_f
 
-		# Calling optgra
-		pop = algo.evolve(pop)
-		new_best = pop.champion_f
+        self.assertLess(new_best, previous_best)
 
-		self.assertLess(new_best, previous_best)
+    def gradient_with_constraints_test(self):
+        prob = pygmo.problem(luksan_vlcek())
+        og = pyoptgra.optgra(
+            optimization_method=1,
+            max_iterations=100,
+            max_correction_iterations=100,
+            derivatives_computation=1,
+            convergence_thresholds=[1e-6] * prob.get_nf(),
+            max_distance_per_iteration=10,
+        )
+        og.set_verbosity(1)
+        algo = pygmo.algorithm(og)
+        pop = pygmo.population(prob, size=0, seed=1)  # empty population
+        pop.push_back([0.5, 0.5, -0.5, 0.4, 0.3, 0.7])  # add initial guess
+        pop.problem.c_tol = [1e-6] * 6
 
-	def gradient_with_constraints_test(self):
-		prob = pygmo.problem(luksan_vlcek())
-		og = pyoptgra.optgra(optimization_method=1,max_iterations=100,max_correction_iterations=100,derivatives_computation=1,convergence_thresholds=[1e-6]*prob.get_nf(), max_distance_per_iteration=10)
-		og.set_verbosity(1)
-		algo = pygmo.algorithm(og)
-		pop = pygmo.population(prob, size=0, seed=1)  # empty population
-		pop.push_back(  [ 0.5,  0.5, -0.5,  0.4,  0.3,  0.7] )             # add initial guess
-		pop.problem.c_tol = [1E-6] * 6
+        # Calling optgra
+        pop = algo.evolve(pop)  # run the optimisation
 
-		# Calling optgra
-		pop = algo.evolve(pop)    # run the optimisation
+        # objective function
+        self.assertLess(pop.champion_f[0], 2.26)
 
-		# objective function
-		self.assertLess(pop.champion_f[0], 2.26)
+        # equality constraints
+        for i in [1, 2, 3, 4]:
+            self.assertAlmostEqual(pop.champion_f[i], 0.0, 6)
 
-		# equality constraints
-		for i in [1, 2, 3, 4]:
-			self.assertAlmostEqual(pop.champion_f[i], 0.0, 6)
-
-		# inequality constraints
-		for i in [5, 6]:
-			self.assertLess(pop.champion_f[i], 1e-6)
+        # inequality constraints
+        for i in [5, 6]:
+            self.assertLess(pop.champion_f[i], 1e-6)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
