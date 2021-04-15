@@ -96,7 +96,7 @@ class pygmo_test(unittest.TestCase):
             def get_nobj(self):
                 return 2
 
-        # check that multi-objective problems are rejected
+        # Check that multi-objective problems are rejected
         mprob = pygmo.problem(toy_multi_problem())
         mpop = pygmo.population(mprob, 1)
         with self.assertRaises(ValueError):
@@ -117,11 +117,44 @@ class pygmo_test(unittest.TestCase):
             def set_seed(self, seed):
                 self.seed = seed
 
-        # check that stochastic problems are rejected
+        # Check that stochastic problems are rejected
         sprob = pygmo.problem(toy_stochastic_problem())
         spop = pygmo.population(sprob, 1)
         with self.assertRaises(ValueError):
             algo.evolve(spop)
+
+        # Check that scaling factors of wrong size are rejected
+        algo = pygmo.algorithm(pyoptgra.optgra(variable_scaling_factors=[1] * 29))
+        prob = pygmo.problem(pygmo.schwefel(30))
+        pop = pygmo.population(prob, 1)
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
+
+        # Correct size
+        algo = pygmo.algorithm(pyoptgra.optgra(variable_scaling_factors=[1] * 30))
+        algo.evolve(pop)
+
+        # Check that convergence thresholds of wrong size are rejected
+        algo = pygmo.algorithm(pyoptgra.optgra(convergence_thresholds=[1] * 2))
+        prob = pygmo.problem(pygmo.schwefel(30))
+        pop = pygmo.population(prob, 1)
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
+
+        # Correct size
+        algo = pygmo.algorithm(pyoptgra.optgra(convergence_thresholds=[1]))
+        algo.evolve(pop)
+
+        # Check that constraint priorities of wrong size are rejected
+        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 2))
+        prob = pygmo.problem(pygmo.schwefel(30))
+        pop = pygmo.population(prob, 1)
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
+
+        # Correct size
+        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1]))
+        algo.evolve(pop)
 
     def basic_no_gradient_test(self):
         # Basic test that the call works and the result changes. No constraints, not gradients.
