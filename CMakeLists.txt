@@ -3,7 +3,13 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_BUILD_TYPE Debug CACHE STRING
 	"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."	FORCE)
 
-project( fortranTest )
+project(optgra-wrapper LANGUAGES CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+message(STATUS "System name: ${CMAKE_SYSTEM_NAME}")
+
+# compiler setup
 
 enable_language(Fortran)
 set(CMAKE_CXX_STANDARD 17)
@@ -11,15 +17,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(pybind11 REQUIRED)
-
 message("Cmake build type is ${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/_install" CACHE PATH "Prefix prepended to install directories" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir got godot shared objects when using SKBUILD
+# build/configure use of ext libraries
+include(cmake/modules/Update_submodules.cmake)
+include(cmake/modules/Pybind11.cmake)
+
+set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir when using SKBUILD
 
 set (OPTGRAFILES 
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogclos.F"
@@ -57,5 +65,3 @@ target_link_libraries(core PRIVATE optgra)
 
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/__init__.py" DESTINATION .)
 install(TARGETS core optgra LIBRARY DESTINATION .)
-
-enable_testing()
