@@ -41,13 +41,13 @@ class pygmo_test(unittest.TestCase):
     def basic_no_gradient_test(self):
         # Basic test that the call works and the result changes. No constraints, not gradients.
 
-        algo = pygmo.algorithm(pyoptgra.optgra())
+        algo = pygmo.algorithm(pyoptgra.optgra(derivatives_computation=2))
         prob = pygmo.problem(pygmo.schwefel(30))
 
         # Check that empty population is rejected
         empty_pop = pygmo.population(prob, 0)
         with self.assertRaises(ValueError):
-            empty_pop = algo.evolve(empty_pop)
+        	empty_pop = algo.evolve(empty_pop)
 
         # Prepare normal population
         pop = pygmo.population(prob, 1)

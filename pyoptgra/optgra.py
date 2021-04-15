@@ -90,6 +90,9 @@ class optgra:
 
         problem = population.problem
 
+        if len(population) == 0:
+            raise ValueError("Population needs to have at least one member for use as initial guess.")
+
         selected = self.selection.select(
             (population.get_ID(), population.get_x(), population.get_f()),
             problem.get_nx(),
@@ -99,13 +102,6 @@ class optgra:
             problem.get_nic(),
             problem.c_tol,
         )
-
-        if len(selected[0]) != 1:
-            raise ValueError(
-                "Selection policy returned "
-                + str(len(selected[0]))
-                + " elements, but 1 was needed."
-            )
 
         idx = list(population.get_ID()).index(selected[0][0])
 
