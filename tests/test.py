@@ -42,6 +42,13 @@ class pygmo_test(unittest.TestCase):
 
 		algo = pygmo.algorithm(pyoptgra.optgra())
 		prob = pygmo.problem(pygmo.schwefel(30))
+
+		# Check that empty population is rejected
+		empty_pop = pygmo.population(prob, 0)
+		with self.assertRaises(ValueError):
+			pop = algo.evolve(pop)
+
+		# Prepare normal population
 		pop = pygmo.population(prob, 1)
 		previous_best = pop.champion_f
 
