@@ -109,7 +109,7 @@ class pygmo_test(unittest.TestCase):
             def fitness(self, x):
                 import random
 
-                return random.random() + x[0]
+                return [random.random() + x[0]]
 
             def get_bounds(self):
                 return ([0], [1])
