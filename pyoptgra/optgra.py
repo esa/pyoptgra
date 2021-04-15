@@ -149,7 +149,16 @@ class optgra:
                 + " is invalid for perturbation_for_snd_order_derivatives, must be non-negative."
             )
 
-        if 
+        conv_len = len(convergence_thresholds)
+        prio_len = len(constraint_priorities)
+        if conv_len > 0 and prio_len > 0 and conv_len != prio_len:
+            raise ValueError(
+                str(conv_len)
+                + " constraint scaling factors passed,"
+                + " but "
+                + str(prio_len)
+                + " constraint priorities."
+            )
 
     def set_verbosity(self, level: int) -> None:
         """
