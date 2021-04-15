@@ -196,7 +196,6 @@ class pygmo_test(unittest.TestCase):
             optimization_method=1,
             max_iterations=100,
             max_correction_iterations=100,
-            derivatives_computation=1,
             convergence_thresholds=[1e-6] * prob.get_nf(),
             max_distance_per_iteration=10,
         )
