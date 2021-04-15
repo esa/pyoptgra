@@ -1,8 +1,8 @@
 import pyoptgra
 import pygmo
-import math
 
 import unittest
+
 
 # problem class with numerical gradient, equality and inequality constraints from
 # https://esa.github.io/pygmo2/tutorials/coding_udp_constrained.html
@@ -43,29 +43,29 @@ class pygmo_test(unittest.TestCase):
     def constructor_test(self):
         # Check that invalid optimization method is rejected
         with self.assertRaises(ValueError):
-            algo = pygmo.algorithm(pyoptgra.optgra(optimization_method=5))
+            _ = pygmo.algorithm(pyoptgra.optgra(optimization_method=5))
 
         # Check that negative iteration count is rejected
         with self.assertRaises(ValueError):
-            algo = pygmo.algorithm(pyoptgra.optgra(max_iterations=-1))
+            _ = pygmo.algorithm(pyoptgra.optgra(max_iterations=-1))
 
         # Check that negative correction iteration count is rejected
         with self.assertRaises(ValueError):
-            algo = pygmo.algorithm(pyoptgra.optgra(max_correction_iterations=-1))
+            _ = pygmo.algorithm(pyoptgra.optgra(max_correction_iterations=-1))
 
         # Check that negative distance per iteration is rejected
         with self.assertRaises(ValueError):
-            algo = pygmo.algorithm(pyoptgra.optgra(max_distance_per_iteration=-1))
+            _ = pygmo.algorithm(pyoptgra.optgra(max_distance_per_iteration=-1))
 
         # Check that negative perturbation is rejected
         with self.assertRaises(ValueError):
-            algo = pygmo.algorithm(
+            _ = pygmo.algorithm(
                 pyoptgra.optgra(perturbation_for_snd_order_derivatives=-1)
             )
 
         # Check that conflicting sizes of constraint scalings and priorities are rejected
         with self.assertRaises(ValueError):
-            algo = pygmo.algorithm(
+            _ = pygmo.algorithm(
                 pyoptgra.optgra(
                     convergence_thresholds=[1], constraint_priorities=[1, 2]
                 )
@@ -83,7 +83,7 @@ class pygmo_test(unittest.TestCase):
         with self.assertRaises(ValueError):
             empty_pop = algo.evolve(empty_pop)
 
-        class toy_multi_problem:
+        class toy_multi_problem(object):
             def __init__(self):
                 pass
 
@@ -96,7 +96,13 @@ class pygmo_test(unittest.TestCase):
             def get_nobj(self):
                 return 2
 
-        class toy_stochastic_problem:
+        # check that multi-objective problems are rejected
+        mprob = pygmo.problem(toy_multi_problem())
+        mpop = pygmo.population(mprob, 1)
+        with self.assertRaises(ValueError):
+            algo.evolve(mpop)
+
+        class toy_stochastic_problem(object):
             def __init__(self):
                 self.seed = 0
 
@@ -110,6 +116,12 @@ class pygmo_test(unittest.TestCase):
 
             def set_seed(self, seed):
                 self.seed = seed
+
+        # check that stochastic problems are rejected
+        sprob = pygmo.problem(toy_stochastic_problem())
+        spop = pygmo.population(sprob, 1)
+        with self.assertRaises(ValueError):
+            algo.evolve(spop)
 
     def basic_no_gradient_test(self):
         # Basic test that the call works and the result changes. No constraints, not gradients.
