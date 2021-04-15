@@ -91,7 +91,9 @@ class optgra:
         problem = population.problem
 
         if len(population) == 0:
-            raise ValueError("Population needs to have at least one member for use as initial guess.")
+            raise ValueError(
+                "Population needs to have at least one member for use as initial guess."
+            )
 
         selected = self.selection.select(
             (population.get_ID(), population.get_x(), population.get_f()),
