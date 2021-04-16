@@ -10,10 +10,20 @@ class optgra:
     """
     This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written in Fortran.
 
+    It is specifically designed for near-linear optimization problems with many constraints.
+    When optimizing a problem, Optgra will first move towards satisfying the constraints,
+    then move along the feasible region boundary to optimize the merit function,
+    fixing constraint violations as they occur.
+
+    For this, constraints and the merit function are linearized. Optgra will perform less well on
+    very non-linear merit functions or constraints.
+
     """
 
     @staticmethod
     def _wrap_fitness_func(problem):
+        """"""
+
         def wrapped_fitness(x):
             result = deque(problem.fitness(x))
 
@@ -58,9 +68,8 @@ class optgra:
         max_correction_iterations: int = 10,
         max_distance_per_iteration: int = 10,
         perturbation_for_snd_order_derivatives: int = 10,
-        convergence_thresholds: List[
-            float
-        ] = [],  # f_dim, this might be replaced with c_tol
+        # TODO the following might be replaced with c_tol, check with Johannes
+        convergence_thresholds: List[float] = [],  # f_dim
         variable_scaling_factors: List[float] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
         optimization_method: int = 2,
@@ -79,10 +88,13 @@ class optgra:
             max_iterations: number of optimization iterations
             max_correction_iterations: number of constraint correction iterations within each optimization iteration
             max_distance_per_iteration: maximum distance traveled in each optimization iteration
-            perturbation_for_snd_order_derivatives: TODO
-            convergence_thresholds: optional - TODO
-            variable_scaling_factors: optional - TODO
-            constraint_priorities: optional - TODO
+            perturbation_for_snd_order_derivatives: Used as delta for numerically computing second order errors
+                of the constraints in the optimization step
+            convergence_thresholds: optional - Scaling factors for the constraints.
+                If passed, must be positive and one more than there are constraints.
+            variable_scaling_factors: optional - Scaling factors for the input variables.
+                If passed, must be positive and as many as there are variables
+            constraint_priorities: optional - How to prioritize constraint fulfillment in the initial phase
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
             verbosity: 0 has no output, 4 and higher have maximum output
