@@ -1,24 +1,23 @@
-      SUBROUTINE OGCPRI (PRICON)
+      SUBROUTINE OGSOPT (OPTSEN)
 C ======================================================================
 C NEAR-LINEAR OPTIMISATION TOOL TAILORED FOR S/C TRAJECTORY DESIGN:
-C DEFINE CONTRAINT PRIORITY
+C LINEAR OPTIMISATION MODE
 C ======================================================================
-C INP | PRICON(NUMCON+1) | I*4 | CONSTRAINTS PRIORITY (1:NUMCON)
-C     |                  |     | -> 1-N
+C INP | OPTSEN           | I*4 | SENSITIVITY OPTIMISATION MODE
+C     |                  |     | ->  0: NO
+C     |                  |     | -> -1: INITIALISATION
+C     |                  |     | -> +1: WITH CONSTRAINT CALCULATION
+C     |                  |     | -> +2: WITH CONSTRAINT BIAS
 C ======================================================================
-C 2008/01/16 | J. SCHOENMAEKERS | NEW
+C 2021/03/30 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
 #include <ogdata.inc>
 C ======================================================================
-      INTEGER(4)PRICON(NUMCON+1)
+      INTEGER(4)   OPTSEN
 C ======================================================================
-      INTEGER(4)CON
-C ======================================================================
-      DO CON = 1, NUMCON + 1
-         CONPRI(CON) = PRICON(CON)
-      ENDDO
+      SENOPT = OPTSEN
 C ======================================================================
       RETURN
       END

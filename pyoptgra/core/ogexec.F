@@ -27,30 +27,25 @@ C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%      %E%     MAN_FDD\n'/
+#include <ogdata.inc>
 C ======================================================================
-#include "ogdata.inc"
-C ======================================================================
-      REAL*8       VALVAR(NUMVAR)
-      REAL*8       VALCON(NUMCON+1)
-      INTEGER*4    FINOPT, FINISH, FINITE, ITECOR, ITEOPT
+      REAL(8)      VALVAR(NUMVAR)
+      REAL(8)      VALCON(NUMCON+1)
+      INTEGER(4)   FINOPT, FINISH, FINITE, ITECOR, ITEOPT
       EXTERNAL     CALVAL
       EXTERNAL     CALDER
 C ======================================================================
-      INTEGER*4    ITE, VAR, CON, ACT, ROW, TYP, INC, LEN, NUM
-      REAL*8       VAL, SCA, RED, DER, FAC, OLD
-      CHARACTER*256 NAM,STR
+      INTEGER(4)   ITE, VAR, CON, ACT, ROW, TYP, INC, LEN, NUM
+      REAL(8)      VAL, SCA, RED, DER, FAC, OLD
+      CHARACTER    STR*256, NAM*256
 C ----------------------------------------------------------------------
-      INTEGER*4    NUMINC, NUMEQU, NUMITE, ITEDIV, ITECNV
-      REAL*8       VARACC, VARDIS, COSNEW, COSOLD, VARSAV, MEAMER
-      REAL*8       CONERR, DESNOR, NORERR, MEAERR
+      INTEGER(4)   NUMINC, NUMEQU, NUMITE, ITEDIV, ITECNV
+      REAL(8)      VARACC, VARDIS, COSNEW, COSOLD, VARSAV, MEAMER
+      REAL(8)      CONERR, DESNOR, NORERR, MEAERR
 C ======================================================================
-      REAL*8,      DIMENSION(:  ), ALLOCATABLE :: VARSUM
-      REAL*8,      DIMENSION(:  ), ALLOCATABLE :: VARCOR
-      REAL*8,      DIMENSION(:  ), ALLOCATABLE :: CONCOR
+      REAL(8),     DIMENSION(:  ), ALLOCATABLE :: VARSUM
+      REAL(8),     DIMENSION(:  ), ALLOCATABLE :: VARCOR
+      REAL(8),     DIMENSION(:  ), ALLOCATABLE :: CONCOR
 C ----------------------------------------------------------------------
       ALLOCATE    (VARSUM(NUMVAR))
       ALLOCATE    (VARCOR(NUMVAR))
@@ -62,7 +57,6 @@ C     LOGLEV = 2
       CALL OGWRIT (2,"")
       CALL OGWRIT (2,"OPTGRA START")
       CALL OGWRIT (2,"")
-      CALL flush  (LOGLUN)
       FINOPT = 3
       ITECOR = 0
       ITEOPT = 0
@@ -73,6 +67,7 @@ C     LOGLEV = 2
       CONOPT = 0
       CONCOR = 0D0
       VARCOR = 0D0
+      DESNOR = 0D0
 C ----------------------------------------------------------------------
       VARSTP = VARSND
       NUMITE = 0
@@ -85,7 +80,8 @@ C ======================================================================
 C EQUALTIY CONSTRAINTS IN ACTIVE SET
 C ----------------------------------------------------------------------
       NUMACT = 0
-      DO CON = 1, NUMCON   
+      DO CON = 1, NUMCON
+C          IF (CONTYP(CON) .EQ. -2) CYCLE
           NAM = CONSTR(CON)
           LEN = CONLEN(CON)
           WRITE (STR,*) "CON/PRI=",CON,CONPRI(CON)," ", NAM(1:LEN)
@@ -117,7 +113,8 @@ C ----------------------------------------------------------------------
       ENDIF
 C ======================================================================
  1000 CONTINUE
-C      IF (NUMITE .GE. 89) MATLEV = 3
+C      IF (NUMITE .GE. 52) MATLEV = 3
+C      IF (NUMITE .GE. 55) MATLEV = 2
 C ======================================================================
 C NEW ITERATION
 C ----------------------------------------------------------------------
@@ -150,22 +147,36 @@ C ----------------------------------------------------------------------
 C ======================================================================
 C GET VALUES AND GRADIENTS
 C ======================================================================
-C      IF (NUMITE .EQ. 1) MATLEV = 3
-C      IF (NUMITE .GT. 1) MATLEV = 2
-      CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
-     &             CALVAL, CALDER)
-C      MATLEV = 2
+      IF     (SENOPT .LE. 0) THEN
+          CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+      ELSEIF (SENOPT .EQ. +1) THEN
+          VARVAL = SENVAR
+          CALL OGEVAL (VARVAL, CONVAL, 0, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+      ELSEIF (SENOPT .EQ. +2) THEN
+          VARVAL = SENVAR
+          DO CON = 1, NUMCON+1
+              SCA = CONSCA(CON)
+              IF (CONTYP(CON) .EQ. -1) SCA = - SCA
+              CONVAL(CON) = SENCON(CON) - SENDEL(CON) / SCA
+          ENDDO
+      ENDIF
+      IF     (SENOPT .EQ. -1) THEN
+          SENVAR = VARVAL
+          SENCON = CONVAL
+      ENDIF
 C ======================================================================
-      IF (VARDER .EQ. -1) THEN
+      IF (VARDER .EQ. -1 .AND. SENOPT .LE. 0) THEN
           CONRED(1:NUMCON+1,:) = CONDER(1:NUMCON+1,:)
           CALL OGEVAL (VARVAL, CONVAL, 2, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
           WRITE (STR,'("GRADIENT CHECK")')
           CALL OGWRIT (1,STR)
           DO VAR = 1,NUMVAR
-				DO CON = 1,NUMCON+1
-				FAC = VARSCA(VAR) / CONSCA(CON)
-				FAC = 1D0
+              DO CON = 1,NUMCON+1
+                  FAC = VARSCA(VAR) / CONSCA(CON)
+                  FAC = 1D0
                   DER = CONDER(CON,VAR) * FAC 
                   RED = CONRED(CON,VAR) * FAC
                   IF (ABS(DER) .LT. 1D-6 .AND. ABS(RED) .LT. 1D-6) CYCLE
@@ -176,7 +187,7 @@ C ======================================================================
                       FAC = 0D0
                   ENDIF
                   IF (DABS(FAC-1D0) .LT. 1D-2) CYCLE
-				WRITE (STR,'("VAR/CON/ANA/NUM/A2N=",2I4,3(1X,D13.6))')
+                  WRITE (STR,'("VAR/CON/ANA/NUM/A2N=",2I4,3(1X,D13.6))')
      &            VAR,CON,RED,DER,FAC
                   CALL OGWRIT (1,STR)
                   NAM = VARSTR(VAR)
@@ -192,8 +203,16 @@ C ======================================================================
               ENDDO
           ENDDO
 C          CONDER(1:NUMCON+1,:) = CONRED(1:NUMCON+1,:)
-C		GOTO 9999
+C          GOTO 9999
       ENDIF
+C ======================================================================
+      SENDER = CONDER
+      DO VAR = 1,NUMVAR
+          IF (VARTYP(VAR) .NE. 1) CYCLE
+C          WRITE (STR,*) "VAR=",VAR,VARVAL(VAR)*VARSCA(VAR)
+          CALL OGWRIT (2,STR)
+          CONDER(1:NUMCON+1,VAR) = 0D0
+      ENDDO
 C ======================================================================
       IF (NUMITE .EQ. 1) THEN
           VARGRD = VARVAL
@@ -207,6 +226,7 @@ C ======================================================================
 C ======================================================================
       COSOLD = COSNEW
       COSNEW = CONVAL(NUMCON+1)
+      CALL OGWRIT (3,"")
       WRITE (STR,'("OPTGRA: VALCOS=",D15.8,1X,D15.8)') COSNEW,
      &COSNEW-COSOLD
       CALL OGWRIT (3,STR)
@@ -219,6 +239,15 @@ C ----------------------------------------------------------------------
           WRITE (TABLUN,'(I4,1X,"COR",1X,1000(1X,D10.3))') NUMITE,
      &    (VARVAL(VAR),VAR=1,NUMVAR),
      &    (CONVAL(CON),CON=1,NUMCON)
+      ENDIF
+C ----------------------------------------------------------------------
+      IF (SENOPT .NE. 0) THEN
+          IF (FINISH .EQ. 0) THEN
+              FINOPT = 0
+              GOTO 9999
+          ELSE
+              GOTO 2233
+          ENDIF
       ENDIF
 C ----------------------------------------------------------------------
       IF (FINISH .EQ. 0) THEN
@@ -274,10 +303,24 @@ C      CALL OGWRIT (-1,STR)
 C ======================================================================
 C OPTIMISATION PART
 C ----------------------------------------------------------------------
+ 2233 CONTINUE
+C ----------------------------------------------------------------------
       VARSAV = VARMAX
       VARMAX = VARMAX * 10D-1
       CALL OGOPTI (VARACC, NUMEQU, FINISH, DESNOR, CALVAL)
       VARMAX = VARSAV
+C ----------------------------------------------------------------------
+      IF (SENOPT .NE. 0) THEN
+          CALL OGWRIT (1,"")
+          IF (FINISH .EQ. 0) THEN
+              FINOPT = 0
+              CALL OGWRIT (1,"OPTGRA sensitivity converged: not")
+          ELSE
+              FINOPT = 1
+              CALL OGWRIT (1,"OPTGRA sensitivity converged: yes")
+          ENDIF
+          GOTO 9999
+      ENDIF
 C ----------------------------------------------------------------------
       IF (FINISH .EQ. 0) GOTO 1000
 C ======================================================================
@@ -301,24 +344,50 @@ C ======================================================================
 C ======================================================================
 C DESCALE VARIABLES
 C ----------------------------------------------------------------------
-      DO VAR = 1, NUMVAR
+C      CALL OGWMAT (3)
+C      CALL OGEVAL (VARVAL, VALCON, 0, CONDER, CALVAL, CALDER)
+      DO VAR = 1, NUMVAR       
           VALVAR(VAR) = VARVAL(VAR) * VARSCA(VAR)
       ENDDO
+C      IF (SENOPT .NE. 0) THEN
+C          CALL OGEVAL (VARVAL, VALCON, 0, CONDER, CALVAL, CALVAL)
+C      ENDIF
 C ======================================================================
 C DESCALE VALUES
 C ----------------------------------------------------------------------
       DO CON = 1, NUMCON + 1
           TYP = CONTYP(CON)
           SCA = CONSCA(CON)
-          IF (TYP .LT. 0) SCA = - SCA
+          IF (TYP .EQ. -1) SCA = - SCA
           VALCON(CON) = CONVAL(CON) * SCA
       ENDDO
 C ======================================================================
+      CALL OGWRIT (3,"")
+      CALL OGWRIT (3,"STATUS OF CONSTRAINTS:")        
+      CALL OGWRIT (3,"")
+      CALL OGWRIT (3," ACT  PAS  NON COST___VAL CONSTRAINT")
+      DO CON = 1, NUMCON
+          IF (CONTYP(CON) .EQ. -2) CYCLE
+          NAM = CONSTR(CON)
+          LEN = CONLEN(CON)
+          VAL = CONVAL(CON)
+          IF     (CONACT(CON) .GT.  0) THEN
+              WRITE (STR,'( I4,5X,6X,D10.3,1X,A)') CON,VAL,NAM(1:LEN)
+              CALL OGWRIT (3,STR)
+          ELSEIF (CONACT(CON) .EQ.  0) THEN
+              WRITE (STR,'( 5X,I4,6X,D10.3,1X,A)') CON,VAL,NAM(1:LEN)
+              CALL OGWRIT (3,STR)
+          ELSEIF (CONACT(CON) .LT.  0) THEN
+              WRITE (STR,'(10X,I4,1X,D10.3,1X,A)') CON,VAL,NAM(1:LEN)
+              CALL OGWRIT (3,STR)
+          ENDIF
+      ENDDO
+      
       DEALLOCATE  (VARSUM)
       DEALLOCATE  (VARCOR)
       DEALLOCATE  (CONCOR)
 C ----------------------------------------------------------------------
-      CALL OGWRIT (3,"")
+      CALL OGWRIT (2,"")
       CALL OGWRIT (2,"OPTGRA END")
       CALL OGWRIT (2,"")
 C ======================================================================
