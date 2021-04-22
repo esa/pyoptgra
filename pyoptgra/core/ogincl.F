@@ -10,18 +10,13 @@ C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%	%E%	MAN_FDD\n'/
+#include <ogdata.inc>
 C ======================================================================
-#include "ogdata.inc"
+      INTEGER(4) INC
 C ======================================================================
-      INTEGER*4 INC
-C ======================================================================
-      REAL*8    VAL, FAC, GAM, SAV, MAX
-      INTEGER*4 ROW, COL, IND, LST
-      CHARACTER STR*256
+      REAL(8)    VAL, FAC, GAM, SAV, MAX
+      INTEGER(4) ROW, COL, IND, LST
+      CHARACTER  STR*256
 C ======================================================================
 C GENERAL
 C ----------------------------------------------------------------------
@@ -93,13 +88,13 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
       SAV = CONRED(INC,NUMACT)
       FAC = 1D0 / SAV
-	CONRED(INC,NUMACT:LST) = CONRED(INC,NUMACT:LST) * FAC
+      CONRED(INC,NUMACT:LST) = CONRED(INC,NUMACT:LST) * FAC
 C ----------------------------------------------------------------------
       FAC = SAV / VAL
       DO ROW = 1, NUMCON + 3
          IF (CONACT(ROW) .LE. 0) THEN
-		  GAM = DOT_PRODUCT (CONRED(ROW,NUMACT:LST),
-     &	                     CONRED(INC,NUMACT:LST))
+            GAM = DOT_PRODUCT (CONRED(ROW,NUMACT:LST),
+     &                         CONRED(INC,NUMACT:LST))
             IF (GAM .NE. 0D0) THEN
                GAM = GAM * FAC
                CONRED(ROW,NUMACT:LST) = CONRED(ROW,NUMACT:LST)

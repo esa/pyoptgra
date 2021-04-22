@@ -13,18 +13,13 @@ C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%	%E%	MAN_FDD\n'/
+#include <ogdata.inc>
 C ======================================================================
-#include "ogdata.inc"
+      REAL(8)      ACTINP(NUMCON)
+      REAL(8)      ACTOUT(NUMCON)
 C ======================================================================
-      REAL*8       ACTINP(NUMCON)
-      REAL*8       ACTOUT(NUMCON)
-C ======================================================================
-      INTEGER*4    ROW, COL, ACT
-      REAL*8       VAL
+      INTEGER(4)   ROW, COL, ACT
+      REAL(8)      VAL
 C ======================================================================
       DO ACT = 1, NUMACT
          ROW = ACTCON(ACT)

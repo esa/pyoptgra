@@ -23,27 +23,22 @@ C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%	%E%	MAN_FDD\n'/
+#include <ogdata.inc>
 C ======================================================================
-#include "ogdata.inc"
-C ======================================================================
-      REAL*8       VALVAR(NUMVAR)
-      REAL*8       VALCON(NUMCON+1)
-      INTEGER*4    DERVAR
-      REAL*8       DERCON(NUMCON+1,NUMVAR)
+      REAL(8)      VALVAR(NUMVAR)
+      REAL(8)      VALCON(NUMCON+1)
+      INTEGER(4)   DERVAR
+      REAL(8)      DERCON(NUMCON+1,NUMVAR)
       EXTERNAL     CALVAL
       EXTERNAL     CALDER
 C ======================================================================
-      INTEGER*4    VAR, CON, COD, LEN, IND
-      REAL*8       VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR
+      INTEGER(4)   VAR, CON, COD, LEN, IND
+      REAL(8)      VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR
       CHARACTER    TYP*3, STA*3, NAM*80, STR*256
-      REAL*8       GGG(4,4), BBB(4), VVV(4)
+      REAL(8)      GGG(4,4), BBB(4), VVV(4)
 C ======================================================================
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: VARVEC
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: CONVEC
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: VARVEC
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: CONVEC
 C ----------------------------------------------------------------------
       ALLOCATE    (VARVEC(NUMVAR))
       ALLOCATE    (CONVEC(NUMCON+1))
@@ -52,31 +47,31 @@ C GENERAL
 C ----------------------------------------------------------------------
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
-	IF     (DERVAR .EQ. 0) THEN
+      IF     (DERVAR .EQ. 0) THEN
          WRITE (STR,'("COMPUTE RESULTS")')
-    	   CALL OGWRIT (3,STR)
+         CALL OGWRIT (3,STR)
       ELSEIF (DERVAR .EQ. 1 .OR. DERVAR .EQ. -1) THEN
          WRITE (STR,'("COMPUTE RESULTS",'//
      &              '   " AND DERIVATIVES USER DEFINED")')
-    	   CALL OGWRIT (3,STR)
-	ELSEIF (DERVAR .EQ. 2) THEN
+         CALL OGWRIT (3,STR)
+      ELSEIF (DERVAR .EQ. 2) THEN
          WRITE (STR,'("COMPUTE RESULTS",'//
      &              '   " AND DERIVATIVES BY DOUBLE DIFFERENCING")')
-    	   CALL OGWRIT (3,STR)
-	ELSEIF (DERVAR .EQ. 3) THEN
+         CALL OGWRIT (3,STR)
+      ELSEIF (DERVAR .EQ. 3) THEN
          WRITE (STR,'("COMPUTE RESULTS",'//
      &              '   " AND DERIVATIVES BY SINGLE DIFFERENCING")')
-    	   CALL OGWRIT (3,STR)
-	ENDIF
+         CALL OGWRIT (3,STR)
+      ENDIF
 C ======================================================================
 C WRITE VARIABLES
 C ----------------------------------------------------------------------
       WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'("VARIABLES NOT SCALED:")')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'("VARIABLES NOT SCALED:")')
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'()')
+      CALL OGWRIT (3,STR)
       DO VAR = 1, NUMVAR
          VAL = VALVAR(VAR)
          SCA = VARSCA(VAR)
@@ -89,8 +84,8 @@ C ----------------------------------------------------------------------
      &        '("VAR/VAL/SCA/TYP/NAM=",'//
      &        '  I5,D14.6,D9.1,1X,A3,1X,A)')
      &           VAR,VAL*SCA,SCA,TYP,NAM(1:LEN)
-    	   CALL OGWRIT (3,STR)
-	ENDDO
+         CALL OGWRIT (3,STR)
+      ENDDO
 C ======================================================================
 C DE-SCALE VARIABLES
 C ----------------------------------------------------------------------
@@ -147,7 +142,7 @@ C ----------------------------------------------------------------------
       CALL SUM2V (VALCON, VVV, VALCON, 1)
       CALL MULVS (VALCON, -1D0, VALCON, 1)
       WRITE (STR,*) "VALCON=",(VALCON(IND),IND=1,1)
-	CALL OGWRIT (3,STR)
+      CALL OGWRIT (3,STR)
       ENDIF
 C ----------------------------------------------------------------------
 C SCALE RESULTS
@@ -163,11 +158,11 @@ C ======================================================================
 C WRITE RESULTS
 C ----------------------------------------------------------------------
       WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'("RESULTS NOT SCALED:")')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'("RESULTS NOT SCALED:")')
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'()')
+      CALL OGWRIT (3,STR)
       CONERR = 0D0
       IND = 0
       FAC = 0D0
@@ -178,6 +173,7 @@ C ----------------------------------------------------------------------
          STA = "   "
          ERR = 0D0
          IF (COD .EQ. -1) SCA = - SCA
+         IF (COD .EQ. -2                      ) TYP = "DER"
          IF (COD .EQ. -1 .AND. CON .LE. NUMCON) TYP = "LTE"
          IF (COD .EQ.  0 .AND. CON .LE. NUMCON) TYP = "EQU"
          IF (COD .EQ.  1 .AND. CON .LE. NUMCON) TYP = "GTE"
@@ -189,7 +185,7 @@ C ----------------------------------------------------------------------
             ERR = DABS (VAL)
          ENDIF
          IF (COD .NE.  0 .AND. CON .LE. NUMCON .AND.
-     &                          -VAL  .GT. 1D0) THEN
+     &       COD .NE. -2 .AND. -VAL  .GT. 1D0) THEN
             STA = "VIO"
             ERR = DABS (VAL)
          ENDIF
@@ -202,15 +198,15 @@ C ----------------------------------------------------------------------
      &        '("CON/VAL/SCA/TYP/STA/NAM=",'//
      &        '  I5,D14.6,D9.1,1X,A3,1X,A3,1X,A)')
      &           CON,VAL*SCA,SCA,TYP,STA,NAM(1:LEN)
-		CALL OGWRIT (3,STR)
-	ENDDO
+         CALL OGWRIT (3,STR)
+      ENDDO
       WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'("CONSTRAINT ERROR.:",2(1X,D13.6),I6)')
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'("CONSTRAINT ERROR.:",2(1X,D13.6),I6)')
      &                 CONERR,FAC,IND
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'()')
+      CALL OGWRIT (3,STR)
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------
@@ -227,17 +223,17 @@ C ----------------------------------------------------------------------
       CALL SUM2V (DERCON, BBB, DERCON, 4)
       CALL MULVS (DERCON, -1D0, DERCON, 4)
       WRITE (STR,*) "DERCON=",(DERCON(1,IND),IND=1,4)
-    	CALL OGWRIT (3,STR)
-	ENDIF
+      CALL OGWRIT (3,STR)
+      ENDIF
 C ======================================================================
 C WRITE DERIVATIVES
 C ----------------------------------------------------------------------
       WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'("DERIVATIVES SCALED:")')
-    	CALL OGWRIT (3,STR)
-	WRITE (STR,'()')
-    	CALL OGWRIT (3,STR)
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'("DERIVATIVES SCALED:")')
+      CALL OGWRIT (3,STR)
+      WRITE (STR,'()')
+      CALL OGWRIT (3,STR)
 C ----------------------------------------------------------------------
       DO VAR = 1, NUMVAR
 C ----------------------------------------------------------------------
@@ -256,7 +252,7 @@ C ----------------------------------------------------------------------
      &           VAR,VAL*SCA,SCA,TYP,NAM(1:LEN)
          CALL OGWRIT (4,STR)
          WRITE (STR,'()')
-    	   CALL OGWRIT (4,STR)
+         CALL OGWRIT (4,STR)
 C ----------------------------------------------------------------------
 C DERIVATIVES BY DOUBLE DIFFERENCING
 C ----------------------------------------------------------------------
@@ -297,7 +293,7 @@ C ----------------------------------------------------------------------
          DO CON = 1, NUMCON + 1
             FAC = VARSCA(VAR) / CONSCA(CON)
             IF (CONTYP(CON) .EQ. -1) FAC = - FAC
-		  DERCON(CON,VAR) = DERCON(CON,VAR) * FAC
+            DERCON(CON,VAR) = DERCON(CON,VAR) * FAC
          ENDDO
 C ----------------------------------------------------------------------
 C WRITE DERIVATIVES
@@ -308,6 +304,7 @@ C ======================================================================
                SCA = CONSCA(CON)
                COD = CONTYP(CON)
                IF (COD .EQ. -1) SCA = - SCA
+               IF (COD .EQ. -2                      ) TYP = "DER"
                IF (COD .EQ. -1 .AND. CON .LE. NUMCON) TYP = "LTE"
                IF (COD .EQ.  0 .AND. CON .LE. NUMCON) TYP = "EQU"
                IF (COD .EQ.  1 .AND. CON .LE. NUMCON) TYP = "GTE"
@@ -319,11 +316,11 @@ C ======================================================================
      &              '("CON/DER/SCA/TYP/NAM=",'//
      &              '  I5,D14.6,D9.1,1X,A3,1X,A)')
      &                 CON,DER*SCA/VARSCA(VAR),SCA,TYP,NAM(1:LEN)
-    	         CALL OGWRIT (4,STR)
-		  ENDIF
+               CALL OGWRIT (4,STR)
+            ENDIF
          ENDDO
          WRITE (STR,'()')
-     	   CALL OGWRIT (4,STR)
+         CALL OGWRIT (4,STR)
 C ----------------------------------------------------------------------
       ENDDO
 C ======================================================================

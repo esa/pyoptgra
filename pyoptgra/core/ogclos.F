@@ -7,12 +7,7 @@ C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%      %E%     MAN_FDD\n'/
-C ======================================================================
-#include "ogdata.inc"
+#include <ogdata.inc>
 C ======================================================================
 C VARIABLES
 C ----------------------------------------------------------------------
@@ -26,16 +21,21 @@ C ----------------------------------------------------------------------
       DEALLOCATE  (VARGRD)
       DEALLOCATE  (VARDIR)
       DEALLOCATE  (FUNVAR)
+      DEALLOCATE  (SENVAR)
 C ======================================================================
 C CONSTRAINTS
 C ----------------------------------------------------------------------
       DEALLOCATE  (CONVAL)
       DEALLOCATE  (CONTYP)
       DEALLOCATE  (CONPRI)
-	DEALLOCATE  (CONSCA)
+      DEALLOCATE  (CONSCA)
       DEALLOCATE  (CONSTR)
       DEALLOCATE  (CONLEN)
       DEALLOCATE  (CONREF)
+      DEALLOCATE  (SENQUA)
+      DEALLOCATE  (SENCON)
+      DEALLOCATE  (SENDEL)
+      DEALLOCATE  (SENACT)
 C ======================================================================
 C DERIVATIVES
 C ----------------------------------------------------------------------
@@ -48,6 +48,7 @@ C ----------------------------------------------------------------------
       DEALLOCATE  (CONACT)
       DEALLOCATE  (CONDER)
       DEALLOCATE  (CONRED)
+      DEALLOCATE  (SENDER)
       DEALLOCATE  (CONOPT)
 C ======================================================================
       RETURN

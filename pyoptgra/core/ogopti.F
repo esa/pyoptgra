@@ -17,42 +17,37 @@ C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*100 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%      %E%     MAN_FDD\n'/
+#include <ogdata.inc>
 C ======================================================================
-      INCLUDE "ogdata.inc"
-C ======================================================================
-      REAL*8       VARACC
+      REAL(8)      VARACC
 C ----------------------------------------------------------------------
-      INTEGER*4    NUMEQU
-      INTEGER*4    FINISH
+      INTEGER(4)   NUMEQU
+      INTEGER(4)   FINISH
       EXTERNAL     CALVAL
 C ======================================================================
-      INTEGER*4    STAFLG, FACCNT, NUMCOR
-      REAL*8       DESNOR, FOLDIS, COSIMP, CORNOR, QUACOR, REFDIS
-      REAL*8       CO0, CO1, CO2, NOR
-      REAL*8       COSCO2, COSCO1
-      REAL*8       MAXDIS, NORPRV
+      INTEGER(4)   STAFLG, FACCNT, NUMCOR
+      REAL(8)      DESNOR, FOLDIS, COSIMP, CORNOR, QUACOR, REFDIS
+      REAL(8)      CO0, CO1, CO2, NOR
+      REAL(8)      COSCO2, COSCO1
+      REAL(8)      MAXDIS, NORPRV
 C ----------------------------------------------------------------------
-      INTEGER*4    CON, VAR, COS, ACT, IND, LEN, INC, FLG, NUM, III
-      INTEGER*4    NNN, COR, TYP, DES, PRV, MET
-      REAL*8       DER, VAL, MAX, DET, AAA, BBB, CCC, DIS, PER
-      REAL*8       FAC, DEL, REF, RAT, EXC, EPS, IMP
-      REAL*8       DIF, SCA, SAV, BET, THT
-      CHARACTER*256 NAM, STR
+      INTEGER(4)   CON, VAR, COS, ACT, IND, LEN, INC, FLG, NUM, III
+      INTEGER(4)   NNN, COR, TYP, DES, PRV, MET
+      REAL(8)      DER, VAL, MAX, DET, AAA, BBB, CCC, DIS, PER
+      REAL(8)      FAC, DEL, REF, RAT, EXC, EPS, IMP
+      REAL(8)      DIF, SCA, SAV, BET, THT
+      CHARACTER    STR*256, NAM*256
 C ======================================================================
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: COSACT
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: VARVEC
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: VARWRK
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: CORVEC
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: DESDER
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: DESPRV
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: VARPRV
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: CONVEC
-      REAL*8,      DIMENSION(:), ALLOCATABLE :: CONQUA
-      INTEGER*4,   DIMENSION(:), ALLOCATABLE :: CONCOR
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: COSACT
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: VARVEC
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: VARWRK
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: CORVEC
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: DESDER
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: DESPRV
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: VARPRV
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: CONVEC
+      REAL(8),     DIMENSION(:), ALLOCATABLE :: CONQUA
+      INTEGER(4),  DIMENSION(:), ALLOCATABLE :: CONCOR
 C ----------------------------------------------------------------------
       ALLOCATE    (COSACT(NUMCON))
       ALLOCATE    (VARVEC(NUMVAR))
@@ -71,8 +66,6 @@ C ----------------------------------------------------------------------
       DES = NUMCON + 2
       PRV = NUMCON + 3
       FACCNT = 0
-      NUMACT = 0
-      CONACT(1:DES) = 0
       CONRED(1:COS,:) = CONDER(1:COS,:)
       CONRED(  DES,:) = VARDES
       DESDER          = VARDES
@@ -80,6 +73,21 @@ C ----------------------------------------------------------------------
       CONDER(  PRV,:) = FUNVAR
       CALL OGWRIT (3,"")
       CALL OGWRIT (3,"OPTIMISATION PART")
+C ----------------------------------------------------------------------
+C      WRITE (STR,'("NUMACT = ",I4)') NUMACT
+C      CALL OGWRIT (3,STR)
+      NUMCOR = NUMACT
+      CONCOR = ACTCON
+      NUMACT = 0
+      CONACT(1:DES) = 0
+C      DO COR = 1, NUMCOR
+C          CON = CONCOR(COR)
+C          NAM = CONSTR(CON)
+C          LEN = CONLEN(CON)
+C          WRITE (STR,'("ACT = ",I4,5X,1X,A)') CON, NAM(1:LEN)
+C          CALL OGWRIT (3,STR)
+C          CALL OGINCL (CON)
+C      ENDDO
 C ======================================================================
  1100 CONTINUE
 C ======================================================================
@@ -96,7 +104,6 @@ C REMOVE PASSIVE INEQUALITY CONSTRAINTS
 C ----------------------------------------------------------------------
       DO ACT = NUMACT, 1, -1
           CON = ACTCON(ACT)
-          IF (CONTYP(CON) .EQ. 0  ) CYCLE
           IF (CONVAL(CON) .LE. 1D0) CYCLE
           NAM = CONSTR(CON)
           LEN = CONLEN(CON)
@@ -110,6 +117,7 @@ C INCLUDE VIOLATED INEQUALITY CONSTRAINTS AND SELECT PASSIVE ONES
 C SELECT PASSIVE INEQUALITY CONSTRAINTS
 C ----------------------------------------------------------------------
       DO CON = 1, NUMCON
+          IF (CONTYP(CON) .EQ. -2) CYCLE
           IF     (CONACT(CON) .GT.  0  ) THEN
           ELSEIF (CONTYP(CON) .EQ.  0  ) THEN
               CONACT(CON) =  0
@@ -126,10 +134,10 @@ C ======================================================================
  1110 CONTINUE
       NNN = NNN + 1
       IF (NNN .GT. 999) THEN
-		FINISH = 0
+          FINISH = 0
           WRITE (STR,*) "NNN=",NNN
           CALL OGWRIT (2,STR) 
-		GOTO 9999
+          GOTO 9999
       ENDIF
 C ======================================================================
 C DERIVATIVES OF MERIT W.R.T. ACTIVE CONSTRAINTS
@@ -160,8 +168,8 @@ C ----------------------------------------------------------------------
           CON = ACTCON(IND)
           NAM = CONSTR(CON)
           LEN = CONLEN(CON)
-          WRITE (STR,'(I4,5X,2(1X,D10.3),1X,A)')
-     &           CON,DESNOR,MAX,NAM(1:LEN)
+          WRITE (STR,'(I4,5X,3(1X,D10.3),1X,A)')
+     &           CON,DESNOR,MAX,VARMAX,NAM(1:LEN)
           CALL OGWRIT (3,STR)      
           CALL OGEXCL (IND)
           GOTO 1110
@@ -177,7 +185,8 @@ C ----------------------------------------------------------------------
       MAX = 0D0
 C ----------------------------------------------------------------------      
       DO CON = 1, NUMCON
-          IF (CONACT(CON) .NE. 0) CYCLE
+          IF (CONTYP(CON) .EQ. -2) CYCLE
+          IF (CONACT(CON) .NE.  0) CYCLE
           DEL = DOT_PRODUCT (CONRED(CON,NUMACT+1:NUMVAR),
      &                       CONRED(COS,NUMACT+1:NUMVAR)) / DESNOR
           VAL = DABS(DEL) * VARMAX
@@ -218,6 +227,7 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,"")
       CALL OGWRIT (3," ACT  PAS CONSTRAINT")
       DO CON = 1, NUMCON
+          IF (CONTYP(CON) .EQ. -2) CYCLE
           NAM = CONSTR(CON)
           LEN = CONLEN(CON)
           IF     (CONTYP(CON) .EQ.  0  ) THEN
@@ -264,6 +274,7 @@ C ----------------------------------------------------------------------
       IND = 0
       DIS = 1D10
       DO CON = 1, NUMCON
+         IF (CONTYP(CON) .EQ. -2) CYCLE
          IF (CONACT(CON) .NE. -1) CYCLE
          VAL = DOT_PRODUCT (CONRED(CON,NUMACT+1:NUMVAR),
      &                      CONRED(COS,NUMACT+1:NUMVAR))
@@ -392,7 +403,8 @@ C      CALL OGWRIT (2,STR)
       DESNOR = DSQRT(SUM(VARDES**2))
       NOR = DESNOR
       DO CON = 1, NUMCON
-          IF (CONACT(CON) .NE. 0) CYCLE
+          IF (CONTYP(CON) .EQ. -2) CYCLE
+          IF (CONACT(CON) .NE.  0) CYCLE
           DEL = DOT_PRODUCT (CONDER(CON,1:NUMVAR),
      &                       VARDES(    1:NUMVAR)) / NOR
           VAL = DABS(DEL) * VARMAX
@@ -476,20 +488,37 @@ C ----------------------------------------------------------------------
       DIS = DIS * DESNOR
       MAXDIS = DIS
 C ======================================================================
-C PERTURB VARIABLES
+C COMPUTE SECOND ORDER EFFECTS
 C ----------------------------------------------------------------------
-	FAC = VARSTP / DESNOR
-      VARVEC = VARREF + VARDES * VARSTP / DESNOR
-C ----------------------------------------------------------------------
-C EVALUATE CONTRAINTS AND MERIT
-C ----------------------------------------------------------------------
-      CALL OGEVAL (VARVEC, CONVEC, 0, CONDER, CALVAL, CALVAL)
-C ----------------------------------------------------------------------
-C COMPUTE SECOND ORDER ERRORS
-C ----------------------------------------------------------------------
-      CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
-     &                 VARDES(             1:NUMVAR))
-      CONQUA = 2D0 * (CONVEC - CONREF - CONQUA * FAC) / FAC**2
+      NNN = 0
+      IF (SENOPT .GE. +1) THEN
+      DO CON = 1, NUMCON
+          IF (CONTYP(CON) .EQ. -2) CYCLE
+          ACT = CONACT(CON)
+          IND = SENACT(CON)
+          IF (ACT .EQ. -1 .AND. IND .EQ. -1) CYCLE
+          IF (ACT .EQ.  0 .AND. IND .EQ.  0) CYCLE
+          IF (ACT .GT.  0 .AND. IND .GT.  0) CYCLE
+          NAM = CONSTR(CON)
+          LEN = CONLEN(CON)
+          WRITE (STR,'(I4,1X,I4,1X,I4,1X,A)') CON, ACT, IND, NAM(1:LEN)
+          CALL OGWRIT (2,STR)
+          NNN = 1
+      ENDDO
+      ENDIF
+      IF     (SENOPT .LE.  0 .OR. NNN .EQ. 1) THEN
+          FAC = VARSTP / DESNOR
+          VARVEC = VARREF + VARDES * VARSTP / DESNOR
+          CALL OGEVAL (VARVEC, CONVEC, 0, CONDER, CALVAL, CALVAL)
+          CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
+     &                     VARDES(             1:NUMVAR))
+          CONQUA = 2D0 * (CONVEC - CONREF - CONQUA * FAC) / FAC**2
+      ENDIF
+      IF     (SENOPT .EQ. -1) THEN
+          SENQUA = CONQUA
+      ELSEIF (SENOPT .GE. +1 .AND. NNN .EQ. 0) THEN
+          CONQUA = SENQUA
+      ENDIF
 C ======================================================================
 C COMPUTE CORRECTION VECTOR
 C ----------------------------------------------------------------------
@@ -510,7 +539,7 @@ C GET EXTREMUM
 C ----------------------------------------------------------------------
       COSCO1 = DOT_PRODUCT (VARDES, CONDER(COS,1:NUMVAR)) / DESNOR
       COSCO2 = CONQUA(COS) - DOT_PRODUCT (CONRED(COS,1:NUMACT),
-     &	                                CORVEC(    1:NUMACT))
+     &                                    CORVEC(    1:NUMACT))
       COSCO2 = COSCO2 * 0.5D0 / DESNOR / DESNOR
       WRITE (STR,*) "COSCO2/COSCO1=",COSCO2,COSCO1
       CALL OGWRIT (3,STR)
@@ -609,6 +638,7 @@ C IF CONSTRAINT IS HIT
 C ----------------------------------------------------------------------
       IND = 0
       DO CON = 1, NUMCON
+          IF (CONTYP(CON) .EQ. -2) CYCLE
           IF (CONACT(CON) .NE. -1) CYCLE
           CO2 = CONQUA(CON) - DOT_PRODUCT (CONRED(CON,1:NUMACT),
      &                                     CORVEC(    1:NUMACT))
@@ -623,7 +653,7 @@ C ----------------------------------------------------------------------
               FAC = (-CO1 + DET) / CO2
               IF (FAC .GT. 0D0 .AND. FAC .LT. VAL) VAL = FAC
               FAC = (-CO1 - DET) / CO2
-			IF (FAC .GT. 0D0 .AND. FAC .LT. VAL) VAL = FAC
+              IF (FAC .GT. 0D0 .AND. FAC .LT. VAL) VAL = FAC
           ELSEIF (CO1 .NE. 0D0) THEN
               VAL = -CO0 / CO1 * 0.5D0
           ELSE
@@ -667,8 +697,8 @@ C ----------------------------------------------------------------------
       DO VAR = 1, NUMVAR
           VAL = 0D0
           DO ACT = 1, NUMACT
-              CON = ACTCON(ACT)
-              VAL = VAL - COSACT(ACT) * CONDER(CON,VAR)
+              IND = ACTCON(ACT)
+              VAL = VAL - COSACT(ACT) * CONDER(IND,VAR)
           ENDDO
           VARVEC(VAR) = FAC * (VARDES(VAR) + (VAL * FAC * 0.5D0))
           DIS = DIS + VARVEC(VAR) * VARVEC(VAR)
@@ -681,16 +711,15 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,*) "DIS=",DIS
       CALL OGWRIT (3,STR)
-	IF (DIS .GT. REFDIS * 1.2D0) THEN
-		FACCNT = FACCNT + 1
-          IF (FACCNT .LT. 5) THEN
+      IF (DIS .GT. REFDIS * 1.2D0 .AND. SENOPT .GT. 0) THEN
+          FACCNT = FACCNT + 1
+          IF (FACCNT .LT. 10) THEN
               FOLDIS = FOLDIS * 0.5D0
               QUACOR = CORNOR * FOLDIS * FOLDIS
               COSIMP = FOLDIS * (COSCO1 + FOLDIS * COSCO2)
-			GOTO 8211
+              GOTO 8211
           ELSE
-              FACCNT = 0
-			GOTO 9999
+              GOTO 9999
           ENDIF
       ENDIF
 C ----------------------------------------------------------------------
@@ -711,7 +740,8 @@ C ----------------------------------------------------------------------
           WRITE (STR,'("MERIT MAXIMUM.......:",1X,D13.6,'//
      &    '2(1X,D10.3),1X,D16.9,2D11.3)')
      &    FOLDIS, QUACOR, COSIMP, CONVAL(COS) + COSIMP, THT, BET
-          CALL OGWRIT (2,STR)        
+          CALL OGWRIT (2,STR)
+          IF (SENOPT .GT. 0) FINISH = 1
           GOTO 9999
       ENDIF
 C ======================================================================
@@ -748,6 +778,9 @@ C ======================================================================
 C ----------------------------------------------------------------------
       FUNVAR = DESPRV
       CONFIX = CONACT(1:NUMCON)
+      IF (SENOPT .EQ. -1) THEN
+      SENACT = CONACT(1:NUMCON)
+      ENDIF
 C ----------------------------------------------------------------------    
       DEALLOCATE  (COSACT)
       DEALLOCATE  (VARVEC)

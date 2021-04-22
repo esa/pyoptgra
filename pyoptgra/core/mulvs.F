@@ -7,14 +7,9 @@ CI A   R8     SCALAR
 CI Z   R8  *  VECTOR
 CI KD  I4     NUMBER OF ELEMENTS TO BE USED
 C ======================================================================
-      IMPLICIT REAL*8 (A-H,O-Z)
+      IMPLICIT REAL(8)(A-H,O-Z)
+      IMPLICIT INTEGER(4)(I-N)
 C ======================================================================
-      CHARACTER*100 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'@(#)/home/imsman/mantra_program/gendef/src/SCCS/s.mulvs.F ',
-     &'1.1	02/01/11	MAN_FDD\n'/
-C ======================================================================
-
       DIMENSION X(*), Z(*)
 C ======================================================================
       DO 1100 I = 1, KD

@@ -4,19 +4,14 @@ C 2014/07/29 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%      %E%     MAN_FDD\n'/
-C ======================================================================
-#include "ogdata.inc"
+#include <ogdata.inc>
 C ======================================================================
       CHARACTER*(*) STR
-      INTEGER*4 LEV, RET, mexprintf, mexevalstring
+      INTEGER(4)LEV, RET, mexprintf, mexevalstring
 C ======================================================================
       IF (LEV .LE. LOGLEV) THEN
       WRITE (LOGLUN,'(A)') STR
-      CALL flush (LOGLUN)
+      flush (LOGLUN)
       ENDIF
 C ======================================================================
       RETURN

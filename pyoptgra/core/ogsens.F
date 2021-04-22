@@ -1,97 +1,104 @@
-      SUBROUTINE OGSENS (CONSEN, ACTNUM, ACTLST)
+      SUBROUTINE OGSENS (CONSTA, CONCON, CONVAR, VARCON, VARVAR)
 C ======================================================================
-C NEAR-LINEAR OPTIMISATION TOOL TAILORED FOR S/C TRAJECTORY DESIGN
+C NEAR-LINEAR OPTIMISATION TOOL SENSITIVITY ANALYSIS
 C ======================================================================
-C OUT | CONSEN(NUMCON+1, | R*8 | SENSITIVITY:
-C     |        NUMVAR)   |     | -> FOR CONSTRAINTS (1:NUMCON,1:NUMVAR)
-C     |                  |     | -> FOR MERIT       (1+NUMCON,1:NUMVAR)
-C     |                  |     | -> SENSITIVITY TO ACTIVE CONSTRAINT "I"
-C     |                  |     |    IS IN COLUMN OF FREE VARIABLE "I"
-C     |                  |     |    (NOT OF VARIABLE "I" !!!)
-C     |                  |     | -> SENSITIVITY TO PARAMETER VARIABLE
-C     |                  |     |    IS IN COLUMN OF PARAMETER VARIABLE
+C OUT | CONSTA(NUMCON)   | I*4 | CONSTRAINT STATUS (0=PAS 1=ACT)
+C OUT | CONCON(NUMCON+1, | R*8 | SENSITIVITY OF CONTRAINTS+MERIT W.R.T.
+C     |        NUMCON)   |     |                ACTIVE CONSTRAINTS
+C OUT | CONVAR(NUMCON+1, | R*8 | SENSITIVITY OF CONTRAINTS+MERIT W.R.T.
+C     |        NUMVAR)   |     |                PARAMETERS
+C OUT | VARCON(NUMVAR  , | R*8 | SENSITIVITY OF VARIABLES W.R.T.
+C     |        NUMCON)   |     |                ACTIVE CONSTRAINTS
+C OUT | VARVAR(NUMVAR  , | R*8 | SENSITIVITY OF VARIABLES W.R.T.
+C     |        NUMVAR)   |     |                PARAMETERS
 C     |                  |     | -> NOT SCALED
-C ----------------------------------------------------------------------
-C OUT | ACTNUM           | I*4 | NUMBER OF ACTIVE CONSTRAINTS
-C ----------------------------------------------------------------------
-C OUT | ACTLST(NUMVAR)   | I*4 | LIST OF ACTIVE CONSTRAINTS
 C ======================================================================
 C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================
-      CHARACTER*160 SCCS_INFO(2)
-      DATA SCCS_INFO
-     &/'%Z%%P% ',
-     &'%I%      %E%     MAN_FDD\n'/
+#include <ogdata.inc>
 C ======================================================================
-#include "ogdata.inc"
+      INTEGER(4)   CONSTA(NUMCON         )
+      REAL(8)      CONCON(NUMCON+1,NUMCON)
+      REAL(8)      CONVAR(NUMCON+1,NUMVAR)
+      REAL(8)      VARCON(NUMVAR  ,NUMCON)
+      REAL(8)      VARVAR(NUMVAR  ,NUMVAR)
 C ======================================================================
-      INTEGER*4    CONSEN(NUMCON+1,NUMVAR)
-      INTEGER*4    ACTNUM
-      INTEGER*4    ACTLST(NUMVAR)
-C ======================================================================
-      INTEGER*4    VAR, CON, ACT, ROW, TYP, INC, LEN
-      REAL*8       VAL, SCA
+      REAL(8)       VAL, SCA
+      INTEGER(4)    VAR, CON, ACT, PAR, IND, TYP
+      CHARACTER     STR*256
 C ======================================================================
 C CONVERGED
 C ----------------------------------------------------------------------
-      IF (CONVER .EQ. 0) THEN
-         WRITE (LOGLUN,*) ""
-         WRITE (LOGLUN,*) "OGSENS-ERROR: SOLUTION NOT CONVERGED"
-         CALL flush (LOGLUN)
-         RETURN
-      ENDIF
+      CONSTA = 0
+      DO ACT = 1, NUMACT
+         CON = ACTCON(ACT)
+         CONSTA(CON) = 1
+      ENDDO
 C ======================================================================
-C SENSITIVITY
+C SENSITIVITY OF CONTRAINTS W.R.T. ACTIVE CONSTRAINTS
 C ----------------------------------------------------------------------
+      CONCON = 0D0
       DO CON = 1, NUMCON + 1
-         IF (CONACT(CON) .EQ. 0) THEN
-            VAR = 1
-            DO ACT = 1, NUMACT
-               DO WHILE (VARTYP(VAR) .NE. 0)
-                  VAR = VAR + 1
-               ENDDO
-               CONREF(ACT) = CONRED(CON,VAR)
-               VAR = VAR + 1
-            ENDDO
-            CALL OGRIGT (CONREF, CONREF)
-            VAR = 1
-            DO ACT = 1, NUMACT
-               DO WHILE (VARTYP(VAR) .NE. 0)
-                  VAR = VAR + 1
-               ENDDO
-               CONSEN(CON,VAR) = - CONREF(ACT)
-               VAR = VAR + 1
-            ENDDO
-            DO VAR = 1, NUMVAR
-               VAL = CONDER(CON,VAR)
-               IF (VARTYP(VAR) .EQ. 1) THEN
-                  DO ACT = 1, NUMACT
-                     ROW = ACTCON(ACT)
-                     VAL = VAL + CONDER(ROW,VAR) * CONREF(ACT)
-                  ENDDO
-                  CONSEN(CON,VAR) = VAL
-               ENDIF
-            ENDDO
-         ENDIF
+         IF (CONACT(CON) .GT. 0) CONCON(CON,CON) = 1D0      
+         IF (CONACT(CON) .GT. 0) CYCLE
+         CONREF = CONRED(CON,1:NUMACT)
+         CALL OGRIGT (CONREF, CONREF)
+         DO ACT = 1, NUMACT
+            IND = ACTCON(ACT)
+            CONCON(CON,IND) = - CONREF(ACT)
+         ENDDO
       ENDDO
+C ======================================================================
+C SENSITIVITY OF CONSTRAINTS W.R.T. PARAMETERS
 C ----------------------------------------------------------------------
-      DO ACT = 1, NUMACT
-         CON = ACTCON(ACT)
+      CONVAR = 0D0
+      DO CON = 1, NUMCON + 1
+         IF (CONACT(CON) .GT. 0) CYCLE
          DO VAR = 1, NUMVAR
-            CONSEN(CON,VAR) = 0D0
+            IF (VARTYP(VAR) .EQ. 0) CYCLE
+            VAL = SENDER(CON,VAR)
+            DO ACT = 1, NUMACT
+               IND = ACTCON(ACT)
+               VAL = VAL + CONCON(CON,IND) * SENDER(IND,VAR)
+            ENDDO
+            CONVAR(CON,VAR) = VAL
          ENDDO
       ENDDO
+C ======================================================================
+C SENSITIVITY OF VARIABLES W.R.T. ACTIVE CONSTRAINTS
 C ----------------------------------------------------------------------
-      VAR = 1
-      DO ACT = 1, NUMACT
-         DO WHILE (VARTYP(VAR) .NE. 0)
-            VAR = VAR + 1
+      VARCON = 0D0
+      DO VAR = 1, NUMVAR
+         IF (VARTYP(VAR) .NE. 0) CYCLE
+         DO ACT = 1, NUMACT
+             CON = ACTCON(ACT)
+             CONREF(ACT) = CONDER(CON,VAR)
          ENDDO
-         CON = ACTCON(ACT)
-         CONSEN(CON,VAR) = 1D0
-         VAR = VAR + 1
+         CALL OGLEFT (CONREF, CONREF)
+         CALL OGRIGT (CONREF, CONREF)
+         DO ACT = 1, NUMACT
+             CON = ACTCON(ACT)
+             VARCON(VAR,CON) = - CONREF(ACT)
+         ENDDO
+      ENDDO
+C ======================================================================
+C SENSITIVITY OF VARIABLES W.R.T. PARAMETERS
+C ----------------------------------------------------------------------
+      VARVAR = 0D0
+      DO PAR = 1, NUMVAR
+         VARVAR(PAR,PAR) = 1D0     
+         IF (VARTYP(PAR) .NE. 1) CYCLE
+         DO VAR = 1, NUMVAR
+            IF (VARTYP(VAR) .NE. 0) CYCLE
+            VAL = 0D0
+            DO ACT = 1, NUMACT
+               CON = ACTCON(ACT)
+               VAL = VAL + VARCON(VAR,CON) * SENDER(CON,PAR)
+            ENDDO
+            VARVAR(VAR,PAR) = VAL
+         ENDDO
       ENDDO
 C ======================================================================
 C DESCALE SENSITIVITY
@@ -100,38 +107,19 @@ C ----------------------------------------------------------------------
          TYP = CONTYP(CON)
          SCA = CONSCA(CON)
          IF (TYP .LT. 0) SCA = - SCA
-         DO VAR = 1, NUMVAR
-            CONSEN(CON,VAR) = CONSEN(CON,VAR) * SCA
-         ENDDO
-      ENDDO
-C ----------------------------------------------------------------------
-      VAR = 1
-      DO ACT = 1, NUMACT
-         DO WHILE (VARTYP(VAR) .NE. 0)
-            VAR = VAR + 1
-         ENDDO
-         CON = ACTCON(ACT)
-         TYP = CONTYP(CON)
-         SCA = CONSCA(CON)
-         IF (TYP .LT. 0) SCA = - SCA
-         DO ROW = 1, NUMCON + 1
-            CONSEN(ROW,VAR) = CONSEN(ROW,VAR) / SCA
-         ENDDO
-         VAR = VAR + 1
+         CONVAR(CON,1:NUMVAR  ) = CONVAR(CON,1:NUMVAR  ) * SCA
+         CONCON(CON,1:NUMCON  ) = CONCON(CON,1:NUMCON  ) * SCA
+         IF (CON .GT. NUMCON) CYCLE
+         VARCON(1:NUMVAR  ,CON) = VARCON(1:NUMVAR  ,CON) / SCA
+         CONCON(1:NUMCON+1,CON) = CONCON(1:NUMCON+1,CON) / SCA
       ENDDO
 C ----------------------------------------------------------------------
       DO VAR = 1, NUMVAR
-         IF (VARTYP(VAR) .EQ. 1) THEN
-            SCA = VARSCA(VAR)
-            DO ROW = 1, NUMCON + 1
-               CONSEN(ROW,VAR) = CONSEN(ROW,VAR) / SCA
-            ENDDO
-         ENDIF
-      ENDDO
-C ======================================================================
-      ACTNUM = NUMACT
-      DO ACT = 1, NUMACT
-         ACTLST(ACT) = ACTCON(ACT)
+         SCA = VARSCA(VAR)
+         VARCON(VAR,1:NUMCON  ) = VARCON(VAR,1:NUMCON  ) * SCA
+         VARVAR(VAR,1:NUMVAR  ) = VARVAR(VAR,1:NUMVAR  ) * SCA
+         CONVAR(1:NUMCON+1,VAR) = CONVAR(1:NUMCON+1,VAR) / SCA
+         VARVAR(1:NUMVAR  ,VAR) = VARVAR(1:NUMVAR  ,VAR) / SCA
       ENDDO
 C ======================================================================
       RETURN

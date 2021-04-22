@@ -1,10 +1,9 @@
-      SUBROUTINE OGCPRI (PRICON)
+      SUBROUTINE OGCDEL (DELCON)
 C ======================================================================
 C NEAR-LINEAR OPTIMISATION TOOL TAILORED FOR S/C TRAJECTORY DESIGN:
-C DEFINE CONTRAINT PRIORITY
+C DEFINE CONSTRAINT + MERIT CONVERGENCE THRESHOLDS
 C ======================================================================
-C INP | PRICON(NUMCON+1) | I*4 | CONSTRAINTS PRIORITY (1:NUMCON)
-C     |                  |     | -> 1-N
+C INP | DELCON(NUMCON+1) | R*8 | CONSTRAINTS DELTAS (1:NUMCON)
 C ======================================================================
 C 2008/01/16 | J. SCHOENMAEKERS | NEW
 C ======================================================================
@@ -12,12 +11,12 @@ C ======================================================================
 C ======================================================================
 #include <ogdata.inc>
 C ======================================================================
-      INTEGER(4)PRICON(NUMCON+1)
+      REAL(8)      DELCON(NUMCON+1)
 C ======================================================================
-      INTEGER(4)CON
+      INTEGER(4)   CON
 C ======================================================================
-      DO CON = 1, NUMCON + 1
-         CONPRI(CON) = PRICON(CON)
+      DO CON = 1, NUMCON
+         SENDEL(CON) = DELCON(CON)
       ENDDO
 C ======================================================================
       RETURN
