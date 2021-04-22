@@ -64,10 +64,10 @@ class optgra:
 
     def __init__(
         self,
-        max_iterations: int = 10,
-        max_correction_iterations: int = 10,
+        max_iterations: int = 150,
+        max_correction_iterations: int = 90,
         max_distance_per_iteration: int = 10,
-        perturbation_for_snd_order_derivatives: int = 10,
+        perturbation_for_snd_order_derivatives: int = 1,
         variable_scaling_factors: List[float] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
         optimization_method: int = 2,
