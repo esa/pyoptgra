@@ -56,6 +56,7 @@ set (OPTGRAFILES
  )
 
 add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrapper.hpp" ${OPTGRAFILES})
+target_include_directories(optgra PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core")
 
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
