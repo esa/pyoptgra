@@ -68,8 +68,6 @@ class optgra:
         max_correction_iterations: int = 10,
         max_distance_per_iteration: int = 10,
         perturbation_for_snd_order_derivatives: int = 10,
-        # TODO the following might be replaced with c_tol, check with Johannes
-        convergence_thresholds: List[float] = [],  # f_dim
         variable_scaling_factors: List[float] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
         optimization_method: int = 2,
@@ -85,16 +83,18 @@ class optgra:
 
         Args:
 
-            max_iterations: number of optimization iterations
-            max_correction_iterations: number of constraint correction iterations within each optimization iteration
-            max_distance_per_iteration: maximum distance traveled in each optimization iteration
+            max_iterations: number of total iterations
+            max_correction_iterations: number of constraint correction iterations in the beginning
+                If no feasible solution is found within that many iterations, Optgra aborts
+            max_distance_per_iteration: maximum scaled distance traveled in each iteration
             perturbation_for_snd_order_derivatives: Used as delta for numerically computing second order errors
                 of the constraints in the optimization step
-            convergence_thresholds: optional - Scaling factors for the constraints.
-                If passed, must be positive and one more than there are constraints.
             variable_scaling_factors: optional - Scaling factors for the input variables.
                 If passed, must be positive and as many as there are variables
-            constraint_priorities: optional - How to prioritize constraint fulfillment in the initial phase
+            constraint_priorities: optional - lower constraint priorities are fulfilled earlier.
+                During the initial constraint correction phase, only constraints with a priority at most k
+                are considered in iteration k. Defaults to zero, so that all constraints are considered
+                from the beginning.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
             verbosity: 0 has no output, 4 and higher have maximum output
@@ -113,7 +113,6 @@ class optgra:
         self.perturbation_for_snd_order_derivatives = (
             perturbation_for_snd_order_derivatives
         )
-        self.convergence_thresholds = convergence_thresholds
         self.variable_scaling_factors = variable_scaling_factors
         self.constraint_priorities = constraint_priorities
         self.optimization_method = optimization_method
@@ -161,17 +160,6 @@ class optgra:
                 + " is invalid for perturbation_for_snd_order_derivatives, must be non-negative."
             )
 
-        conv_len = len(convergence_thresholds)
-        prio_len = len(constraint_priorities)
-        if conv_len > 0 and prio_len > 0 and conv_len != prio_len:
-            raise ValueError(
-                str(conv_len)
-                + " constraint scaling factors passed,"
-                + " but "
-                + str(prio_len)
-                + " constraint priorities."
-            )
-
     def set_verbosity(self, level: int) -> None:
         """
         Sets verbosity of optgra.
@@ -198,8 +186,8 @@ class optgra:
             ValueError: If the population is empty
             ValueError: If the problem contains multiple objectives
             ValueError: If the problem is stochastic
-            ValueError: If during the construction of the wrapper, convergence_thresholds,
-                constraint_priorities or variable_scaling_factors were passed that don't fit to the given problem.
+            ValueError: If the problem dimensions don't fit to constraint_priorities
+            or variable_scaling_factors that were passed to the wrapper constructor
         """
 
         problem = population.problem
@@ -233,16 +221,6 @@ class optgra:
             )
 
         num_function_output = 1 + problem.get_nec() + problem.get_nic()
-        conv_len = len(self.convergence_thresholds)
-        if conv_len > 0 and conv_len != num_function_output:
-            raise ValueError(
-                str(conv_len)
-                + " constraint scaling factors passed for problem"
-                + " with "
-                + str(num_function_output)
-                + " function outputs."
-            )
-
         prio_len = len(self.constraint_priorities)
         if prio_len > 0 and prio_len != num_function_output:
             raise ValueError(
@@ -275,6 +253,11 @@ class optgra:
         # 0 for equality constraints, -1 for inequality constraints, -1 for fitness
         constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + [-1]
 
+        # optgra has merit function last, that threshold can be ignored
+        convergence_thresholds = []
+        if any(elem > 0 for elem in problem.c_tol):
+            convergence_thresholds = list(problem.c_tol) + [1e-6]
+
         # still to set: variable_names, constraint_names, autodiff_deltas
         variable_names: List[str] = []
         constraint_names: List[str] = []
@@ -290,7 +273,7 @@ class optgra:
             max_correction_iterations=self.max_correction_iterations,
             max_distance_per_iteration=self.max_distance_per_iteration,
             perturbation_for_snd_order_derivatives=self.perturbation_for_snd_order_derivatives,
-            convergence_thresholds=self.convergence_thresholds,
+            convergence_thresholds=convergence_thresholds,
             variable_scaling_factors=self.variable_scaling_factors,
             constraint_priorities=self.constraint_priorities,
             variable_names=variable_names,

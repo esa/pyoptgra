@@ -158,6 +158,9 @@ struct optgra_raii {
 	        	throw(std::invalid_argument("Got " + std::to_string(convergence_thresholds.size())
 	        	 + " convergence thresholds for " + std::to_string(constraint_types.size()) + " constraints+fitness."));
 	        }
+            if (!convergence_thresholds[convergence_thresholds.size()-1] > 0) {
+                throw(std::invalid_argument("Convergence threshold for merit function must be positive."));
+            }
 	        ogcsca_(convergence_thresholds.data());
 	    }
 

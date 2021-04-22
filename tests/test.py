@@ -63,14 +63,6 @@ class pygmo_test(unittest.TestCase):
                 pyoptgra.optgra(perturbation_for_snd_order_derivatives=-1)
             )
 
-        # Check that conflicting sizes of constraint scalings and priorities are rejected
-        with self.assertRaises(ValueError):
-            _ = pygmo.algorithm(
-                pyoptgra.optgra(
-                    convergence_thresholds=[1], constraint_priorities=[1, 2]
-                )
-            )
-
         # Valid constructor
         pygmo.algorithm(pyoptgra.optgra())
 
@@ -134,17 +126,6 @@ class pygmo_test(unittest.TestCase):
         algo = pygmo.algorithm(pyoptgra.optgra(variable_scaling_factors=[1] * 30))
         algo.evolve(pop)
 
-        # Check that convergence thresholds of wrong size are rejected
-        algo = pygmo.algorithm(pyoptgra.optgra(convergence_thresholds=[1] * 2))
-        prob = pygmo.problem(pygmo.schwefel(30))
-        pop = pygmo.population(prob, 1)
-        with self.assertRaises(ValueError):
-            algo.evolve(pop)
-
-        # Correct size
-        algo = pygmo.algorithm(pyoptgra.optgra(convergence_thresholds=[1]))
-        algo.evolve(pop)
-
         # Check that constraint priorities of wrong size are rejected
         algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 2))
         prob = pygmo.problem(pygmo.schwefel(30))
@@ -192,18 +173,17 @@ class pygmo_test(unittest.TestCase):
 
     def gradient_with_constraints_test(self):
         prob = pygmo.problem(luksan_vlcek())
+        prob.c_tol = 1e-6
         og = pyoptgra.optgra(
             optimization_method=1,
             max_iterations=100,
             max_correction_iterations=100,
-            convergence_thresholds=[1e-6] * prob.get_nf(),
             max_distance_per_iteration=10,
         )
         og.set_verbosity(1)
         algo = pygmo.algorithm(og)
         pop = pygmo.population(prob, size=0, seed=1)  # empty population
         pop.push_back([0.5, 0.5, -0.5, 0.4, 0.3, 0.7])  # add initial guess
-        pop.problem.c_tol = [1e-6] * 6
 
         # Calling optgra
         pop = algo.evolve(pop)  # run the optimisation
