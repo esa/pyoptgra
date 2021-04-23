@@ -8,6 +8,7 @@
 #include <mutex>
 
 extern"C" {
+    void ogcdel_(double * delcon);
     void ogclos_();
     void ogcsca_(double * scacon);
     void ogctyp_(const int* contyp);
@@ -21,11 +22,14 @@ extern"C" {
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
+    void ogsens_(int * consta, double * concon, double * convar, double * varcon, double * varvar);
+    void ogsopt_(int * optsen);
     void ogvstr_(char ** strvar, int * lenvar);
     void ogcstr_(char ** strcon, int * lencon);
     void ogvsca_(double * scavar);
     void ogwlog_(int * lunlog, int * levlog);
 }
+
 
 namespace optgra {
 
@@ -220,8 +224,8 @@ std::mutex optgra_raii::optgra_mutex;
 
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
  const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
- 	    int max_iterations = 10, // MAXITE
-		int max_correction_iterations = 10, // CORITE
+ 	    int max_iterations = 150, // MAXITE
+		int max_correction_iterations = 90, // CORITE
 		double max_distance_per_iteration = 10, // VARMAX
 		double perturbation_for_snd_order_derivatives = 1, // VARSND
 		std::vector<double> convergence_thresholds = {},

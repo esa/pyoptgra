@@ -30,8 +30,10 @@ include(cmake/modules/Pybind11.cmake)
 set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir when using SKBUILD
 
 set (OPTGRAFILES 
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcdel.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogclos.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcpri.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcorr.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcsca.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcstr.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogctyp.F"
@@ -45,9 +47,10 @@ set (OPTGRAFILES
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogiter.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogleft.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogrigt.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogsens.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogsopt.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogomet.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogopti.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogcorr.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvsca.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvstr.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwlog.F"
