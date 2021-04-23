@@ -14,7 +14,7 @@ static:
     - pip install black flake8 isort mypy
     - mypy --ignore-missing-imports pyoptgra/*.py
     - black --check pyoptgra/*.py
-    - flake8 --max-line-length 120 pyoptgra/*.py
+    - flake8 --max-line-length 120 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
     - isort --check pyoptgra
 
 test:

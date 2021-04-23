@@ -134,7 +134,7 @@ class pygmo_test(unittest.TestCase):
             algo.evolve(pop)
 
         # Correct size
-        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1]))
+        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1]*61))
         algo.evolve(pop)
 
     def basic_no_gradient_test(self):

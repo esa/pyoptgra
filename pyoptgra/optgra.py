@@ -1,4 +1,5 @@
 from collections import deque
+from math import isfinite
 from typing import List
 
 from pygmo import s_policy, select_best
@@ -21,11 +22,30 @@ class optgra:
     """
 
     @staticmethod
-    def _wrap_fitness_func(problem):
-        """"""
+    def _constraint_types_from_box_bounds(problem):
 
+        lb, ub = problem.get_bounds()
+        # all box-derived constraints are positive
+        finite_lb = sum(isfinite(elem) for elem in lb)
+        finite_ub = sum(isfinite(elem) for elem in ub)
+        resultTypes = [1] * (finite_lb + finite_ub)
+        return resultTypes
+
+    @staticmethod
+    def _wrap_fitness_func(problem, bounds_to_constraints: bool = True):
         def wrapped_fitness(x):
             result = deque(problem.fitness(x))
+
+            # add constraints derived from box bounds
+            if bounds_to_constraints:
+                lb, ub = problem.get_bounds()
+                for i in range(len(lb)):
+                    if isfinite(lb[i]):
+                        result.append(x[i] - lb[i])
+
+                for i in range(len(ub)):
+                    if isfinite(ub[i]):
+                        result.append(ub[i] - x[i])
 
             # optgra expects the fitness last, pagmo has the fitness first
             result.rotate(-1)
@@ -34,7 +54,7 @@ class optgra:
         return wrapped_fitness
 
     @staticmethod
-    def _wrap_gradient_func(problem):
+    def _wrap_gradient_func(problem, bounds_to_constraints: bool = True):
 
         sparsity_pattern = problem.gradient_sparsity()
 
@@ -47,16 +67,31 @@ class optgra:
 
             result = [[0 for j in range(shape[1])] for i in range(shape[0])]
 
+            # expand gradient to dense representation
             for i in range(nnz):
                 fIndex, xIndex = sparsity_pattern[i]
 
-                # reorder constraint order, optgra expects the fitness last, pagmo has the fitness first
-                if fIndex == 0:
-                    fIndex = problem.get_nf() - 1
-                else:
-                    fIndex = int(fIndex - 1)
-
                 result[fIndex][xIndex] = sparse_values[i]
+
+            # add box-derived constraints
+            if bounds_to_constraints:
+                lb, ub = problem.get_bounds()
+                for i in range(problem.get_nx()):
+                    if isfinite(lb[i]):
+                        box_bound_grad = [0 for j in range(problem.get_nx())]
+                        box_bound_grad[i] = 1
+                        result.append(box_bound_grad)
+
+                for i in range(len(ub)):
+                    if isfinite(ub[i]):
+                        box_bound_grad = [0 for j in range(problem.get_nx())]
+                        box_bound_grad[i] = -1
+                        result.append(box_bound_grad)
+
+            # reorder constraint order, optgra expects the merit function last, pagmo has it first
+            # equivalent to rotating in a dequeue
+            gradient_of_merit = result.pop(0)
+            result.append(gradient_of_merit)
 
             return result
 
@@ -70,6 +105,7 @@ class optgra:
         perturbation_for_snd_order_derivatives: int = 1,
         variable_scaling_factors: List[float] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
+        bounds_to_constraints: bool = True,
         optimization_method: int = 2,
         verbosity: int = 0,
     ) -> None:
@@ -117,6 +153,8 @@ class optgra:
         self.constraint_priorities = constraint_priorities
         self.optimization_method = optimization_method
         self.selection = s_policy(select_best(rate=1))
+
+        self.bounds_to_constraints = bounds_to_constraints
 
         self.log_level = verbosity
 
@@ -187,7 +225,10 @@ class optgra:
             ValueError: If the problem contains multiple objectives
             ValueError: If the problem is stochastic
             ValueError: If the problem dimensions don't fit to constraint_priorities
-            or variable_scaling_factors that were passed to the wrapper constructor
+                or variable_scaling_factors that were passed to the wrapper constructor
+            ValueError: If the problem has finite box bounds and bounds_to_constraints was
+                set to True in the wrapper constructor (default), constraint_priorities
+                were also passed but don't cover the additional bound-derived constraints
         """
 
         problem = population.problem
@@ -220,7 +261,13 @@ class optgra:
                 + " parameters."
             )
 
-        num_function_output = 1 + problem.get_nec() + problem.get_nic()
+        bound_types = []
+        if self.bounds_to_constraints:
+            bound_types = optgra._constraint_types_from_box_bounds(problem)
+
+        num_function_output = (
+            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        )
         prio_len = len(self.constraint_priorities)
         if prio_len > 0 and prio_len != num_function_output:
             raise ValueError(
@@ -243,20 +290,29 @@ class optgra:
 
         idx = list(population.get_ID()).index(selected[0][0])
 
-        fitness_func = optgra._wrap_fitness_func(problem)
+        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
         grad_func = None
         derivatives_computation = 2
         if problem.has_gradient():
-            grad_func = optgra._wrap_gradient_func(problem)
+            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, -1 for fitness
-        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + [-1]
+        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
 
         # optgra has merit function last, that threshold can be ignored
         convergence_thresholds = []
         if any(elem > 0 for elem in problem.c_tol):
-            convergence_thresholds = list(problem.c_tol) + [1e-6]
+            convergence_thresholds = (
+                list(problem.c_tol) + [1e-6] * len(bound_types) + [1e-6]
+            )
+
+        # adjust constraint priorities if adding constraints from box bound
+        constraint_priorities = self.constraint_priorities
+        if self.bounds_to_constraints:
+            constraint_priorities = constraint_priorities + [0] * len(bound_types)
 
         # still to set: variable_names, constraint_names, autodiff_deltas
         variable_names: List[str] = []
@@ -286,8 +342,8 @@ class optgra:
 
         best_x, best_f, finopt = result
 
-        best_f = deque(best_f)
-        best_f.rotate(+1)
-        population.set_xf(idx, best_x, list(best_f))
+        # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
+        pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
+        population.set_xf(idx, best_x, list(pagmo_fitness))
 
         return population
