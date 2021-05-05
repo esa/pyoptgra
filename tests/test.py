@@ -1,7 +1,8 @@
-import pyoptgra
+import unittest
+
 import pygmo
 
-import unittest
+import pyoptgra
 
 
 # problem class with numerical gradient, equality and inequality constraints from
@@ -261,18 +262,19 @@ class pygmo_test(unittest.TestCase):
         algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 5))
         prob = pygmo.problem(toy_box_bound_problem())
         pop = pygmo.population(prob, size=0)  # empty population
-        pop.push_back([0.5, 0.5])  # add initial guess
+        pop.push_back([-0.5, 1.5])  # add initial guess, violating the constraints
         with self.assertRaises(ValueError):
             algo.evolve(pop)
 
         # Correct size
         algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 3))
-        algo.evolve(pop)
+        pop = algo.evolve(pop)
 
         # Check that box bounds are respected
-        x = pop.champion_x
-        self.assertGreaterEqual(x[0], 0)
-        self.assertLessEqual(x[1], 1)
+        eps = 1e-6
+        x = pop.get_x()[pop.best_idx()]
+        self.assertGreaterEqual(x[0], 0 - eps)
+        self.assertLessEqual(x[1], 1 + eps)
 
 
 if __name__ == "__main__":

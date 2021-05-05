@@ -106,6 +106,7 @@ class optgra:
         variable_scaling_factors: List[float] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
         bounds_to_constraints: bool = True,
+        bound_constraints_tolerance: float = 1e-6,
         optimization_method: int = 2,
         verbosity: int = 0,
     ) -> None:
@@ -155,6 +156,7 @@ class optgra:
         self.selection = s_policy(select_best(rate=1))
 
         self.bounds_to_constraints = bounds_to_constraints
+        self.bound_constraints_tolerance = bound_constraints_tolerance
 
         self.log_level = verbosity
 
@@ -306,7 +308,9 @@ class optgra:
         convergence_thresholds = []
         if any(elem > 0 for elem in problem.c_tol):
             convergence_thresholds = (
-                list(problem.c_tol) + [1e-6] * len(bound_types) + [1e-6]
+                list(problem.c_tol)
+                + [self.bound_constraints_tolerance] * len(bound_types)
+                + [1e-6]
             )
 
         # adjust constraint priorities if adding constraints from box bound
