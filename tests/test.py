@@ -10,14 +10,63 @@ class luksan_vlcek:
     def fitness(self, x):
         obj = 0
         for i in range(3):
-            obj += (x[2*i-2]-3)**2 / 1000. - (x[2*i-2]-x[2*i-1]) # + math.exp(20.*(x[2*i - 2]-x[2*i-1]))
-        ce1 = 4*(x[0]-x[1])**2+x[1]-x[2]**2+x[2]-x[3]**2
-        ce2 = 8*x[1]*(x[1]**2-x[0])-2*(1-x[1])+4*(x[1]-x[2])**2+x[0]**2+x[2]-x[3]**2+x[3]-x[4]**2
-        ce3 = 8*x[2]*(x[2]**2-x[1])-2*(1-x[2])+4*(x[2]-x[3])**2+x[1]**2-x[0]+x[3]-x[4]**2+x[0]**2+x[4]-x[5]**2
-        ce4 = 8*x[3]*(x[3]**2-x[2])-2*(1-x[3])+4*(x[3]-x[4])**2+x[2]**2-x[1]+x[4]-x[5]**2+x[1]**2+x[5]-x[0]
-        ci1 = 8*x[4]*(x[4]**2-x[3])-2*(1-x[4])+4*(x[4]-x[5])**2+x[3]**2-x[2]+x[5]+x[2]**2-x[1]
-        ci2 = -(8*x[5] * (x[5]**2-x[4])-2*(1-x[5]) +x[4]**2-x[3]+x[3]**2 - x[4])
-        return [obj, ce1,ce2,ce3,ce4,ci1,ci2]
+            obj += (x[2 * i - 2] - 3) ** 2 / 1000.0 - (
+                x[2 * i - 2] - x[2 * i - 1]
+            )  # + math.exp(20.*(x[2*i - 2]-x[2*i-1]))
+        ce1 = 4 * (x[0] - x[1]) ** 2 + x[1] - x[2] ** 2 + x[2] - x[3] ** 2
+        ce2 = (
+            8 * x[1] * (x[1] ** 2 - x[0])
+            - 2 * (1 - x[1])
+            + 4 * (x[1] - x[2]) ** 2
+            + x[0] ** 2
+            + x[2]
+            - x[3] ** 2
+            + x[3]
+            - x[4] ** 2
+        )
+        ce3 = (
+            8 * x[2] * (x[2] ** 2 - x[1])
+            - 2 * (1 - x[2])
+            + 4 * (x[2] - x[3]) ** 2
+            + x[1] ** 2
+            - x[0]
+            + x[3]
+            - x[4] ** 2
+            + x[0] ** 2
+            + x[4]
+            - x[5] ** 2
+        )
+        ce4 = (
+            8 * x[3] * (x[3] ** 2 - x[2])
+            - 2 * (1 - x[3])
+            + 4 * (x[3] - x[4]) ** 2
+            + x[2] ** 2
+            - x[1]
+            + x[4]
+            - x[5] ** 2
+            + x[1] ** 2
+            + x[5]
+            - x[0]
+        )
+        ci1 = (
+            8 * x[4] * (x[4] ** 2 - x[3])
+            - 2 * (1 - x[4])
+            + 4 * (x[4] - x[5]) ** 2
+            + x[3] ** 2
+            - x[2]
+            + x[5]
+            + x[2] ** 2
+            - x[1]
+        )
+        ci2 = -(
+            8 * x[5] * (x[5] ** 2 - x[4])
+            - 2 * (1 - x[5])
+            + x[4] ** 2
+            - x[3]
+            + x[3] ** 2
+            - x[4]
+        )
+        return [obj, ce1, ce2, ce3, ce4, ci1, ci2]
 
     def get_bounds(self):
         return ([-5] * 6, [5] * 6)
@@ -39,6 +88,7 @@ class pygmo_test(unittest.TestCase):
         self.basic_no_gradient_test()
         self.gradient_no_constraints_test()
         self.gradient_with_constraints_test()
+        self.box_constraints_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -134,7 +184,7 @@ class pygmo_test(unittest.TestCase):
             algo.evolve(pop)
 
         # Correct size
-        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1]*61))
+        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 61))
         algo.evolve(pop)
 
     def basic_no_gradient_test(self):
@@ -198,6 +248,31 @@ class pygmo_test(unittest.TestCase):
         # inequality constraints
         for i in [5, 6]:
             self.assertLess(pop.champion_f[i], 1e-6)
+
+    def box_constraints_test(self):
+        class toy_box_bound_problem(object):
+            def fitness(self, x):
+                return [x[0] - x[1]]
+
+            def get_bounds(self):
+                return ([0, -float("inf")], [float("inf"), 1])
+
+        # check that infinite bounds are not counted
+        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 5))
+        prob = pygmo.problem(toy_box_bound_problem())
+        pop = pygmo.population(prob, size=0)  # empty population
+        pop.push_back([0.5, 0.5])  # add initial guess
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
+
+        # Correct size
+        algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 3))
+        algo.evolve(pop)
+
+        # Check that box bounds are respected
+        x = pop.champion_x
+        self.assertGreaterEqual(x[0], 0)
+        self.assertLessEqual(x[1], 1)
 
 
 if __name__ == "__main__":
