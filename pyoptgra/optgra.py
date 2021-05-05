@@ -120,7 +120,7 @@ class optgra:
 
         Args:
 
-            max_iterations: number of total iterations
+            max_iterations: maximum number of total iterations
             max_correction_iterations: number of constraint correction iterations in the beginning
                 If no feasible solution is found within that many iterations, Optgra aborts
             max_distance_per_iteration: maximum scaled distance traveled in each iteration
@@ -132,13 +132,17 @@ class optgra:
                 During the initial constraint correction phase, only constraints with a priority at most k
                 are considered in iteration k. Defaults to zero, so that all constraints are considered
                 from the beginning.
+            bounds_to_constraints: optional - if true (default), translate box bounds of the given problems into
+                inequality constraints for optgra. Note that when also passing constraint priorities, the original
+                constraints of the problem come first, followed by those derived from the lower box bounds, then those
+                from the upper box bounds. Infinite bounds are ignored and not counted.
+            bound_constraints_tolerance: optional - constraint tolerance for the constraints derived from bounds
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
             verbosity: 0 has no output, 4 and higher have maximum output
 
         Raises:
 
-            ValueError: if both convergence thresholds and constraint priorities are passed and their lengths differ
             ValueError: if optimization_method is not one of 0, 1, 2, or 3
             ValueError: if any of max_iterations, max_correction_iterations, max_distance_per_iteration,
                 or perturbation_for_snd_order_derivatives are negative
