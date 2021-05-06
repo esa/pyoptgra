@@ -1,7 +1,7 @@
 Optgra
 ======
 
-This repository provides _pyoptgra_, a python package wrapping (and including) OPTGRA.
+This repository provides *pyoptgra*, a python package wrapping (and including) OPTGRA.
 OPTGRA is an optimization algorithm developed and implemented by Johannes Schoenmaekers, it is specifically designed for near-linear constrained problems, which commonly occur in trajectory optimization.
 
 Installation
@@ -12,15 +12,15 @@ With Pip
 
 Make sure you have a Fortran compiler such as gfortran, then clone this repository and execute in it (in a virtualenv, if you prefer) the following commands:
 
-```pip install -r build-requirements.txt```
-```pip install -r requirements.txt```
-```pip install . --user```
+* ```pip install -r build-requirements.txt```
+* ```pip install -r requirements.txt```
+* ```pip install . --user```
 
 
 Usage
 =====
 
-Pyoptgra is designed as a pygmo user-defined algorithm: First create an instance of the _optgra_ class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's _evolve_ method: # TODO: link pygmo
+Pyoptgra is designed as a pygmo user-defined algorithm: First create an instance of the *optgra* class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's *evolve* method: # TODO: link pygmo
 
 >>> import pygmo
 >>> import pyoptgra
@@ -33,12 +33,12 @@ Variable Scaling Factors
 ------------------------
 
 The free variables in an optimization problem are often on different scales, and the optimization performs better if these are aligned.
-For this, pyoptgra supports _variable scaling factors_, to be passed with the keyword argument of the same name:
+For this, pyoptgra supports *variable scaling factors*, to be passed with the keyword argument of the same name:
 
 >>> import pygmo
 >>> import pyoptgra
 >>>
->>> prob = pygmo.problem(pygmo.schwefel(4)) # using the schwefel test problem, this time with 4 dimensions
+>>> prob = pygmo.problem(pygmo.schwefel(4)) # schwefel test problem with 4 dimensions
 >>> pop = pygmo.population(prob, 1)
 >>>
 >>> scaling_factors = [1,2,2,1]
@@ -57,12 +57,12 @@ Recommended scaling factors for trajectory optimization problems, depending on t
 Constraint Tolerances
 ---------------------
 
-The maximum allowed violation of each constraint can be set with the _c_tol_ property of the passed problem.
+The maximum allowed violation of each constraint can be set with the *c_tol* property of the passed problem.
 
 >>> import pygmo
 >>> import pyoptgra
 >>>
->>> prob = pygmo.problem(pygmo.luksan_vlcek1(dim=4)) # the luksan_vlcek1 test problem has dim-2
+>>> prob = pygmo.problem(pygmo.luksan_vlcek1(dim=4)) # the luksan_vlcek1 problem has dim-2 constraints
 >>> prob.c_tol = [1e-10, 1e-10]
 >>> pop = pygmo.population(prob, 1)
 >>>
@@ -71,7 +71,6 @@ The maximum allowed violation of each constraint can be set with the _c_tol_ pro
 
 Recommended constraint tolerances for different constraint types:
 
-* 1e-4 for merit function
 * 1e-3 for epoch (day)
 * 1e-3 for ene (J)
 * 1e-6 for eccentricity
