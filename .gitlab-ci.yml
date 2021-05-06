@@ -44,5 +44,5 @@ doctest:
     - pip install -r requirements.txt
   script:
     - python setup.py install --user
-    - cd tests # move into test directory to ensure that the installed package is tested, not the source
+    - cd doc
     - make doctest
