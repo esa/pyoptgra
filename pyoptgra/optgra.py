@@ -320,8 +320,11 @@ class optgra:
         # optgra has merit function last, that threshold can be ignored
         convergence_thresholds = []
         if any(elem > 0 for elem in problem.c_tol) or len(bound_types) > 0:
+            c_tol_list = [1e-6 for _ in problem.c_tol]
+            if any(elem > 0 for elem in problem.c_tol):
+                c_tol_list = list(problem.c_tol)
             convergence_thresholds = (
-                list(problem.c_tol)
+                c_tol_list
                 + [self.bound_constraints_tolerance] * len(bound_types)
                 + [1e-6]
             )

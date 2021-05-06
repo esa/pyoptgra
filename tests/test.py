@@ -250,6 +250,13 @@ class pygmo_test(unittest.TestCase):
         for i in [5, 6]:
             self.assertLess(pop.champion_f[i], 1e-6)
 
+    def constraints_with_default_tolerances_test(self):
+        prob = pygmo.problem(luksan_vlcek())
+        pop = pygmo.population(prob, size=0, seed=1)  # empty population
+        pop.push_back([0.5, 0.5, -0.5, 0.4, 0.3, 0.7])  # add initial guess
+        algo = pygmo.algorithm(pyoptgra.optgra())
+        pop = algo.evolve(pop)  # run the optimisation
+
     def box_constraints_test(self):
         class toy_box_bound_problem(object):
             def fitness(self, x):
