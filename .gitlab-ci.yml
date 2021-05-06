@@ -44,6 +44,6 @@ doctest:
     - pip install -r requirements.txt
     - pip install sphinx
   script:
-    - python setup.py install --user
+    - pip install --user .
     - cd doc
     - make doctest
