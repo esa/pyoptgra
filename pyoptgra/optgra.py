@@ -19,6 +19,15 @@ class optgra:
     For this, constraints and the merit function are linearized. Optgra will perform less well on
     very non-linear merit functions or constraints.
 
+    Example:
+
+    >>> import pygmo
+    >>> import pyoptgra
+    >>> prob = pygmo.problem(pygmo.schwefel(30))
+    >>> pop = pygmo.population(prob, 1)
+    >>> algo = pygmo.algorithm(pyoptgra.optgra())
+    >>> pop = algo.evolve(pop)
+
     """
 
     @staticmethod
@@ -310,7 +319,7 @@ class optgra:
 
         # optgra has merit function last, that threshold can be ignored
         convergence_thresholds = []
-        if any(elem > 0 for elem in problem.c_tol):
+        if any(elem > 0 for elem in problem.c_tol) or len(bound_types) > 0:
             convergence_thresholds = (
                 list(problem.c_tol)
                 + [self.bound_constraints_tolerance] * len(bound_types)
