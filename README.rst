@@ -16,11 +16,10 @@ Make sure you have a Fortran compiler such as gfortran, then clone this reposito
 * ```pip install -r requirements.txt```
 * ```pip install . --user```
 
-
 Usage
 =====
 
-Pyoptgra is designed as a pygmo user-defined algorithm: First create an instance of the *optgra* class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's *evolve* method: # TODO: link pygmo
+Pyoptgra is designed as a `pygmo <https://esa.github.io/pygmo2/>` user-defined algorithm: First create an instance of the *optgra* class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's *evolve* method:
 
 >>> import pygmo
 >>> import pyoptgra
