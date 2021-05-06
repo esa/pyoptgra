@@ -42,6 +42,7 @@ doctest:
     - apt update && apt install gfortran --yes
     - pip install -r build-requirements.txt
     - pip install -r requirements.txt
+    - pip install sphinx
   script:
     - python setup.py install --user
     - cd doc
