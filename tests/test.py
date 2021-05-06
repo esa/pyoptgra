@@ -276,6 +276,17 @@ class pygmo_test(unittest.TestCase):
         self.assertGreaterEqual(x[0], 0 - eps)
         self.assertLessEqual(x[1], 1 + eps)
 
+        # Check that bound constraint tolerances are respected
+        tight_eps = 1e-20
+        algo = pygmo.algorithm(pyoptgra.optgra(bound_constraints_tolerance=tight_eps))
+        prob = pygmo.problem(toy_box_bound_problem())
+        pop = pygmo.population(prob, size=0)  # empty population
+        pop.push_back([-0.5, 1.5])  # add initial guess
+        pop = algo.evolve(pop)
+        x = pop.get_x()[pop.best_idx()]
+        self.assertGreaterEqual(x[0], 0 - tight_eps)
+        self.assertLessEqual(x[1], 1 + tight_eps)
+
 
 if __name__ == "__main__":
     unittest.main()
