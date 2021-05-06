@@ -17,6 +17,7 @@ static:
     - flake8 --max-line-length 120 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
     - isort --check pyoptgra
 
+# check the code compiles and the tests run
 test:
   stage: test
   image: python:3.8
@@ -32,3 +33,17 @@ test:
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=100
 
+# check the documentation examples work
+doctest:
+  stage: test
+  image: python:3.8
+  allow_failure: false
+  before_script:  # install this project's dependencies using the requirements.txt file
+    - apt update && apt install gfortran --yes
+    - pip install -r build-requirements.txt
+    - pip install -r requirements.txt
+    - pip install sphinx
+  script:
+    - python setup.py install --user
+    - cd doc
+    - make doctest
