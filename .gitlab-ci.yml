@@ -33,6 +33,19 @@ test:
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=100
 
+# check the code compiles and the tests run
+c++-test:
+  stage: test
+  image: python:3.8
+  allow_failure: false
+  before_script:  # install this project's dependencies
+    - apt update && apt install gfortran g++ cmake --yes
+  script:
+    - mkdir build && cd build
+    - cmake ..
+    - make optgra-test
+    - optgra-test
+
 # check the documentation examples work
 doctest:
   stage: test
