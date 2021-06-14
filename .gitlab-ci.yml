@@ -1,6 +1,7 @@
 stages:
   - static analysis
   - test
+  - deploy
   
   
 # check the code adheres to the coding standards
@@ -78,3 +79,20 @@ documentation:
     - doxygen Doxyfile
     - cd ../sphinx
     - make html
+  artifacts:
+     paths:
+       - docs/sphinx/build
+
+pages:
+  stage: deploy
+  image: python:3.8
+  script:
+  - mkdir -p ./public/html/
+  - mv ./docs/sphinx/_build/html ./public/
+  artifacts:
+    paths:
+    - public
+    - docs/sphinx/_build
+  only:
+    refs:
+      - master
