@@ -54,7 +54,7 @@ struct static_callable_store {
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
 
-        std::vector<double> fitness_vector = f_callable(x_vector);
+        std::vector<double> fitness_vector = f_callable(x_vector); //TODO: check for correct dimension of return value
 
         std::copy(fitness_vector.begin(), fitness_vector.end(), out_f);
     }
@@ -65,7 +65,7 @@ struct static_callable_store {
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
 
-        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector);
+        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector); //TODO: check for correct dimension of return value
 
         int num_constraints = gradient_vector.size();
 
@@ -222,6 +222,46 @@ private:
 
 std::mutex optgra_raii::optgra_mutex;
 
+/// Main C++ wrapper function
+/**
+ * Call optgra to optimize a problem. Most of the parameters are identical to the constructor arguments of pyoptgra,
+ *    but some additional ones are available.
+ *
+ * @param initial_x the initial guess for the decision vector
+ * @param constraint_types types of constraints. Set 0 for equality constraints,
+ *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints
+ * @param fitness a callable for the fitness values. It is called with the current x,
+ *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
+ * @param gradient a callable for the gradient values, optional. It is called with the current x,
+ *    expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j.
+ * @param has_gradient whether the problem has a gradient. If set to False, the gradient callable will not be called
+ *    and numerical differentiation will be used instead.
+ * @param max_iterations the maximum number of iterations. Optional, defaults to 150.
+ * @param max_correction_iterations number of constraint correction iterations in the beginning.
+ *    If no feasible solution is found within that many iterations, Optgra aborts. Optional, defaults to 90.
+ * @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
+ * @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
+ *    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
+ * @param convergence_thresholds 
+ * @param variable_scaling_factors
+ * @param constraint_priorities filter in which to consider constraints. Lower constraint priorities are fulfilled earlier.
+ *    During the initial constraint correction phase, only constraints with a priority at most k
+ *    are considered in iteration k. Defaults to zero, so that all constraints are considered
+ *    from the beginning.
+ * @param variable_names Not yet implemented
+ * @param constraint_names Not yet implemented
+ * @param optimization_method select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
+ *    2 for spectral conjugate gradient method and 3 for conjugate gradient method. Parameter OPTMET in Fortran.
+ * @param derivatives_computation method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function,
+ *    2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing.
+ *    Parameter VARDER in Fortran.
+ * @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
+ * @param log_level 0 has no output, 4 and higher have maximum output
+ *
+ * @return a tuple of the best value of x, the fitness of that x, and a status int of optgra for the optimization result
+ *
+ * @throws unspecified any exception thrown by memory errors in standard containers
+ */
 std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::vector<double> &initial_x,
  const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
  	    int max_iterations = 150, // MAXITE

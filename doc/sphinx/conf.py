@@ -35,7 +35,13 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'breathe'
 ]
+
+# BREATHE configuration paths
+breathe_projects = {"optgra": "../doxygen/xml"}
+breathe_default_project = "optgra"
+breathe_default_members = ('members',)
 
 autoclass_content = 'both'
 

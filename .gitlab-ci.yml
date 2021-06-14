@@ -45,5 +45,5 @@ doctest:
     - pip install sphinx
   script:
     - python setup.py install --user
-    - cd doc
+    - cd doc/sphinx
     - make doctest
