@@ -44,7 +44,8 @@ c++-test:
     - mkdir build && cd build
     - cmake ..
     - make optgra-test
-    - optgra-test
+    - chmod u+x optgra-test
+    - ./optgra-test
 
 # check the documentation examples work
 doctest:
