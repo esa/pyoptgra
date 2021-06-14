@@ -57,7 +57,7 @@ documentation:
     - apt update && apt install gfortran doxygen --yes
     - pip install -r build-requirements.txt
     - pip install -r requirements.txt
-    - pip install sphinx breathe
+    - pip install sphinx breathe sphinx-rtd-theme
   script:
     - python setup.py install --user
     - cd doc/doxygen
