@@ -10,6 +10,7 @@ using std::vector;
 
 using namespace optgra;
 
+///Fitness callable implementing a constraint function of \sum_0^4 (x_i - i)^2 and a merit function of \sum_0^4 x_i
 std::vector<double> f(std::vector<double> x) {
 	std::vector<double> con(2);
 	con[0] = 0;
@@ -24,6 +25,7 @@ std::vector<double> f(std::vector<double> x) {
 	return con;
 }
 
+///Fitness callable implementing a constraint function of \sum_0^4 (x_i - i)^2 and a merit function of \sum_0^4 x_i 
 std::vector<std::vector<double>> g(std::vector<double> x) {
 	cout << "g called with ";
 	int x_dim = x.size();
