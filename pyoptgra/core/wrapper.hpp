@@ -242,8 +242,10 @@ std::mutex optgra_raii::optgra_mutex;
  * @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
  * @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
  *    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
- * @param convergence_thresholds 
- * @param variable_scaling_factors
+ * @param convergence_thresholds tolerance a constraint can deviate and still be considered fulfilled.
+ *    Constraints with lower thresholds will be prioritized during optimization. Thresholds of 0 break the optimization process.
+ * @param variable_scaling_factors scaling factors for the input variables.
+ *    If passed, must be positive and as many as there are variables
  * @param constraint_priorities filter in which to consider constraints. Lower constraint priorities are fulfilled earlier.
  *    During the initial constraint correction phase, only constraints with a priority at most k
  *    are considered in iteration k. Defaults to zero, so that all constraints are considered
@@ -258,7 +260,7 @@ std::mutex optgra_raii::optgra_mutex;
  * @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
  * @param log_level 0 has no output, 4 and higher have maximum output
  *
- * @return a tuple of the best value of x, the fitness of that x, and a status int of optgra for the optimization result
+ * @return a tuple of the best value of x, the fitness of that x, and a status flag of optgra
  *
  * @throws unspecified any exception thrown by memory errors in standard containers
  */
