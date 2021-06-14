@@ -1,6 +1,7 @@
 stages:
   - static analysis
   - test
+  - deploy
   
   
 # check the code adheres to the coding standards
@@ -33,6 +34,20 @@ test:
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=100
 
+# check the code compiles and the tests run
+c++-test:
+  stage: test
+  image: python:3.8
+  allow_failure: false
+  before_script:  # install this project's dependencies
+    - apt update && apt install gfortran g++ cmake --yes
+  script:
+    - mkdir build && cd build
+    - cmake ..
+    - make optgra-test
+    - chmod u+x optgra-test
+    - ./optgra-test
+
 # check the documentation examples work
 doctest:
   stage: test
@@ -42,8 +57,42 @@ doctest:
     - apt update && apt install gfortran --yes
     - pip install -r build-requirements.txt
     - pip install -r requirements.txt
-    - pip install sphinx
+    - pip install sphinx breathe
   script:
     - python setup.py install --user
-    - cd doc
+    - cd doc/sphinx
     - make doctest
+
+# check the documentation build works
+documentation:
+  stage: test
+  image: python:3.8
+  allow_failure: false
+  before_script:  # install this project's dependencies
+    - apt update && apt install gfortran doxygen --yes
+    - pip install -r build-requirements.txt
+    - pip install -r requirements.txt
+    - pip install sphinx breathe sphinx-rtd-theme
+  script:
+    - python setup.py install --user
+    - cd doc/doxygen
+    - doxygen Doxyfile
+    - cd ../sphinx
+    - make html
+  artifacts:
+     paths:
+       - doc/sphinx/_build
+
+pages:
+  stage: deploy
+  image: python:3.8
+  script:
+  - mkdir -p ./public/html/
+  - mv ./doc/sphinx/_build/html ./public/
+  artifacts:
+    paths:
+    - public
+    - doc/sphinx/_build
+  only:
+    refs:
+      - master
