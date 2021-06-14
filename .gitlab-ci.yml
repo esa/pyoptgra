@@ -81,18 +81,18 @@ documentation:
     - make html
   artifacts:
      paths:
-       - docs/sphinx/_build
+       - doc/sphinx/_build
 
 pages:
   stage: deploy
   image: python:3.8
   script:
   - mkdir -p ./public/html/
-  - mv ./docs/sphinx/_build/html ./public/
+  - mv ./doc/sphinx/_build/html ./public/
   artifacts:
     paths:
     - public
-    - docs/sphinx/_build
+    - doc/sphinx/_build
   only:
     refs:
       - master
