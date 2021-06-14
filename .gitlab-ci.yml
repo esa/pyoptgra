@@ -81,7 +81,7 @@ documentation:
     - make html
   artifacts:
      paths:
-       - docs/sphinx/build
+       - docs/sphinx/_build
 
 pages:
   stage: deploy
