@@ -54,7 +54,11 @@ struct static_callable_store {
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
 
-        std::vector<double> fitness_vector = f_callable(x_vector); //TODO: check for correct dimension of return value
+        std::vector<double> fitness_vector = f_callable(x_vector);
+        if (int(fitness_vector.size()) != c_dim) {
+            throw(std::invalid_argument("Got vector of size" + std::to_string(fitness_vector.size())
+                 + " from fitness callable, but expected " + std::to_string(c_dim) + " constraints+fitness."));
+        }
 
         std::copy(fitness_vector.begin(), fitness_vector.end(), out_f);
     }
@@ -68,12 +72,18 @@ struct static_callable_store {
         std::vector<std::vector<double>> gradient_vector = g_callable(x_vector); //TODO: check for correct dimension of return value
 
         int num_constraints = gradient_vector.size();
+        if (num_constraints != c_dim) {
+            throw(std::invalid_argument("Got vector of size" + std::to_string(num_constraints)
+                 + " from gradient callable, but expected " + std::to_string(c_dim) + " constraints+fitness."));
+        }
 
         for ( int i = 0; i < num_constraints; i++) {
+            if (int(gradient_vector[i].size()) != x_dim) {
+                throw(std::invalid_argument("Got vector of size" + std::to_string(int(gradient_vector[i].size()))
+                 + " from row " + std::to_string(i) + " of gradient callable, but expected " + std::to_string(x_dim) + " variables."));
+            }
             for (int j = 0; j < x_dim; j++) {
-                //std::cout << "Writing " << gradient_vector[i][j] << " to " << j*num_constraints+i;
                 out_derivatives[j*num_constraints+i] = gradient_vector[i][j];
-                //std::cout << " ... done" << std::endl;
             }
         }
         //std::cout << "All done" << std::endl;
@@ -91,14 +101,20 @@ struct static_callable_store {
         x_dim = dim;
     }
 
+    static void set_c_dim(int dim) {
+        c_dim = dim;
+    }
+
     static fitness_callback f_callable;
     static gradient_callback g_callable;
     static int x_dim;
+    static int c_dim;
 };
 // static initialization
 fitness_callback static_callable_store::f_callable;
 gradient_callback static_callable_store::g_callable;
 int static_callable_store::x_dim;
+int static_callable_store::c_dim;
 
 struct optgra_raii {
 
@@ -194,6 +210,7 @@ struct optgra_raii {
         static_callable_store::set_fitness_callable(fitness);
         static_callable_store::set_gradient_callable(gradient);
         static_callable_store::set_x_dim(initial_x.size());
+        static_callable_store::set_c_dim(num_constraints+1);
 
         int finopt = 0;
         int finite = 0;
