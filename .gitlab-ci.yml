@@ -63,7 +63,7 @@ doctest:
     - cd doc/sphinx
     - make doctest
 
-# check the documentation build works
+# build the documentation
 documentation:
   stage: test
   image: python:3.8
@@ -88,7 +88,7 @@ pages:
   image: python:3.8
   script:
   - mkdir -p ./public/html/
-  - mv ./doc/sphinx/_build/html ./public/
+  - mv ./doc/sphinx/_build/html/* ./public/
   artifacts:
     paths:
     - public
