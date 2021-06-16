@@ -4,7 +4,7 @@ stages:
   - deploy
   
 variables:
-  TWINE_REPOSITORY_URL: https://gitlab.esa.int/api/v4/projects/2014/packages/pypi
+  TWINE_REPOSITORY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
   
 # check the code adheres to the coding standards
 static:
