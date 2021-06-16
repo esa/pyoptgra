@@ -18,7 +18,21 @@ static:
     - flake8 --max-line-length 120 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
     - isort --check pyoptgra
 
-# check the code compiles and the tests run
+# check the C++ part compiles and the tests
+c++-test:
+  stage: test
+  image: python:3.8
+  allow_failure: false
+  before_script:  # install this project's dependencies
+    - apt update && apt install gfortran g++ cmake --yes
+  script:
+    - mkdir build && cd build
+    - cmake ..
+    - make optgra-test
+    - chmod u+x optgra-test
+    - ./optgra-test
+
+# check the python code compiles and the tests run
 test:
   stage: test
   image: python:3.8
@@ -33,20 +47,6 @@ test:
     - cd tests # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=100
-
-# check the code compiles and the tests run
-c++-test:
-  stage: test
-  image: python:3.8
-  allow_failure: false
-  before_script:  # install this project's dependencies
-    - apt update && apt install gfortran g++ cmake --yes
-  script:
-    - mkdir build && cd build
-    - cmake ..
-    - make optgra-test
-    - chmod u+x optgra-test
-    - ./optgra-test
 
 # check the documentation examples work
 doctest:
@@ -100,8 +100,12 @@ pages:
 publish:
   stage: deploy
   image: python:3.8
+  before_script:  # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - pip install -r build-requirements.txt
+    - pip install -r requirements.txt
+    - pip install twine setuptools
   script:
-  - pip install twine setuptools
   - python setup.py bdist_wheel
   - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN dist/pyoptgra-*.whl
   artifacts:
