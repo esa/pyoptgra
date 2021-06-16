@@ -96,3 +96,20 @@ pages:
   only:
     refs:
       - master
+
+publish:
+  stage: deploy
+  image: python:3.8
+  script:
+  - pip install twine setuptools
+  - python setup.py bdist_wheel
+  - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN dist/pyoptgra-*.whl
+  artifacts:
+    paths:
+      - dist
+  only:
+    refs:
+      - master
+
+
+    
