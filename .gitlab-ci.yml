@@ -3,6 +3,8 @@ stages:
   - test
   - deploy
   
+variables:
+  TWINE_REPOSITORY_URL: https://gitlab.esa.int/api/v4/projects/2014/packages/pypi
   
 # check the code adheres to the coding standards
 static:
