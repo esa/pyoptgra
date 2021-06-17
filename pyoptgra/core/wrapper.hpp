@@ -37,7 +37,9 @@ namespace optgra {
 
     typedef std::function<std::vector<std::vector<double>>(std::vector<double>)> gradient_callback;
 
-    using std::vector, std::tuple, std::function;
+    using std::vector;
+    using std::tuple;
+    using std::function;
 
 struct parameters {
 	
