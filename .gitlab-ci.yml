@@ -1,6 +1,7 @@
 stages:
   - static analysis
   - test
+  - package
   - deploy
   
 variables:
@@ -85,6 +86,63 @@ documentation:
      paths:
        - doc/sphinx/_build
 
+python-sdist:
+  stage: package
+  image: python:3.8
+  needs: []
+  before_script:
+    - apt update && apt install gfortran doxygen --yes
+    - pip install -r build-requirements.txt
+    - pip install -r requirements.txt
+  script:
+    - python setup.py sdist
+    - mv dist/pyoptgra-*.tar.gz .
+  artifacts:
+    name: python-package
+    paths:
+      - pyoptgra-*.tar.gz
+
+python-wheels:manylinux2010:
+  stage: package
+  image: quay.io/pypa/manylinux2010_x86_64:latest
+  needs: []
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  before_script:
+    - apt update && apt install gfortran doxygen --yes
+    - pip install -r build-requirements.txt
+    - pip install -r requirements.txt
+  script:
+    - ./tools/build-manylinux-wheels.sh
+    - mv /wheelhouse/repaired/*.whl .
+  artifacts:
+    name: python-wheels-manylinux2010
+    paths:
+      - pyoptgra-*.whl
+
+test-wheels:
+  stage: test
+  image: python:3.8
+  script:
+    - pip install pyoptgra-*-cp38-cp38m-manylinux2010_x86_64.whl
+    - python -c "import pyoptgra"
+  needs:
+    - python-wheels:manylinux2010
+
+publish:
+  stage: deploy
+  image: python:3.8
+  script:
+    - pip install twine
+    # upload to the project pypi (sdist and whl)
+    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN dist/pyoptgra-*.whl
+  needs:
+    - python-sdist
+    - python-wheels:manylinux2010
+  only:
+    refs:
+      - master
+
 pages:
   stage: deploy
   image: python:3.8
@@ -98,24 +156,4 @@ pages:
   only:
     refs:
       - master
-
-publish:
-  stage: deploy
-  image: quay.io/pypa/manylinux2010_x86_64:latest
-  before_script:  # install this project's dependencies
-    - apt update && apt install gfortran --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
-    - pip install twine setuptools
-  script:
-  - python setup.py bdist_wheel
-  - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN dist/pyoptgra-*.whl
-  artifacts:
-    paths:
-      - dist
-  only:
-    refs:
-      - master
-
-
     
