@@ -1,5 +1,4 @@
 stages:
-  - static analysis
   - test
   - package
   - test-package
@@ -10,7 +9,7 @@ variables:
   
 # check the code adheres to the coding standards
 static:
-  stage: static analysis
+  stage: test
   image: python:3.8
   allow_failure: false
   before_script:  # install this project's dependencies using the requirements.txt file
@@ -22,7 +21,7 @@ static:
     - flake8 --max-line-length 120 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
     - isort --check pyoptgra
 
-# check the C++ part compiles and the tests
+# check the C++ part compiles and the test runs
 c++-test:
   stage: test
   image: python:3.8
@@ -119,9 +118,9 @@ python-wheels:manylinux2010:
 
 test-wheels:
   stage: test-package
-  image: python:3.8
+  image: python:3.6
   script:
-    - pip install pyoptgra-*-cp38-cp38m-manylinux2010_x86_64.whl
+    - pip install pyoptgra*cp36-cp36m*manylinux2010_x86_64.whl
     - python -c "import pyoptgra"
   needs:
     - python-wheels:manylinux2010
@@ -132,10 +131,10 @@ publish:
   script:
     - pip install twine
     # upload to the project pypi (sdist and whl)
-    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN dist/pyoptgra-*.whl
+    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN pyoptgra-*.whl
   needs:
     - python-sdist
-    - python-wheels:manylinux2010
+    - test-wheels
   only:
     refs:
       - master
@@ -145,6 +144,7 @@ pages:
   image: python:3.8
   needs:
     - documentation
+    - test-wheels
   script:
   - mkdir -p ./public/html/
   - mv ./doc/sphinx/_build/html/* ./public/
