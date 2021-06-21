@@ -2,6 +2,7 @@ stages:
   - static analysis
   - test
   - package
+  - test-package
   - deploy
   
 variables:
@@ -121,7 +122,7 @@ python-wheels:manylinux2010:
       - pyoptgra-*.whl
 
 test-wheels:
-  stage: test
+  stage: test-package
   image: python:3.8
   script:
     - pip install pyoptgra-*-cp38-cp38m-manylinux2010_x86_64.whl
@@ -146,6 +147,8 @@ publish:
 pages:
   stage: deploy
   image: python:3.8
+  needs:
+    - documentation
   script:
   - mkdir -p ./public/html/
   - mv ./doc/sphinx/_build/html/* ./public/
