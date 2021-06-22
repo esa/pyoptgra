@@ -119,6 +119,8 @@ python-wheels:manylinux2010:
 test-wheels:
   stage: test-package
   image: python:3.6
+  before_script:
+    - pip install -r requirements.txt
   script:
     - pip install pyoptgra*cp36-cp36m*manylinux2010_x86_64.whl
     - python -c "import pyoptgra"
@@ -130,7 +132,7 @@ publish:
   image: python:3.8
   script:
     - pip install twine
-    # upload to the project pypi (sdist and whl)
+    # upload to the project pypi (whl)
     - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN pyoptgra-*.whl
   needs:
     - python-sdist
