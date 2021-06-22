@@ -134,6 +134,8 @@ publish:
     - pip install twine
     # upload to the project pypi (whl)
     - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN pyoptgra-*.whl
+    # upload to the project pypi (sdist)
+    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN pyoptgra-*.tar.gz
   needs:
     - python-sdist
     - test-wheels

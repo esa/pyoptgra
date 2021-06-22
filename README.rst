@@ -57,6 +57,7 @@ Constraint Tolerances
 ---------------------
 
 The maximum allowed violation of each constraint can be set with the *c_tol* property of the passed problem.
+Setting constraint tolerances to zero may lead to divergence.
 
 >>> import pygmo
 >>> import pyoptgra
