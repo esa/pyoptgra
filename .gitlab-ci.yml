@@ -123,6 +123,8 @@ test-wheels:
     - pip install -r requirements.txt
   script:
     - pip install pyoptgra*cp36-cp36m*manylinux2010_x86_64.whl
+    - mkdir test-install
+    - cd test-install
     - python -c "import pyoptgra"
   needs:
     - python-wheels:manylinux2010
