@@ -126,6 +126,7 @@ test-wheels:
     - mkdir test-install
     - cd test-install
     - python -c "import pyoptgra"
+    - cd ..
   needs:
     - python-wheels:manylinux2010
 
@@ -141,6 +142,7 @@ publish:
   needs:
     - python-sdist
     - test-wheels
+    - python-wheels:manylinux2010
   only:
     refs:
       - master
