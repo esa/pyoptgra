@@ -17,14 +17,12 @@ Usage
 
 Pyoptgra is designed as a `pygmo <https://esa.github.io/pygmo2/>` user-defined algorithm: First create an instance of the *optgra* class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's *evolve* method:
 
-```python
-import pygmo
-import pyoptgra
-prob = pygmo.problem(pygmo.schwefel(30)) # using the schwefel test problem from pygmo, with 30 dimensions
-pop = pygmo.population(prob, 1)
-algo = pygmo.algorithm(pyoptgra.optgra())
-pop = algo.evolve(pop) # the actual call to OPTGRA
-```
+>>> import pygmo
+>>> import pyoptgra
+>>> prob = pygmo.problem(pygmo.schwefel(30)) # using the schwefel test problem from pygmo, with 30 dimensions
+>>> pop = pygmo.population(prob, 1)
+>>> algo = pygmo.algorithm(pyoptgra.optgra())
+>>> pop = algo.evolve(pop) # the actual call to OPTGRA
 
 Variable Scaling Factors
 ------------------------
@@ -32,17 +30,15 @@ Variable Scaling Factors
 The free variables in an optimization problem are often on different scales, and the optimization performs better if these are aligned.
 For this, pyoptgra supports *variable scaling factors*, to be passed with the keyword argument of the same name:
 
-```python
-import pygmo
-import pyoptgra
-
-prob = pygmo.problem(pygmo.schwefel(4)) # schwefel test problem with 4 dimensions
-pop = pygmo.population(prob, 1)
-
-scaling_factors = [1,2,2,1]
-algo = pygmo.algorithm(pyoptgra.optgra(variable_scaling_factors=scaling_factors))
-pop = algo.evolve(pop)
-```
+>>> import pygmo
+>>> import pyoptgra
+>>>
+>>> prob = pygmo.problem(pygmo.schwefel(4)) # schwefel test problem with 4 dimensions
+>>> pop = pygmo.population(prob, 1)
+>>>
+>>> scaling_factors = [1,2,2,1]
+>>> algo = pygmo.algorithm(pyoptgra.optgra(variable_scaling_factors=scaling_factors))
+>>> pop = algo.evolve(pop)
 
 Recommended scaling factors for trajectory optimization problems, depending on the type of variable:
 
@@ -59,17 +55,15 @@ Constraint Tolerances
 The maximum allowed violation of each constraint can be set with the *c_tol* property of the passed problem.
 Setting constraint tolerances to zero may lead to divergence.
 
-```python
-import pygmo
-import pyoptgra
-
-prob = pygmo.problem(pygmo.luksan_vlcek1(dim=4)) # the luksan_vlcek1 problem has dim-2 constraints
-prob.c_tol = [1e-10, 1e-10]
-pop = pygmo.population(prob, 1)
-
-algo = pygmo.algorithm(pyoptgra.optgra())
-pop = algo.evolve(pop)
-```
+>>> import pygmo
+>>> import pyoptgra
+>>>
+>>> prob = pygmo.problem(pygmo.luksan_vlcek1(dim=4)) # the luksan_vlcek1 problem has dim-2 constraints
+>>> prob.c_tol = [1e-10, 1e-10]
+>>> pop = pygmo.population(prob, 1)
+>>>
+>>> algo = pygmo.algorithm(pyoptgra.optgra())
+>>> pop = algo.evolve(pop)
 
 Recommended constraint tolerances for different constraint types:
 
