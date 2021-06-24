@@ -10,11 +10,7 @@ Installation
 With Pip
 --------
 
-Make sure you have a Fortran compiler such as gfortran, then clone this repository and execute in it (in a virtualenv, if you prefer) the following commands:
-
-* ```pip install -r build-requirements.txt```
-* ```pip install -r requirements.txt```
-* ```pip install . --user```
+* ```pip install pyoptgra --extra-index-url https://gitlab.esa.int/api/v4/projects/4531/packages/pypi/simple```
 
 Usage
 =====
@@ -61,6 +57,7 @@ Constraint Tolerances
 ---------------------
 
 The maximum allowed violation of each constraint can be set with the *c_tol* property of the passed problem.
+Setting constraint tolerances to zero may lead to divergence.
 
 ```python
 import pygmo
