@@ -81,8 +81,16 @@ class luksan_vlcek:
     def gradient(self, x):
         return pygmo.estimate_gradient_h(lambda x: self.fitness(x), x)
 
+class _prob(object):
 
-class pygmo_test(unittest.TestCase):
+    def get_bounds(self):
+        return ([0, 0], [1, 1])
+
+    def fitness(self, a):
+        return [42]
+
+
+class optgra_test(unittest.TestCase):
     def runTest(self):
         self.constructor_test()
         self.evolve_input_check_test()
@@ -90,6 +98,8 @@ class pygmo_test(unittest.TestCase):
         self.gradient_no_constraints_test()
         self.gradient_with_constraints_test()
         self.box_constraints_test()
+        self.archipelago_evolve_test()
+        self.archipelago_pickle_tests()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -293,6 +303,55 @@ class pygmo_test(unittest.TestCase):
         x = pop.get_x()[pop.best_idx()]
         self.assertGreaterEqual(x[0], 0 - tight_eps)
         self.assertLessEqual(x[1], 1 + tight_eps)
+
+    def archipelago_evolve_test(self):
+        from pygmo import archipelago, rosenbrock, mp_island, evolve_status
+        from copy import deepcopy
+        a = archipelago()
+        self.assertTrue(a.status == evolve_status.idle)
+        a = archipelago(5, algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
+        a.evolve(10)
+        a.evolve(10)
+        str(a)
+        a.wait()
+        a.evolve(10)
+        a.evolve(10)
+        str(a)
+        a.wait_check()
+        # Copy while evolving.
+        a.evolve(10)
+        a.evolve(10)
+        a2 = deepcopy(a)
+        a.wait_check()
+        a = archipelago(5, udi=mp_island(), algo=pyoptgra.optgra(),
+                        prob=rosenbrock(), pop_size=10)
+        a.evolve(10)
+        a.evolve(10)
+        str(a)
+        a.wait()
+        a.evolve(10)
+        a.evolve(10)
+        str(a)
+        a.wait_check()
+        # Copy while evolving.
+        a.evolve(10)
+        a.evolve(10)
+        a2 = deepcopy(a)
+        a.wait_check()
+        # Throws on wait_check().
+        a = archipelago(5, algo=pyoptgra.optgra(variable_scaling_factors=[0.5]*3), prob=rosenbrock(), pop_size=3)
+        a.evolve()
+        self.assertRaises(RuntimeError, lambda: a.wait_check())
+
+
+    def archipelago_pickle_tests(self):
+        from pygmo import archipelago, rosenbrock, mp_island, ring, migration_type, migrant_handling
+        from pickle import dumps, loads
+        a = archipelago(5, algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
+        self.assertEqual(repr(a), repr(loads(dumps(a))))
+        a = archipelago(5, algo=pyoptgra.optgra(), prob=_prob(),
+                        pop_size=10, udi=mp_island())
+        self.assertEqual(repr(a), repr(loads(dumps(a))))
 
 
 if __name__ == "__main__":
