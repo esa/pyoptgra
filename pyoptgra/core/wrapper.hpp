@@ -123,8 +123,8 @@ struct optgra_raii {
     optgra_raii() = delete;
 
     optgra_raii(int num_variables, const std::vector<int> &constraint_types,
-	    int max_iterations = 10, // MAXITE
-		int max_correction_iterations = 10, // CORITE
+	    int max_iterations = 150, // MAXITE
+		int max_correction_iterations = 90, // CORITE
 		double max_distance_per_iteration = 10, // VARMAX
 		double perturbation_for_snd_order_derivatives = 1, // VARSND
 		std::vector<double> convergence_thresholds = {},
@@ -227,7 +227,7 @@ struct optgra_raii {
     }
 
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity(std::vector<double> initial_x, int sensitivity_mode,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sens(std::vector<double> initial_x, int sensitivity_mode,
      fitness_callback fitness, gradient_callback gradient, std::vector<double> constraint_deltas = {} ) {
 
         if (int(initial_x.size()) != num_variables) {
@@ -294,8 +294,8 @@ struct optgra_raii {
 
         // copy values for constraints_to_active_constraints and constraints_to_parameters
         for ( int i = 0; i < (num_constraints+1); i++) {
-            constraints_to_active_constraints.resize(num_constraints);
-            constraints_to_parameters.resize(x_dim);
+            constraints_to_active_constraints[i].resize(num_constraints);
+            constraints_to_parameters[i].resize(x_dim);
 
             for (int j = 0; j < num_constraints; j++) {
                 constraints_to_active_constraints[i][j] = concon[j*num_constraints+i];
@@ -308,8 +308,8 @@ struct optgra_raii {
 
         // copy values for variables_to_active_constraints and variables_to_parameters
         for ( int i = 0; i < x_dim; i++) {
-            constraints_to_active_constraints.resize(num_constraints);
-            constraints_to_parameters.resize(x_dim);
+            variables_to_active_constraints[i].resize(num_constraints);
+            variables_to_parameters[i].resize(x_dim);
 
             for (int j = 0; j < num_constraints; j++) {
                 variables_to_active_constraints[i][j] = varcon[j*x_dim+i];
@@ -433,8 +433,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 
     optgra_raii raii_object = optgra_raii(num_variables, constraint_types);
 
-    return raii_object.sensitivity(initial_x, sensitivity_mode, fitness, gradient, constraint_deltas);
-
+    return raii_object.sens(initial_x, sensitivity_mode, fitness, gradient, constraint_deltas);
 }
 
 }

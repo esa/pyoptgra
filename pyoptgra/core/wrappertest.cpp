@@ -70,7 +70,9 @@ int main(int argn, char** argc)
 	for (int i = 0; i < 1 + 1; i++) {
 		cout << best_orig[i] << " ";
 	}
-	cout << endl;	
+	cout << endl;
+
+	std::ignore = sensitivity(bestx, {0,-1}, f, g, true, -1);
 
    return 0;
 }
