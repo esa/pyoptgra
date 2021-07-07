@@ -226,6 +226,104 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
+    std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity(std::vector<double> initial_x, int sensitivity_mode,
+     fitness_callback fitness, gradient_callback gradient, std::vector<double> constraint_deltas = {} ) {
+
+        if (int(initial_x.size()) != num_variables) {
+            throw(std::invalid_argument("Expected " + std::to_string(num_variables) + ", but got " + std::to_string(initial_x.size())));
+        }
+
+        if (!(sensitivity_mode == -1 || sensitivity_mode == 1 || sensitivity_mode == 2)) {
+            throw(std::invalid_argument("Expected sensitivity_mode to be one of -1, 1, or 2, but got " + std::to_string(sensitivity_mode)));
+        }
+
+        std::vector<double> valvar(initial_x);
+        std::vector<double> valcon(num_constraints+1);
+
+        static_callable_store::set_fitness_callable(fitness);
+        static_callable_store::set_gradient_callable(gradient);
+        static_callable_store::set_x_dim(initial_x.size());
+        static_callable_store::set_c_dim(num_constraints+1);
+
+        ogsopt_(&sensitivity_mode);
+
+        if (sensitivity_mode == 2) {
+            if (constraint_deltas.size() != num_constraints) {
+                throw(std::invalid_argument("Expected " + std::to_string(num_constraints) + ", but got " + std::to_string(constraint_deltas.size())));
+            }
+            ogcdel_(constraint_deltas.data());
+        }
+
+        int finopt = 0;
+        int finite = 0;
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
+
+        // resetting callables to make sure that passed handles go out of scope
+        static_callable_store::set_fitness_callable(fitness_callback());
+        static_callable_store::set_gradient_callable(gradient_callback());
+
+        // allocate flattened sensitivity matrices
+        int x_dim = initial_x.size();
+        std::vector<int> constraint_status(num_constraints);
+        std::vector<double> concon((num_constraints+1)*num_constraints);
+        std::vector<double> convar((num_constraints+1)*x_dim);
+        std::vector<double> varcon(x_dim*num_constraints);
+        std::vector<double> varvar(x_dim*x_dim);
+
+        // call ogsens
+        ogsens_(constraint_status.data(), concon.data(), convar.data(), varcon.data(), varvar.data());
+        /**
+        C OUT | CONSTA(NUMCON)   | I*4 | CONSTRAINT STATUS (0=PAS 1=ACT)
+        C OUT | CONCON(NUMCON+1, | R*8 | SENSITIVITY OF CONTRAINTS+MERIT W.R.T.
+        C     |        NUMCON)   |     |                ACTIVE CONSTRAINTS
+        C OUT | CONVAR(NUMCON+1, | R*8 | SENSITIVITY OF CONTRAINTS+MERIT W.R.T.
+        C     |        NUMVAR)   |     |                PARAMETERS
+        C OUT | VARCON(NUMVAR  , | R*8 | SENSITIVITY OF VARIABLES W.R.T.
+        C     |        NUMCON)   |     |                ACTIVE CONSTRAINTS
+        C OUT | VARVAR(NUMVAR  , | R*8 | SENSITIVITY OF VARIABLES W.R.T.
+        C     |        NUMVAR)   |     |                PARAMETERS
+        */
+
+        // allocate unflattened sensitivity matrices
+        std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
+        std::vector<std::vector<double>> constraints_to_parameters(num_constraints+1);
+        std::vector<std::vector<double>> variables_to_active_constraints(x_dim);
+        std::vector<std::vector<double>> variables_to_parameters(x_dim);
+
+        // copy values for constraints_to_active_constraints and constraints_to_parameters
+        for ( int i = 0; i < (num_constraints+1); i++) {
+            constraints_to_active_constraints.resize(num_constraints);
+            constraints_to_parameters.resize(x_dim);
+
+            for (int j = 0; j < num_constraints; j++) {
+                constraints_to_active_constraints[i][j] = concon[j*num_constraints+i];
+            }
+
+            for (int j = 0; j < x_dim; j++) {
+                constraints_to_parameters[i][j] = convar[j*num_constraints+i];
+            }
+        }
+
+        // copy values for variables_to_active_constraints and variables_to_parameters
+        for ( int i = 0; i < x_dim; i++) {
+            constraints_to_active_constraints.resize(num_constraints);
+            constraints_to_parameters.resize(x_dim);
+
+            for (int j = 0; j < num_constraints; j++) {
+                variables_to_active_constraints[i][j] = varcon[j*x_dim+i];
+            }
+
+            for (int j = 0; j < x_dim; j++) {
+                variables_to_parameters[i][j] = varvar[j*x_dim+i];
+            }
+        }
+
+        return std::make_tuple(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
+         variables_to_active_constraints, variables_to_parameters);
+    }
+
     ~optgra_raii()
     {
         ogclos_();
