@@ -423,6 +423,20 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     return raii_object.exec(initial_x, fitness, gradient);
 }
 
+std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity(const std::vector<double> &initial_x,
+ const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
+        int sensitivity_mode, std::vector<double> constraint_deltas = {}
+ ) {
+
+    int num_variables = initial_x.size();
+
+    optgra_raii raii_object = optgra_raii(num_variables, constraint_types);
+
+    return raii_object.sensitivity(initial_x, sensitivity_mode, fitness, gradient, constraint_deltas);
+
+}
+
 }
 
 /**
