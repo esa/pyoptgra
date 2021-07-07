@@ -1,1 +1,1 @@
-from .core import optimize
+from .core import optimize, sensitivity

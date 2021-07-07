@@ -4,7 +4,7 @@ from typing import List
 
 from pygmo import s_policy, select_best
 
-from .core import optimize
+from .core import optimize, sensitivity
 
 
 class optgra:
@@ -367,3 +367,80 @@ class optgra:
         population.set_xf(idx, best_x, list(pagmo_fitness))
 
         return population
+
+    def get_sensitivity_matrices(
+        self, problem, initial_x, sensitivity_mode, constraint_deltas=[]
+    ):
+        if problem.get_nobj() > 1:
+            raise ValueError(
+                "Multiple objectives detected in "
+                + problem.get_name()
+                + " instance. Optgra cannot deal with them"
+            )
+
+        if problem.is_stochastic():
+            raise ValueError(
+                problem.get_name()
+                + " appears to be stochastic, optgra cannot deal with it"
+            )
+
+        scaling_len = len(self.variable_scaling_factors)
+        if scaling_len > 0 and scaling_len != problem.get_nx():
+            raise ValueError(
+                str(scaling_len)
+                + " variable scaling factors passed for problem"
+                + " with "
+                + str(problem.get_nx())
+                + " parameters."
+            )
+
+        bound_types = []
+        if self.bounds_to_constraints:
+            bound_types = optgra._constraint_types_from_box_bounds(problem)
+
+        num_function_output = (
+            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        )
+        prio_len = len(self.constraint_priorities)
+        if prio_len > 0 and prio_len != num_function_output:
+            raise ValueError(
+                str(prio_len)
+                + " constraint priorities passed for problem"
+                + " with "
+                + str(num_function_output)
+                + " function outputs."
+            )
+
+        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
+        grad_func = None
+        derivatives_computation = 2
+        if problem.has_gradient():
+            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
+            derivatives_computation = 1
+
+        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
+
+        # adjust constraint priorities if adding constraints from box bound
+        constraint_priorities = self.constraint_priorities
+        if self.bounds_to_constraints:
+            constraint_priorities = constraint_priorities + [0] * len(bound_types)
+
+        # still to set: variable_names, constraint_names, autodiff_deltas
+        variable_names: List[str] = []
+        constraint_names: List[str] = []
+        autodiff_deltas: List[float] = []
+
+        result = sensitivity(
+            initial_x=initial_x,
+            constraint_types=constraint_types,
+            fitness_callback=fitness_func,
+            gradient_callback=grad_func,
+            has_gradient=problem.has_gradient(),
+            sensitivity_mode=sensitivity_mode,
+            constraint_deltas=constraint_deltas,
+        )
+
+        return result
