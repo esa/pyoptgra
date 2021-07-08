@@ -214,6 +214,8 @@ struct optgra_raii {
         static_callable_store::set_x_dim(initial_x.size());
         static_callable_store::set_c_dim(num_constraints+1);
 
+        // TODO: prepare sensitivity matrices by default, once confirmed with Johannes
+
         int finopt = 0;
         int finite = 0;
         ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
@@ -226,6 +228,11 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
+    // TODO: function to get sensitivity state data
+
+    // TODO: function to set sensitivity state data
+
+    // take sensitivity data from common block as input
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> sens(std::vector<double> initial_x, int sensitivity_mode,
      fitness_callback fitness, gradient_callback gradient, std::vector<double> constraint_deltas = {} ) {
@@ -333,6 +340,7 @@ struct optgra_raii {
 private:
     int num_variables;
     int num_constraints;
+    // TODO: has_run
 
     static std::mutex optgra_mutex;
 };
