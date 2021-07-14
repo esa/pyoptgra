@@ -72,7 +72,7 @@ int main(int argn, char** argc)
 	}
 	cout << endl;
 
-	std::ignore = sensitivity(bestx, {0,-1}, f, g, true, -1);
+	std::ignore = sensitivity(bestx, best_orig, {0,-1}, f, g, true);
 
    return 0;
 }
