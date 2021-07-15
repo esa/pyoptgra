@@ -64,6 +64,9 @@ target_include_directories(optgra PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/c
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
+add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/raiitest.cpp")
+target_link_libraries(raii-test optgra)
+
 pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(core PRIVATE optgra)
 
