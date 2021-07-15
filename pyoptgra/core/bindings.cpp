@@ -18,6 +18,6 @@ PYBIND11_MODULE(core, m) {
 		py::arg("derivatives_computation") = 1,	py::arg("autodiff_deltas"),	py::arg("log_level") = 1);
 
     m.def("sensitivity", &optgra::sensitivity, "Calculate sensitivity matrices using optgra",
-    	py::arg("x"), py::arg("con"), py::arg("constraint_types"), py::arg("fitness_callback"), py::arg("gradient_callback"),
+    	py::arg("x"), py::arg("constraint_types"), py::arg("fitness_callback"), py::arg("gradient_callback"),
     	py::arg("has_gradient"));
 }

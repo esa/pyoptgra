@@ -41,10 +41,6 @@ namespace optgra {
     using std::tuple;
     using std::function;
 
-struct parameters {
-	
-};
-
 /** This struct is just to connect the std::functions passed from python
  *  to the unholy mess of static function pointers, which are requried by Fortran.
  *  It is emphatically not thread safe.
@@ -88,7 +84,6 @@ struct static_callable_store {
                 out_derivatives[j*num_constraints+i] = gradient_vector[i][j];
             }
         }
-        //std::cout << "All done" << std::endl;
     }
 
     static void set_fitness_callable(fitness_callback f) {
@@ -122,7 +117,10 @@ struct optgra_raii {
 
     optgra_raii() = delete;
 
+    optgra_raii( const optgra_raii & ) = delete;
+
     optgra_raii(int num_variables, const std::vector<int> &constraint_types,
+        fitness_callback fitness, gradient_callback gradient,
 	    int max_iterations = 150, // MAXITE
 		int max_correction_iterations = 90, // CORITE
 		double max_distance_per_iteration = 10, // VARMAX
@@ -196,12 +194,16 @@ struct optgra_raii {
 
         //TODO: figure out how string arrays are passed to fortran for variable names
 
+        static_callable_store::set_fitness_callable(fitness);
+        static_callable_store::set_gradient_callable(gradient);
+        static_callable_store::set_x_dim(num_variables);
+        static_callable_store::set_c_dim(num_constraints+1);
+
         initialized_sensitivity = false;
         
     }
 
-    std::tuple<std::vector<double>, std::vector<double>, int> exec(std::vector<double> initial_x,
-    fitness_callback fitness, gradient_callback gradient) {
+    std::tuple<std::vector<double>, std::vector<double>, int> exec(std::vector<double> initial_x) {
 
         if (int(initial_x.size()) != num_variables) {
             throw(std::invalid_argument("Expected " + std::to_string(num_variables) + ", but got " + std::to_string(initial_x.size())));
@@ -210,21 +212,13 @@ struct optgra_raii {
         std::vector<double> valvar(initial_x);
         std::vector<double> valcon(num_constraints+1);
 
-        static_callable_store::set_fitness_callable(fitness);
-        static_callable_store::set_gradient_callable(gradient);
-        static_callable_store::set_x_dim(initial_x.size());
-        static_callable_store::set_c_dim(num_constraints+1);
-
-        // TODO: prepare sensitivity matrices by default, once confirmed with Johannes
+        int sensitivity_mode = 0;
+        ogsopt_(&sensitivity_mode);
 
         int finopt = 0;
         int finite = 0;
         ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
          static_callable_store::fitness, static_callable_store::gradient);
-
-        // resetting callables to make sure that passed handles go out of scope
-        static_callable_store::set_fitness_callable(fitness_callback());
-        static_callable_store::set_gradient_callable(gradient_callback());
 
         return std::make_tuple(valvar, valcon, finopt);
     }
@@ -233,19 +227,13 @@ struct optgra_raii {
 
     // TODO: function to set sensitivity state data
 
-    std::tuple<int, int> prepare_sensitivity_data(std::vector<double> x, std::vector<double> con,
-        fitness_callback fitness, gradient_callback gradient) {
+    std::tuple<int, int> prepare_sensitivity_data(std::vector<double> x) {
         if (int(x.size()) != num_variables) {
             throw(std::invalid_argument("Expected " + std::to_string(num_variables) + ", but got " + std::to_string(x.size())));
         }
 
         std::vector<double> valvar(x);
         std::vector<double> valcon(num_constraints+1);
-
-        static_callable_store::set_fitness_callable(fitness);
-        static_callable_store::set_gradient_callable(gradient);
-        static_callable_store::set_x_dim(num_variables);
-        static_callable_store::set_c_dim(num_constraints+1);
 
         int sensitivity_mode = -1;
         ogsopt_(&sensitivity_mode);
@@ -254,10 +242,6 @@ struct optgra_raii {
         int finite = 0;
         ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
          static_callable_store::fitness, static_callable_store::gradient);
-
-        // resetting callables to make sure that passed handles go out of scope
-        static_callable_store::set_fitness_callable(fitness_callback());
-        static_callable_store::set_gradient_callable(gradient_callback());
 
         initialized_sensitivity = true; // TODO: check return values before setting it to true
 
@@ -331,9 +315,65 @@ struct optgra_raii {
          variables_to_active_constraints, variables_to_parameters);
      }
 
+    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update(std::vector<double> initial_x) {
+
+        if (!initialized_sensitivity) {
+            throw(std::runtime_error("Please call prepare_sensitivity_data first."));
+        }
+
+        if (int(initial_x.size()) != num_variables) {
+            throw(std::invalid_argument("Expected " + std::to_string(num_variables) + ", but got " + std::to_string(initial_x.size())));
+        }
+
+        std::vector<double> valvar(initial_x);
+        std::vector<double> valcon(num_constraints+1);
+        
+        int sensitivity_mode = 1;
+        ogsopt_(&sensitivity_mode);
+
+        int finopt = 0;
+        int finite = 0;
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
+
+        return std::make_tuple(valvar, valcon, finopt);
+    } 
+
+    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_deltas(std::vector<double> constraint_deltas) {
+
+        if (!initialized_sensitivity) {
+            throw(std::runtime_error("Please call prepare_sensitivity_data first."));
+        }
+
+        if (int(constraint_deltas.size()) != num_constraints) {
+            throw(std::invalid_argument("Expected " + std::to_string(num_constraints) + " constraint deltas, but got "
+             + std::to_string(constraint_deltas.size())));
+        }
+
+        std::vector<double> valvar(num_variables);
+        std::vector<double> valcon(num_constraints+1);
+        
+        int sensitivity_mode = 2;
+        ogsopt_(&sensitivity_mode);
+
+        ogcdel_(constraint_deltas.data());
+
+        int finopt = 0;
+        int finite = 0;
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
+
+        return std::make_tuple(valvar, valcon, finopt);
+    } 
+
+
+
     ~optgra_raii()
     {
         ogclos_();
+        // resetting callables to make sure that passed handles go out of scope
+        static_callable_store::set_fitness_callable(fitness_callback());
+        static_callable_store::set_gradient_callable(gradient_callback());
         optgra_mutex.unlock();
     }
 
@@ -413,7 +453,8 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     	derivatives_computation = 3;
     }
 
-    optgra_raii raii_object = optgra_raii(num_variables, constraint_types,
+    optgra_raii raii_object(num_variables, constraint_types,
+        fitness, gradient, // callbacks
     	max_iterations, // MAXITE
 		max_correction_iterations, // CORITE
 		max_distance_per_iteration, // VARMAX
@@ -428,7 +469,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 		autodiff_deltas,
 		log_level);
 
-    return raii_object.exec(initial_x, fitness, gradient);
+    return raii_object.exec(initial_x);
 }
 
 /***
@@ -436,14 +477,14 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 */
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity(const std::vector<double> &x,
-        const std::vector<double> &con, const std::vector<int> &constraint_types,
+    const std::vector<int> &constraint_types,
          fitness_callback fitness, gradient_callback gradient, bool has_gradient
  ) {
 
     int num_variables = x.size();
 
-    optgra_raii raii_object = optgra_raii(num_variables, constraint_types);
-    raii_object.prepare_sensitivity_data(x, con, fitness, gradient);
+    optgra_raii raii_object(num_variables, constraint_types, fitness, gradient);
+    raii_object.prepare_sensitivity_data(x);
 
     return raii_object.get_sensitivity_matrices();
 }
