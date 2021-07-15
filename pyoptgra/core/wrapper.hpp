@@ -10,9 +10,10 @@
 extern"C" {
     void ogcdel_(double * delcon);
     void ogclos_();
-    void ogcsca_(double * scacon);
-    void ogctyp_(const int* contyp);
     void ogcpri_(int * pricon);
+    void ogcsca_(double * scacon);
+    void ogcstr_(char ** strcon, int * lencon);
+    void ogctyp_(const int* contyp);
     void ogderi_(int * dervar, double * pervar);
     void ogdist_(double * maxvar, double * sndvar);
     void ogeval_(double * valvar, double * valcon, int * dervar, double * dercon,
@@ -24,9 +25,9 @@ extern"C" {
     void ogomet_(int * metopt);
     void ogsens_(int * consta, double * concon, double * convar, double * varcon, double * varvar);
     void ogsopt_(int * optsen);
-    void ogvstr_(char ** strvar, int * lenvar);
-    void ogcstr_(char ** strcon, int * lencon);
     void ogvsca_(double * scavar);
+    void ogvtyp_(const int* vartyp);
+    void ogvstr_(char ** strvar, int * lenvar);
     void ogwlog_(int * lunlog, int * levlog);
 }
 
@@ -337,7 +338,7 @@ struct optgra_raii {
          static_callable_store::fitness, static_callable_store::gradient);
 
         return std::make_tuple(valvar, valcon, finopt);
-    } 
+    }
 
     std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_deltas(std::vector<double> constraint_deltas) {
 

@@ -53,6 +53,7 @@ set (OPTGRAFILES
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogopti.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvsca.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvstr.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvtyp.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwlog.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwrit.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogdata.inc"
