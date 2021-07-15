@@ -369,8 +369,7 @@ class optgra:
         return population
 
     def get_sensitivity_matrices(
-        self, problem, initial_x, sensitivity_mode, constraint_deltas=[]
-    ):
+        self, problem, x):
         if problem.get_nobj() > 1:
             raise ValueError(
                 "Multiple objectives detected in "
@@ -434,13 +433,11 @@ class optgra:
         autodiff_deltas: List[float] = []
 
         result = sensitivity(
-            initial_x=initial_x,
+            x=x,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
             gradient_callback=grad_func,
             has_gradient=problem.has_gradient(),
-            sensitivity_mode=sensitivity_mode,
-            constraint_deltas=constraint_deltas,
         )
 
         return result
