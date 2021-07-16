@@ -19,5 +19,9 @@ PYBIND11_MODULE(core, m) {
 
     m.def("sensitivity", &optgra::sensitivity, "Calculate sensitivity matrices using optgra",
     	py::arg("x"), py::arg("constraint_types"), py::arg("fitness_callback"), py::arg("gradient_callback"),
-    	py::arg("has_gradient"));
+    	py::arg("has_gradient"), py::arg("max_distance_per_iteration") = 10, py::arg("perturbation_for_snd_order_derivatives") = 1,
+        py::arg("variable_scaling_factors"),
+        py::arg("variable_names"), py::arg("constraint_names"),
+        py::arg("derivatives_computation") = 1, py::arg("autodiff_deltas"), py::arg("log_level") = 1);
+
 }

@@ -411,10 +411,10 @@ class optgra:
 
         fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
         grad_func = None
-        # derivatives_computation = 2
+        derivatives_computation = 2
         if problem.has_gradient():
             grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
-            # derivatives_computation = 1
+            derivatives_computation = 1
 
         # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
         constraint_types = (
@@ -426,12 +426,25 @@ class optgra:
         if self.bounds_to_constraints:
             constraint_priorities = constraint_priorities + [0] * len(bound_types)
 
+        # still to set: variable_names, constraint_names, autodiff_deltas
+        variable_names: List[str] = []
+        constraint_names: List[str] = []
+        autodiff_deltas: List[float] = []
+
         result = sensitivity(
             x=x,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
             gradient_callback=grad_func,
             has_gradient=problem.has_gradient(),
+            max_distance_per_iteration=self.max_distance_per_iteration,
+            perturbation_for_snd_order_derivatives=self.perturbation_for_snd_order_derivatives,
+            variable_scaling_factors=self.variable_scaling_factors,
+            variable_names=variable_names,
+            constraint_names=constraint_names,
+            derivatives_computation=derivatives_computation,
+            autodiff_deltas=autodiff_deltas,
+            log_level=self.log_level,
         )
 
         return result

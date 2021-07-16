@@ -491,13 +491,39 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 */
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity(const std::vector<double> &x,
-    const std::vector<int> &constraint_types,
-         fitness_callback fitness, gradient_callback gradient, bool has_gradient
+    const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
+    double max_distance_per_iteration = 10, // VARMAX
+    double perturbation_for_snd_order_derivatives = 1, // VARSND
+    std::vector<double> variable_scaling_factors = {},
+    std::vector<std::string> variable_names = {},
+    std::vector<std::string> constraint_names = {},
+    int derivatives_computation = 1, //VARDER
+    std::vector<double> autodiff_deltas = {},
+    int log_level = 1
  ) {
 
     int num_variables = x.size();
 
-    optgra_raii raii_object(num_variables, constraint_types);
+    if (derivatives_computation == 1 && !has_gradient) {
+        std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
+        derivatives_computation = 3;
+    }
+
+    optgra_raii raii_object(num_variables, constraint_types,
+        1, //max_iterations, // MAXITE
+        1, //max_correction_iterations, // CORITE
+        max_distance_per_iteration, // VARMAX
+        perturbation_for_snd_order_derivatives, // VARSND
+        {}, //convergence_thresholds,
+        variable_scaling_factors,
+        {}, //constraint_priorities,
+        variable_names,
+        constraint_names,
+        2, //optimization_method, // OPTMET
+        derivatives_computation, //VARDER
+        autodiff_deltas,
+        log_level);
+
     raii_object.prepare_sensitivity_data(x, fitness, gradient);
 
     return raii_object.get_sensitivity_matrices();
