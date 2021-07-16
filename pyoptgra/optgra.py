@@ -368,8 +368,7 @@ class optgra:
 
         return population
 
-    def get_sensitivity_matrices(
-        self, problem, x):
+    def get_sensitivity_matrices(self, problem, x):
         if problem.get_nobj() > 1:
             raise ValueError(
                 "Multiple objectives detected in "

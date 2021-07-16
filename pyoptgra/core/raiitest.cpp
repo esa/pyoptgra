@@ -55,11 +55,10 @@ int main(int argn, char** argc)
     int derivatives_computation = 1;
     int num_constraints = 1;
 
-    optgra_raii raii_object(num_variables, {0,-1},
-        f, g);
+    optgra_raii raii_object(num_variables, {0,-1});
 
     
-    std::tie(bestx, bestf, finopt) = raii_object.exec(initial_x);
+    std::tie(bestx, bestf, finopt) = raii_object.exec(initial_x, f, g);
 
 	cout << "Best x:";
 	for (int i = 0; i < num_variables; i++) {
@@ -84,7 +83,7 @@ int main(int argn, char** argc)
 	//std::vector<double> sens_x = {0, 1, 2, 3, 4};
 	std::vector<double> sens_x = {0, 0.99, 2, 3, 4};
 
-	raii_object.prepare_sensitivity_data(sens_x);
+	raii_object.prepare_sensitivity_data(sens_x, f, g);
 
 	std::vector<int> constraint_status(num_constraints);
 	std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
@@ -134,9 +133,7 @@ int main(int argn, char** argc)
 	}
 
 	cout << endl << "Sensitivity Update Test" << endl;
-	sens_x = {100, 0.99, 2, 3, 4};
-
-	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update(sens_x);
+	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update(f, g);
 
 	cout << "Best x:";
 	for (int i = 0; i < num_variables; i++) {
