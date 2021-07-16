@@ -99,7 +99,8 @@ class optgra_test(unittest.TestCase):
         self.gradient_with_constraints_test()
         self.box_constraints_test()
         self.archipelago_evolve_test()
-        self.archipelago_pickle_tests()
+        self.archipelago_pickle_test()
+        self.sensitivity_matrices_input_check_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -344,7 +345,7 @@ class optgra_test(unittest.TestCase):
         self.assertRaises(RuntimeError, lambda: a.wait_check())
 
 
-    def archipelago_pickle_tests(self):
+    def archipelago_pickle_test(self):
         from pygmo import archipelago, rosenbrock, mp_island, ring, migration_type, migrant_handling
         from pickle import dumps, loads
         a = archipelago(5, algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
@@ -352,6 +353,67 @@ class optgra_test(unittest.TestCase):
         a = archipelago(5, algo=pyoptgra.optgra(), prob=_prob(),
                         pop_size=10, udi=mp_island())
         self.assertEqual(repr(a), repr(loads(dumps(a))))
+
+    def sensitivity_matrices_input_check_test(self):
+        class toy_multi_problem(object):
+            def __init__(self):
+                pass
+
+            def fitness(self, x):
+                return (sum(x), 1)
+
+            def get_bounds(self):
+                return ([0, 0], [1, 1])
+
+            def get_nobj(self):
+                return 2
+
+        # Check that multi-objective problems are rejected
+        opt = pyoptgra.optgra()
+        mprob = pygmo.problem(toy_multi_problem())
+        with self.assertRaises(ValueError):
+            opt.get_sensitivity_matrices(mprob, [0,0])
+
+        class toy_stochastic_problem(object):
+            def __init__(self):
+                self.seed = 0
+
+            def fitness(self, x):
+                import random
+
+                return [random.random() + x[0]]
+
+            def get_bounds(self):
+                return ([0], [1])
+
+            def set_seed(self, seed):
+                self.seed = seed
+
+        # Check that stochastic problems are rejected
+        sprob = pygmo.problem(toy_multi_problem())
+        with self.assertRaises(ValueError):
+            opt.get_sensitivity_matrices(sprob, [0])
+
+        # Check that scaling factors of wrong size are rejected
+        opt = pyoptgra.optgra(variable_scaling_factors=[1] * 29)
+        prob = pygmo.problem(pygmo.schwefel(30))
+        with self.assertRaises(ValueError):
+            opt.get_sensitivity_matrices(prob, [0]*30)
+
+        # Correct size
+        opt = pyoptgra.optgra(variable_scaling_factors=[1] * 30)
+        opt.get_sensitivity_matrices(prob, [0]*30)
+
+        # Check that constraint priorities of wrong size are rejected
+        opt = pyoptgra.optgra(constraint_priorities=[1] * 2)
+        prob = pygmo.problem(pygmo.schwefel(30))
+        with self.assertRaises(ValueError):
+            opt.get_sensitivity_matrices(prob, [0]*30)
+
+        # Correct size
+        opt = pyoptgra.optgra(constraint_priorities=[1] * 61)
+        opt.get_sensitivity_matrices(prob, [0]*30)
+
 
 
 if __name__ == "__main__":
