@@ -101,6 +101,7 @@ class optgra_test(unittest.TestCase):
         self.archipelago_evolve_test()
         self.archipelago_pickle_test()
         self.sensitivity_matrices_input_check_test()
+        self.sensitivity_matrices_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -390,7 +391,7 @@ class optgra_test(unittest.TestCase):
                 self.seed = seed
 
         # Check that stochastic problems are rejected
-        sprob = pygmo.problem(toy_multi_problem())
+        sprob = pygmo.problem(toy_stochastic_problem())
         with self.assertRaises(ValueError):
             opt.get_sensitivity_matrices(sprob, [0])
 
@@ -401,7 +402,7 @@ class optgra_test(unittest.TestCase):
             opt.get_sensitivity_matrices(prob, [0]*30)
 
         # Correct size
-        opt = pyoptgra.optgra(variable_scaling_factors=[1] * 30)
+        opt = pyoptgra.optgra(variable_scaling_factors = [1 for _ in range(30)], bounds_to_constraints=False)
         opt.get_sensitivity_matrices(prob, [0]*30)
 
         # Check that constraint priorities of wrong size are rejected
@@ -414,6 +415,11 @@ class optgra_test(unittest.TestCase):
         opt = pyoptgra.optgra(constraint_priorities=[1] * 61)
         opt.get_sensitivity_matrices(prob, [0]*30)
 
+    def sensitivity_matrices_test(self):
+        opt = pyoptgra.optgra()
+        prob = pygmo.problem(luksan_vlcek())
+        opt.get_sensitivity_matrices(prob, [0]*6)
+        
 
 
 if __name__ == "__main__":
