@@ -33,7 +33,8 @@ PYBIND11_MODULE(core, m) {
     m.def("get_sensitivity_matrices", &optgra::get_sensitivity_matrices, "Get sensitivity matrices from prepared sensitivity state",
         py::arg("num_variables"), py::arg("constraint_types"), py::arg("state_tuple"));
 
-    m.def("sensitivity_update_new_callable", &optgra::sensitivity_update_new_callable, "Perform a single step given a new callable", py::arg("state_tuple"), py::arg("num_variables"),
+    m.def("sensitivity_update_new_callable", &optgra::sensitivity_update_new_callable, "Perform a single step given a new callable",
+        py::arg("state_tuple"), py::arg("num_variables"),
         py::arg("constraint_types"), py::arg("fitness_callback"), py::arg("gradient_callback"), py::arg("has_gradient"),
         py::arg("max_distance_per_iteration") = 10, py::arg("perturbation_for_snd_order_derivatives") = 1,
         py::arg("variable_scaling_factors"),

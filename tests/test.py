@@ -100,8 +100,8 @@ class optgra_test(unittest.TestCase):
         self.box_constraints_test()
         self.archipelago_evolve_test()
         self.archipelago_pickle_test()
-        self.sensitivity_matrices_input_check_test()
-        self.sensitivity_matrices_test()
+        self.prepare_sensitivity_input_check_test()
+        self.prepare_sensitivity_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -355,7 +355,7 @@ class optgra_test(unittest.TestCase):
                         pop_size=10, udi=mp_island())
         self.assertEqual(repr(a), repr(loads(dumps(a))))
 
-    def sensitivity_matrices_input_check_test(self):
+    def prepare_sensitivity_input_check_test(self):
         class toy_multi_problem(object):
             def __init__(self):
                 pass
@@ -373,7 +373,7 @@ class optgra_test(unittest.TestCase):
         opt = pyoptgra.optgra()
         mprob = pygmo.problem(toy_multi_problem())
         with self.assertRaises(ValueError):
-            opt.get_sensitivity_matrices(mprob, [0,0])
+            opt.prepare_sensitivity(mprob, [0,0])
 
         class toy_stochastic_problem(object):
             def __init__(self):
@@ -393,32 +393,32 @@ class optgra_test(unittest.TestCase):
         # Check that stochastic problems are rejected
         sprob = pygmo.problem(toy_stochastic_problem())
         with self.assertRaises(ValueError):
-            opt.get_sensitivity_matrices(sprob, [0])
+            opt.prepare_sensitivity(sprob, [0])
 
         # Check that scaling factors of wrong size are rejected
         opt = pyoptgra.optgra(variable_scaling_factors=[1] * 29)
         prob = pygmo.problem(pygmo.schwefel(30))
         with self.assertRaises(ValueError):
-            opt.get_sensitivity_matrices(prob, [0]*30)
+            opt.prepare_sensitivity(prob, [0]*30)
 
         # Correct size
         opt = pyoptgra.optgra(variable_scaling_factors = [1 for _ in range(30)], bounds_to_constraints=False)
-        opt.get_sensitivity_matrices(prob, [0]*30)
+        opt.prepare_sensitivity(prob, [0]*30)
 
         # Check that constraint priorities of wrong size are rejected
         opt = pyoptgra.optgra(constraint_priorities=[1] * 2)
         prob = pygmo.problem(pygmo.schwefel(30))
         with self.assertRaises(ValueError):
-            opt.get_sensitivity_matrices(prob, [0]*30)
+            opt.prepare_sensitivity(prob, [0]*30)
 
         # Correct size
         opt = pyoptgra.optgra(constraint_priorities=[1] * 61)
-        opt.get_sensitivity_matrices(prob, [0]*30)
+        opt.prepare_sensitivity(prob, [0]*30)
 
-    def sensitivity_matrices_test(self):
+    def prepare_sensitivity_test(self):
         opt = pyoptgra.optgra()
         prob = pygmo.problem(luksan_vlcek())
-        opt.get_sensitivity_matrices(prob, [0]*6)
+        opt.prepare_sensitivity(prob, [0]*6)
         
 
 

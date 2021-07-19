@@ -1,10 +1,16 @@
 from collections import deque
 from math import isfinite
-from typing import List
+from typing import List, Tuple
 
 from pygmo import s_policy, select_best
 
-from .core import optimize, sensitivity
+from .core import (
+    optimize,
+    prepare_sensitivity_state,
+    get_sensitivity_matrices,
+    sensitivity_update_new_callable,
+    sensitivity_update_constraint_delta,
+)
 
 
 class optgra:
@@ -172,6 +178,8 @@ class optgra:
         self.bound_constraints_tolerance = bound_constraints_tolerance
 
         self.log_level = verbosity
+        self.sens_state = None
+        self.sens_constraint_types = None
 
         if optimization_method not in [
             0,
@@ -368,7 +376,7 @@ class optgra:
 
         return population
 
-    def get_sensitivity_matrices(self, problem, x):
+    def prepare_sensitivity(self, problem, x):
         if problem.get_nobj() > 1:
             raise ValueError(
                 "Multiple objectives detected in "
@@ -427,11 +435,9 @@ class optgra:
             constraint_priorities = constraint_priorities + [0] * len(bound_types)
 
         # still to set: variable_names, constraint_names, autodiff_deltas
-        variable_names: List[str] = []
-        constraint_names: List[str] = []
         autodiff_deltas: List[float] = []
 
-        result = compute_sensitivity_matrices(
+        state = prepare_sensitivity_state(
             x=x,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
@@ -440,11 +446,78 @@ class optgra:
             max_distance_per_iteration=self.max_distance_per_iteration,
             perturbation_for_snd_order_derivatives=self.perturbation_for_snd_order_derivatives,
             variable_scaling_factors=self.variable_scaling_factors,
-            variable_names=variable_names,
-            constraint_names=constraint_names,
             derivatives_computation=derivatives_computation,
             autodiff_deltas=autodiff_deltas,
             log_level=self.log_level,
         )
 
-        return result
+        self.sens_state = state
+        self.sens_constraint_types = constraint_types
+
+    def sensitivity_matrices(self):
+
+        if self.sens_state is None or len(self.sens_state) == 0:
+            raise RuntimeError("Please call prepare_sensitivity first")
+
+        return get_sensitivity_matrices(
+            len(self.sens_state[0]), self.sens_constraint_types, self.sens_state
+        )
+
+    def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
+
+        if self.sens_state is None or len(self.sens_state) == 0:
+            raise RuntimeError("Please call prepare_sensitivity first")
+
+        bound_types = []
+        if self.bounds_to_constraints:
+            bound_types = optgra._constraint_types_from_box_bounds(problem)
+
+        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
+        grad_func = None
+        derivatives_computation = 2
+        if problem.has_gradient():
+            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
+            derivatives_computation = 1
+
+        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
+
+        autodiff_deltas: List[float] = []
+
+        # TODO: check constraint types and warn if they have changed
+
+        return sensitivity_update_new_callable(
+            self.sens_state,
+            problem.get_nx(),
+            constraint_types,
+            fitness_func,
+            grad_func,
+            problem.has_gradient(),
+            self.max_distance_per_iteration,
+            self.perturbation_for_snd_order_derivatives,
+            self.variable_scaling_factors,
+            derivatives_computation,
+            autodiff_deltas,
+            self.log_level,
+        )
+
+    def linear_update_delta(
+        self, constraint_delta: List[float]
+    ) -> Tuple[List[float], List[float]]:
+
+        if self.sens_state is None or len(self.sens_state) == 0:
+            raise RuntimeError("Please call prepare_sensitivity first")
+
+        # TODO: check that delta is of right dimension
+        return sensitivity_update_constraint_delta(
+            self.sens_state,
+            len(self.sens_state[0]),
+            self.sens_constraint_types,
+            constraint_delta,
+            self.max_distance_per_iteration,
+            self.perturbation_for_snd_order_derivatives,
+            self.variable_scaling_factors,
+            self.log_level,
+        )
