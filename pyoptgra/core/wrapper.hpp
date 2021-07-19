@@ -550,16 +550,6 @@ sensitivity_state prepare_sensitivity_state(const std::vector<double> &x,
     return raii_object.get_sensitivity_state_data();
 }
 
-std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(int num_variables, vector<int> constraint_types,
-      sensitivity_state state_tuple) {//TODO: I don't even need the number of variables and constraints here, can be derived from the tuple.
-     //TODO: I do need the constraint types and variable types, though.
-
-        optgra_raii raii_object(num_variables, constraint_types);
-        raii_object.set_sensitivity_state_data(state_tuple);
-        return raii_object.get_sensitivity_matrices();
-}
-
 /***
 * Sensitivity Function
 */
@@ -603,13 +593,22 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
     return raii_object.get_sensitivity_matrices();
 }
 
+
+std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(int num_variables, vector<int> constraint_types,
+      sensitivity_state state_tuple) {//TODO: I don't even need the number of variables and constraints here, can be derived from the tuple.
+     //TODO: I do need the constraint types and variable types, though.
+
+        optgra_raii raii_object(num_variables, constraint_types);
+        raii_object.set_sensitivity_state_data(state_tuple);
+        return raii_object.get_sensitivity_matrices();
+}
+
 std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new_callable(sensitivity_state state_tuple, int num_variables,
     const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
     double max_distance_per_iteration = 10, // VARMAX
     double perturbation_for_snd_order_derivatives = 1, // VARSND
     std::vector<double> variable_scaling_factors = {},
-    std::vector<std::string> variable_names = {},
-    std::vector<std::string> constraint_names = {},
     int derivatives_computation = 1, //VARDER
     std::vector<double> autodiff_deltas = {},
     int log_level = 1
