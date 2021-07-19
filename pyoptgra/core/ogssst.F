@@ -1,4 +1,4 @@
-      SUBROUTINE OGGSST (VARSEN, QUASEN, CONSEN, ACTSEN, DERSEN)
+      SUBROUTINE OGSSST (VARSEN, QUASEN, CONSEN, ACTSEN, DERSEN)
 C ======================================================================
 C NEAR-LINEAR OPTIMISATION TOOL SENSITIVITY ANALYSIS
 C Function to get sensitivity state data, necessary for serialization.

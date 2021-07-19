@@ -78,7 +78,7 @@ int main(int argn, char** argc)
 	//std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
     // std::vector<std::vector<double>>, std::vector<std::vector<double>>>
 
-	std::ignore = sensitivity(bestx, {0,-1}, f, g, true);
+	std::ignore = compute_sensitivity_matrices(bestx, {0,-1}, f, g, true);
 
    return 0;
 }

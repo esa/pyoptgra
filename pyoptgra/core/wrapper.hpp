@@ -44,11 +44,12 @@ namespace optgra {
     using std::tuple;
     using std::function;
 
+    typedef tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>> sensitivity_state;
+
 /** This struct is just to connect the std::functions passed from python
  *  to the unholy mess of static function pointers, which are requried by Fortran.
  *  It is emphatically not thread safe.
  */
-
 struct static_callable_store {
 
     static void fitness(double * x, double * out_f, int * inapplicable_flag) {
@@ -382,8 +383,17 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
-    void set_sensitivity_state_data(vector<double> senvar, vector<double> senqua, vector<double> sencon, 
-        vector<int> senact, vector<double> sender) {
+    void set_sensitivity_state_data(sensitivity_state state_tuple) {
+
+        vector<double> senvar;
+        vector<double> senqua;
+        vector<double> sencon;
+        vector<int> senact;
+        vector<double> sender;
+
+        std::tie(senvar, senqua, sencon, senact, sender) = state_tuple;
+
+        //TODO: verify dimensions
 
         ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
 
@@ -391,7 +401,7 @@ struct optgra_raii {
 
     }
 
-    tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>> get_sensitivity_state_data() {
+    sensitivity_state get_sensitivity_state_data() const {
         vector<double> senvar(num_variables);
         vector<double> senqua(num_constraints+1);
         vector<double> sencon(num_constraints+1);
@@ -503,11 +513,57 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     return raii_object.exec(initial_x, fitness, gradient);
 }
 
+sensitivity_state prepare_sensitivity_state(const std::vector<double> &x,
+    const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
+    double max_distance_per_iteration = 10, // VARMAX
+    double perturbation_for_snd_order_derivatives = 1, // VARSND
+    std::vector<double> variable_scaling_factors = {},
+    int derivatives_computation = 1, //VARDER
+    std::vector<double> autodiff_deltas = {},
+    int log_level = 1
+ ) {
+
+    int num_variables = x.size();
+
+    if (derivatives_computation == 1 && !has_gradient) {
+        std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
+        derivatives_computation = 3;
+    }
+
+    optgra_raii raii_object(num_variables, constraint_types,
+        1, //max_iterations, // MAXITE
+        1, //max_correction_iterations, // CORITE
+        max_distance_per_iteration, // VARMAX
+        perturbation_for_snd_order_derivatives, // VARSND
+        {}, //convergence_thresholds,
+        variable_scaling_factors,
+        {}, //constraint_priorities,
+        {}, //variable_names,
+        {}, //constraint_names,
+        2, //optimization_method, // OPTMET
+        derivatives_computation, //VARDER
+        autodiff_deltas,
+        log_level);
+
+    raii_object.initialize_sensitivity_data(x, fitness, gradient);
+
+    return raii_object.get_sensitivity_state_data();
+}
+
+std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(int num_variables, vector<int> constraint_types,
+      sensitivity_state state_tuple) {//TODO: I don't even need the number of variables and constraints here, can be derived from the tuple.
+
+        optgra_raii raii_object(num_variables, constraint_types);
+        raii_object.set_sensitivity_state_data(state_tuple);
+        return raii_object.get_sensitivity_matrices();
+}
+
 /***
 * Sensitivity Function
 */
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity(const std::vector<double> &x,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> compute_sensitivity_matrices(const std::vector<double> &x,
     const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
     double max_distance_per_iteration = 10, // VARMAX
     double perturbation_for_snd_order_derivatives = 1, // VARSND
@@ -547,23 +603,3 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 }
 
 }
-
-/**
- * oginit.F : Allocates and zeroes vectors, sets parameter values in common block to hardcoded defaults
- * ogvsca.F : Define variable scale factor - int[numvar]
- * ogvstr.F : Set variable names - str[numvar]
- * ogctyp.F : Sets types of constraints and merit function in common block
- * ogcpri.F : Sets constraint priorities in common block int[numcon+1]
- * ogcsca.F : Sets convergence thresholds of constraints and merit function in common block - double[NUMCON+1]
- * ogcstr.F : Sets names of constraints and merit function in common block
- * 
- * ogderi.F : Sets parameters for type of derivative computation in common block
- * ogomet.F : Set optimization method parameter in common block
- * ogiter.F : Set optimization parameters in common block (ITEMAX, ITECOR, ITEOPT, ITEDIV, ITECNV)
- * ogdist.F : Sets parameters for maximum distance per iteration and perturbation in common block
- * 
- * ogwlog.F : Define writing in log file
- * ogwmat.F : Something with writing to Matlab
- * ogwtab.F : writes units and verbosity(?) options for tabular output into the common block defined in ogdata.inc
-
-*/
