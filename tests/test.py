@@ -102,6 +102,9 @@ class optgra_test(unittest.TestCase):
         self.archipelago_pickle_test()
         self.prepare_sensitivity_input_check_test()
         self.prepare_sensitivity_test()
+        self.sensitivity_matrices_test()
+        self.sensitivity_new_callable_test()
+        self.sensitivity_constraint_delta_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -419,6 +422,48 @@ class optgra_test(unittest.TestCase):
         opt = pyoptgra.optgra()
         prob = pygmo.problem(luksan_vlcek())
         opt.prepare_sensitivity(prob, [0]*6)
+
+    def sensitivity_matrices_test(self):
+        opt = pyoptgra.optgra()
+
+        # test illegal state
+        with self.assertRaises(RuntimeError):
+            opt.sensitivity_matrices()
+
+        prob = pygmo.problem(luksan_vlcek())
+        opt.prepare_sensitivity(prob, [0]*6)
+
+        matrices = opt.sensitivity_matrices()
+        self.assertEqual(len(matrices), 5)
+
+        #TODO: test matrix sizes and content
+
+    def sensitivity_new_callable_test(self):
+        opt = pyoptgra.optgra()
+
+        prob = pygmo.problem(luksan_vlcek())
+
+        # test illegal state
+        with self.assertRaises(RuntimeError):
+            opt.linear_update_new_callable(prob)
+
+        opt.prepare_sensitivity(prob, [0]*6)
+
+        opt.linear_update_new_callable(prob)
+
+    def sensitivity_constraint_delta_test(self):
+        opt = pyoptgra.optgra()
+
+        # test illegal state
+        with self.assertRaises(RuntimeError):
+            opt.linear_update_delta([1]*16)
+
+        prob = pygmo.problem(luksan_vlcek())
+        opt.prepare_sensitivity(prob, [0]*6)
+
+        opt.linear_update_delta([1]*18)
+
+
         
 
 
