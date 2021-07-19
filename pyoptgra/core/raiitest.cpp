@@ -83,7 +83,7 @@ int main(int argn, char** argc)
 	//std::vector<double> sens_x = {0, 1, 2, 3, 4};
 	std::vector<double> sens_x = {0, 0.99, 2, 3, 4};
 
-	raii_object.prepare_sensitivity_data(sens_x, f, g);
+	raii_object.initialize_sensitivity_data(sens_x, f, g);
 
 	std::vector<int> constraint_status(num_constraints);
 	std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
@@ -158,7 +158,7 @@ int main(int argn, char** argc)
 
 	std::vector<double> delta = {1};
 
-	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update_constraint_deltas(delta);
+	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update_constraint_delta(delta);
 
 	cout << "Best x:";
 	for (int i = 0; i < num_variables; i++) {

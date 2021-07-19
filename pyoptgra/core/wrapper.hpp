@@ -20,11 +20,13 @@ extern"C" {
          void (*)(double*, double*), void (*)(double*, double*, double*));
     void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
+    void oggsst_(double * senvar, double * senqua, double * sencon, int * senact, double * sender);
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
     void ogsens_(int * consta, double * concon, double * convar, double * varcon, double * varvar);
     void ogsopt_(int * optsen);
+    void ogssst_(const double * senvar, const double * senqua, const double * sencon, const int * senact, const double * sender);
     void ogvsca_(double * scavar);
     void ogvtyp_(const int* vartyp);
     void ogvstr_(char ** strvar, int * lenvar);
@@ -227,11 +229,7 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
-    // TODO: function to get sensitivity state data
-
-    // TODO: function to set sensitivity state data
-
-    std::tuple<int, int> prepare_sensitivity_data(std::vector<double> x, fitness_callback fitness, gradient_callback gradient) {
+    std::tuple<int, int> initialize_sensitivity_data(std::vector<double> x, fitness_callback fitness, gradient_callback gradient) {
         if (int(x.size()) != num_variables) {
             throw(std::invalid_argument("Expected " + std::to_string(num_variables) + ", but got " + std::to_string(x.size())));
         }
@@ -265,7 +263,7 @@ struct optgra_raii {
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices() {
 
         if (!initialized_sensitivity) {
-            throw(std::runtime_error("Please call prepare_sensitivity_data first."));
+            throw(std::runtime_error("Please call initialize_sensitivity_data first."));
         }
 
         // allocate flattened sensitivity matrices
@@ -331,7 +329,7 @@ struct optgra_raii {
     std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update(fitness_callback fitness, gradient_callback gradient) {
 
         if (!initialized_sensitivity) {
-            throw(std::runtime_error("Please call prepare_sensitivity_data first."));
+            throw(std::runtime_error("Please call initialize_sensitivity_data first."));
         }
 
         std::vector<double> valvar(num_variables);
@@ -357,15 +355,15 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
-    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_deltas(std::vector<double> constraint_deltas) {
+    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_delta(std::vector<double> constraint_delta) {
 
         if (!initialized_sensitivity) {
-            throw(std::runtime_error("Please call prepare_sensitivity_data first."));
+            throw(std::runtime_error("Please call initialize_sensitivity_data first."));
         }
 
-        if (int(constraint_deltas.size()) != num_constraints) {
+        if (int(constraint_delta.size()) != num_constraints) {
             throw(std::invalid_argument("Expected " + std::to_string(num_constraints) + " constraint deltas, but got "
-             + std::to_string(constraint_deltas.size())));
+             + std::to_string(constraint_delta.size())));
         }
 
         std::vector<double> valvar(num_variables);
@@ -374,7 +372,7 @@ struct optgra_raii {
         int sensitivity_mode = 2;
         ogsopt_(&sensitivity_mode);
 
-        ogcdel_(constraint_deltas.data());
+        ogcdel_(constraint_delta.data());
 
         int finopt = 0;
         int finite = 0;
@@ -382,9 +380,28 @@ struct optgra_raii {
          static_callable_store::fitness, static_callable_store::gradient);
 
         return std::make_tuple(valvar, valcon, finopt);
-    } 
+    }
 
+    void set_sensitivity_state_data(vector<double> senvar, vector<double> senqua, vector<double> sencon, 
+        vector<int> senact, vector<double> sender) {
 
+        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
+
+        initialized_sensitivity = true;
+
+    }
+
+    tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>> get_sensitivity_state_data() {
+        vector<double> senvar(num_variables);
+        vector<double> senqua(num_constraints+1);
+        vector<double> sencon(num_constraints+1);
+        vector<int> senact(num_constraints+1);
+        vector<double> sender((num_constraints+1)*num_variables);
+
+        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
+        
+        return std::make_tuple(senvar, senqua, sencon, senact, sender);
+    }
 
     ~optgra_raii()
     {
@@ -524,7 +541,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
         autodiff_deltas,
         log_level);
 
-    raii_object.prepare_sensitivity_data(x, fitness, gradient);
+    raii_object.initialize_sensitivity_data(x, fitness, gradient);
 
     return raii_object.get_sensitivity_matrices();
 }
