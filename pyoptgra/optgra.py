@@ -5,11 +5,11 @@ from typing import List, Tuple
 from pygmo import s_policy, select_best
 
 from .core import (
+    get_sensitivity_matrices,
     optimize,
     prepare_sensitivity_state,
-    get_sensitivity_matrices,
-    sensitivity_update_new_callable,
     sensitivity_update_constraint_delta,
+    sensitivity_update_new_callable,
 )
 
 
