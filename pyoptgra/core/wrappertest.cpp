@@ -80,5 +80,7 @@ int main(int argn, char** argc)
 
 	std::ignore = compute_sensitivity_matrices(bestx, {0,-1}, f, g, true);
 
+	std::ignore =  prepare_sensitivity_state(bestx, {0,-1}, f, g, true);
+
    return 0;
 }
