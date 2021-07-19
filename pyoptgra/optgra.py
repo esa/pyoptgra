@@ -431,7 +431,7 @@ class optgra:
         constraint_names: List[str] = []
         autodiff_deltas: List[float] = []
 
-        result = sensitivity(
+        result = compute_sensitivity_matrices(
             x=x,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
