@@ -438,7 +438,9 @@ class optgra:
 
         # still to set: variable_names, constraint_names, autodiff_deltas
         autodiff_deltas: List[float] = []
-        variable_types: List[float] = [0 for _ in x] #TODO: extend to set variable types
+        variable_types: List[float] = [
+            0 for _ in x
+        ]  # TODO: extend to set variable types
 
         state = prepare_sensitivity_state(
             x=x,
@@ -457,7 +459,7 @@ class optgra:
 
         self.sens_state = state
         self.sens_constraint_types = constraint_types
-        self.sens_variable_types=variable_types
+        self.sens_variable_types = variable_types
 
     def sensitivity_matrices(self):
 
