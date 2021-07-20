@@ -25,7 +25,7 @@ std::vector<double> f(std::vector<double> x) {
 	return con;
 }
 
-///Fitness callable implementing a constraint function of \sum_0^4 (x_i - i)^2 and a merit function of \sum_0^4 x_i 
+///Gradient callable implementing a constraint function of \sum_0^4 (x_i - i)^2 and a merit function of \sum_0^4 x_i 
 std::vector<std::vector<double>> g(std::vector<double> x) {
 	cout << "g called with ";
 	int x_dim = x.size();
@@ -44,6 +44,27 @@ std::vector<std::vector<double>> g(std::vector<double> x) {
 	return der;
 }
 
+std::vector<double> f_simple(std::vector<double> x) {
+	std::vector<double> con(2);
+	con[0] = 10 - x[0];
+	con[1] = x[0];
+	cout << "f_simple called with " << x[0];
+	cout << endl;
+	return con;
+}
+
+
+std::vector<std::vector<double>> g_simple(std::vector<double> x) {
+	cout << "g_simple called with " << x[0] << endl;
+	std::vector<std::vector<double>> der(2);
+	der[0].resize(1);
+	der[1].resize(1);
+
+	der[0][0] = -1;
+	der[1][0] = 1;
+	return der;
+}
+
 int main(int argn, char** argc)
 {
 	std::vector<double> initial_x = {1,1,1,1,1};
@@ -56,7 +77,7 @@ int main(int argn, char** argc)
     int num_constraints = 1;
 
     std::vector<int> variable_types(num_variables, 0);
-
+    {
     optgra_raii raii_object(variable_types, {0,-1});
 
     
@@ -180,6 +201,62 @@ int main(int argn, char** argc)
 		cout << best_orig[i] << " ";
 	}
 	cout << endl;
+	}
+	cout << "-----------------------------------------------" << endl;
+
+    optgra_raii raii_object({0}, {-1,-1});
+
+ 	raii_object.initialize_sensitivity_data({2}, f_simple, g_simple);
+
+ 	std::vector<int> constraint_status(num_constraints);
+	std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
+    std::vector<std::vector<double>> constraints_to_parameters(num_constraints+1);
+    std::vector<std::vector<double>> variables_to_active_constraints(num_variables);
+    std::vector<std::vector<double>> variables_to_parameters(num_variables);
+
+ 	std::tie(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
+	 variables_to_active_constraints, variables_to_parameters) = raii_object.get_sensitivity_matrices();
+
+ 	num_constraints = 1;
+ 	num_variables = 1;
+
+	cout << "Active constraints:" << endl;
+	for (int i = 0; i < num_constraints; i++) {
+		cout << constraint_status[i] << " ";
+	}
+	cout << endl;
+
+	cout << "Constraints to active constraints:" << endl;
+	for (int i = 0; i < num_constraints+1; i++) {
+		for (int j = 0; j < num_constraints; j++) {
+			cout << constraints_to_active_constraints[i][j] << " ";
+		}
+		cout << endl;
+	}
+
+	cout << "Constraints to parameters:" << endl;
+	for (int i = 0; i < num_constraints+1; i++) {
+		for (int j = 0; j < num_variables; j++) {
+			cout << constraints_to_parameters[i][j] << " ";
+		}
+		cout << endl;
+	}
+
+	cout << "Variables to active constraints:" << endl;
+	for (int i = 0; i < num_variables; i++) {
+		for (int j = 0; j < num_constraints; j++) {
+			cout << variables_to_active_constraints[i][j] << " ";
+		}
+		cout << endl;
+	}
+
+	cout << "Variables to parameters:" << endl;
+	for (int i = 0; i < num_variables; i++) {
+		for (int j = 0; j < num_variables; j++) {
+			cout << variables_to_parameters[i][j] << " ";
+		}
+		cout << endl;
+	}
 
    return 0;
 }
