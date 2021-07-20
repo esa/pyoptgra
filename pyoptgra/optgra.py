@@ -346,6 +346,7 @@ class optgra:
         variable_names: List[str] = []
         constraint_names: List[str] = []
         autodiff_deltas: List[float] = []
+        variable_types: List[int] = []
 
         result = optimize(
             initial_x=population.get_x()[idx],
@@ -365,6 +366,7 @@ class optgra:
             optimization_method=self.optimization_method,
             derivatives_computation=derivatives_computation,
             autodiff_deltas=autodiff_deltas,
+            variable_types=variable_types,
             log_level=self.log_level,
         )
 
@@ -436,6 +438,7 @@ class optgra:
 
         # still to set: variable_names, constraint_names, autodiff_deltas
         autodiff_deltas: List[float] = []
+        variable_types: List[float] = [0 for _ in x] #TODO: extend to set variable types
 
         state = prepare_sensitivity_state(
             x=x,
@@ -448,11 +451,13 @@ class optgra:
             variable_scaling_factors=self.variable_scaling_factors,
             derivatives_computation=derivatives_computation,
             autodiff_deltas=autodiff_deltas,
+            variable_types=variable_types,
             log_level=self.log_level,
         )
 
         self.sens_state = state
         self.sens_constraint_types = constraint_types
+        self.sens_variable_types=variable_types
 
     def sensitivity_matrices(self):
 
@@ -460,7 +465,7 @@ class optgra:
             raise RuntimeError("Please call prepare_sensitivity first")
 
         return get_sensitivity_matrices(
-            len(self.sens_state[0]), self.sens_constraint_types, self.sens_state
+            self.sens_variable_types, self.sens_constraint_types, self.sens_state
         )
 
     def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
@@ -490,7 +495,7 @@ class optgra:
 
         return sensitivity_update_new_callable(
             self.sens_state,
-            problem.get_nx(),
+            self.sens_variable_types,
             constraint_types,
             fitness_func,
             grad_func,
@@ -513,7 +518,7 @@ class optgra:
         # TODO: check that delta is of right dimension
         return sensitivity_update_constraint_delta(
             self.sens_state,
-            len(self.sens_state[0]),
+            self.sens_variable_types,
             self.sens_constraint_types,
             constraint_delta,
             self.max_distance_per_iteration,

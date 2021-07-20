@@ -123,7 +123,7 @@ struct optgra_raii {
 
     optgra_raii( const optgra_raii & ) = delete;
 
-    optgra_raii(int num_variables, const std::vector<int> &constraint_types,
+    optgra_raii(const std::vector<int> &variable_types, const std::vector<int> &constraint_types,
 	    int max_iterations = 150, // MAXITE
 		int max_correction_iterations = 90, // CORITE
 		double max_distance_per_iteration = 10, // VARMAX
@@ -137,11 +137,13 @@ struct optgra_raii {
 		int derivatives_computation = 1, //VARDER
 		std::vector<double> autodiff_deltas = {},
 		int log_level = 1
-	) : num_variables(num_variables)
+	)
     {
+        num_variables = variable_types.size();
+
         num_constraints = constraint_types.size() - 1;
         if (autodiff_deltas.size() == 0) {
-            autodiff_deltas = std::vector<double>(num_variables, 0.001);
+            autodiff_deltas = std::vector<double>(num_variables, 0.01);
         } else if (autodiff_deltas.size() != num_variables) {
         	throw(std::invalid_argument("Got " + std::to_string(autodiff_deltas.size())
         	 + " autodiff deltas for " + std::to_string(num_variables) + " variables."));
@@ -156,6 +158,8 @@ struct optgra_raii {
         ogctyp_(constraint_types.data());
         ogderi_(&derivatives_computation, autodiff_deltas.data());
         ogdist_(&max_distance_per_iteration, &perturbation_for_snd_order_derivatives);
+
+        ogvtyp_(variable_types.data());
 
         // Haven't figured out what the others do, but maxiter is an upper bound anyway
         int otheriters = max_iterations; // TODO: figure out what it does.
@@ -485,17 +489,27 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 		int optimization_method = 2, // OPTMET
 		int derivatives_computation = 1, //VARDER
 		std::vector<double> autodiff_deltas = {},
+        std::vector<int> variable_types = {},
 		int log_level = 1
  ) {
     // initialization
     int num_variables = initial_x.size();
+
+    if (variable_types.size() == 0) {
+            variable_types = std::vector<int>(num_variables, 0);
+        }
+
+    if (variable_types.size() != initial_x.size()) {
+        throw(std::invalid_argument("Got initial_x vector of size" + std::to_string(initial_x.size())
+                 + " but variable_types vector of size " + std::to_string(variable_types.size()) + "."));
+    }
 
     if (derivatives_computation == 1 && !has_gradient) {
     	std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
     	derivatives_computation = 3;
     }
 
-    optgra_raii raii_object(num_variables, constraint_types,
+    optgra_raii raii_object(variable_types, constraint_types,
     	max_iterations, // MAXITE
 		max_correction_iterations, // CORITE
 		max_distance_per_iteration, // VARMAX
@@ -520,17 +534,27 @@ sensitivity_state prepare_sensitivity_state(const std::vector<double> &x,
     std::vector<double> variable_scaling_factors = {},
     int derivatives_computation = 1, //VARDER
     std::vector<double> autodiff_deltas = {},
+    std::vector<int> variable_types = {},
     int log_level = 1
  ) {
 
     int num_variables = x.size();
+
+    if (variable_types.size() == 0) {
+            variable_types = std::vector<int>(num_variables, 0);
+        }
+
+    if (variable_types.size() != x.size()) {
+        throw(std::invalid_argument("Got initial_x vector of size" + std::to_string(x.size())
+                 + " but variable_types vector of size " + std::to_string(variable_types.size()) + "."));
+    }
 
     if (derivatives_computation == 1 && !has_gradient) {
         std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
         derivatives_computation = 3;
     }
 
-    optgra_raii raii_object(num_variables, constraint_types,
+    optgra_raii raii_object(variable_types, constraint_types,
         1, //max_iterations, // MAXITE
         1, //max_correction_iterations, // CORITE
         max_distance_per_iteration, // VARMAX
@@ -563,17 +587,27 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
     std::vector<std::string> constraint_names = {},
     int derivatives_computation = 1, //VARDER
     std::vector<double> autodiff_deltas = {},
+    std::vector<int> variable_types = {},
     int log_level = 1
  ) {
 
     int num_variables = x.size();
+
+    if (variable_types.size() == 0) {
+        variable_types = std::vector<int>(num_variables, 0);
+    }
+
+    if (variable_types.size() != x.size()) {
+        throw(std::invalid_argument("Got initial_x vector of size" + std::to_string(x.size())
+                 + " but variable_types vector of size " + std::to_string(variable_types.size()) + "."));
+    }
 
     if (derivatives_computation == 1 && !has_gradient) {
         std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
         derivatives_computation = 3;
     }
 
-    optgra_raii raii_object(num_variables, constraint_types,
+    optgra_raii raii_object(variable_types, constraint_types,
         1, //max_iterations, // MAXITE
         1, //max_correction_iterations, // CORITE
         max_distance_per_iteration, // VARMAX
@@ -595,16 +629,16 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 
 
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(int num_variables, vector<int> constraint_types,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(const std::vector<int> &variable_types, vector<int> constraint_types,
       sensitivity_state state_tuple) {//TODO: I don't even need the number of variables and constraints here, can be derived from the tuple.
      //TODO: I do need the constraint types and variable types, though.
 
-        optgra_raii raii_object(num_variables, constraint_types);
+        optgra_raii raii_object(variable_types, constraint_types);
         raii_object.set_sensitivity_state_data(state_tuple);
         return raii_object.get_sensitivity_matrices();
 }
 
-std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new_callable(sensitivity_state state_tuple, int num_variables,
+std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new_callable(sensitivity_state state_tuple, const std::vector<int> &variable_types,
     const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
     double max_distance_per_iteration = 10, // VARMAX
     double perturbation_for_snd_order_derivatives = 1, // VARSND
@@ -619,7 +653,9 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new
         derivatives_computation = 3;
     }
 
-    optgra_raii raii_object(num_variables, constraint_types,
+    // TODO: check consistency of sizes of variable types and variable scaling factors
+
+    optgra_raii raii_object(variable_types, constraint_types,
         1, //max_iterations, // MAXITE
         1, //max_correction_iterations, // CORITE
         max_distance_per_iteration, // VARMAX
@@ -640,7 +676,8 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new
 
 }
 
-std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_delta(sensitivity_state state_tuple, int num_variables,
+std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_delta(sensitivity_state state_tuple,
+    const std::vector<int> &variable_types,
     const std::vector<int> &constraint_types, vector<double>& delta,
     double max_distance_per_iteration = 10, // VARMAX
     double perturbation_for_snd_order_derivatives = 1, // VARSND
@@ -648,7 +685,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_con
     int log_level = 1
  ) {
 
-    optgra_raii raii_object(num_variables, constraint_types,
+    optgra_raii raii_object(variable_types, constraint_types,
         1, //max_iterations, // MAXITE
         1, //max_correction_iterations, // CORITE
         max_distance_per_iteration, // VARMAX

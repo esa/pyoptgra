@@ -55,7 +55,9 @@ int main(int argn, char** argc)
     int derivatives_computation = 1;
     int num_constraints = 1;
 
-    optgra_raii raii_object(num_variables, {0,-1});
+    std::vector<int> variable_types(num_variables, 0);
+
+    optgra_raii raii_object(variable_types, {0,-1});
 
     
     std::tie(bestx, bestf, finopt) = raii_object.exec(initial_x, f, g);
