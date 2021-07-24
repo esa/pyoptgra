@@ -1,6 +1,6 @@
 from collections import deque
 from math import isfinite
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from pygmo import s_policy, select_best
 
@@ -47,7 +47,9 @@ class optgra:
         return resultTypes
 
     @staticmethod
-    def _wrap_fitness_func(problem, bounds_to_constraints: bool = True):
+    def _wrap_fitness_func(
+        problem, bounds_to_constraints: bool = True
+    ):  # TODO: add bounds here
         def wrapped_fitness(x):
             result = deque(problem.fitness(x))
 
@@ -178,8 +180,8 @@ class optgra:
         self.bound_constraints_tolerance = bound_constraints_tolerance
 
         self.log_level = verbosity
-        self.sens_state = None
-        self.sens_constraint_types = None
+        self._sens_state = None
+        self._sens_constraint_types: Union[List[int], None] = None
 
         if optimization_method not in [
             0,
@@ -378,7 +380,29 @@ class optgra:
 
         return population
 
-    def prepare_sensitivity(self, problem, x):
+    def prepare_sensitivity(self, problem, x: List[float]) -> None:
+        """
+        Prepare OPTGRA for sensitivity analysis at x. This is independant from previous and later calls to evolve,
+        but enables calls to sensitivity_matrices, linear_update_new_callable and linear_update_delta on this instance.
+
+        This works by creating a linearization of the problem's fitness function around x.
+
+        Args:
+
+            problem: The problem being analyzed.
+            x: The value of x around which linearization is performed
+
+        Raises:
+
+            ValueError: If the problem contains multiple objectives
+            ValueError: If the problem is stochastic
+            ValueError: If the problem dimensions don't fit to constraint_priorities
+                or variable_scaling_factors that were passed to the wrapper constructor
+            ValueError: If the problem has finite box bounds and bounds_to_constraints was
+                set to True in the wrapper constructor (default), constraint_priorities
+                were also passed but don't cover the additional bound-derived constraints
+        """
+
         if problem.get_nobj() > 1:
             raise ValueError(
                 "Multiple objectives detected in "
@@ -457,22 +481,57 @@ class optgra:
             log_level=self.log_level,
         )
 
-        self.sens_state = state
-        self.sens_constraint_types = constraint_types
-        self.sens_variable_types = variable_types
+        self._sens_state = state
+        self._sens_constraint_types = constraint_types
+        self._sens_variable_types = variable_types
 
     def sensitivity_matrices(self):
+        """
+        Get stored sensitivity matrices prepared by earlier call to _prepare_sensivitity.
+        Note that the active constraints are constraints that are currently violated,
+        while parameters refer to variables whose variable type was declared as fixed.
 
-        if self.sens_state is None or len(self.sens_state) == 0:
+        Returns:
+
+            A tuple of one list and four matrices: a boolean list of whether each constraint is active,
+            the sensitivity of constraints + merit function with respect to active constraints,
+            the sensitivity of constraints + merit function with respect to parameters,
+            the sensitivity of variables with respect to active constraints,
+            and the sensitivity of variables with respect to parameters.
+
+        Raises:
+
+            RuntimeError: If prepare_sensitivity has not been called on this instance
+
+        """
+
+        if self._sens_state is None or len(self._sens_state) == 0:
             raise RuntimeError("Please call prepare_sensitivity first")
 
         return get_sensitivity_matrices(
-            self.sens_variable_types, self.sens_constraint_types, self.sens_state
+            self._sens_variable_types, self._sens_constraint_types, self._sens_state
         )
 
     def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
+        """
+        Perform a single optimization step on the stored value of x, but with a new callable
 
-        if self.sens_state is None or len(self.sens_state) == 0:
+        Args:
+            problem: A problem containing the new callable.
+                     Has to have same dimensions and types as the problem passed to prepare_sensitivity
+
+        Returns:
+
+            tuple of new_x, new_y
+
+        Raises:
+
+            RuntimeError: If prepare_sensitivity has not been called on this instance
+            ValueError: If number or type of constraints has changed against prepare_sensitivity
+
+        """
+
+        if self._sens_state is None or len(self._sens_state) == 0:
             raise RuntimeError("Please call prepare_sensitivity first")
 
         bound_types = []
@@ -491,13 +550,19 @@ class optgra:
             [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
         )
 
+        if constraint_types != self._sens_constraint_types:
+            raise ValueError(
+                "Derived constraint types from new problem are, "
+                + str(constraint_types)
+                + ", but stored types for analysis are "
+                + str(constraint_types)
+            )  # TOOD: maybe report exact index of difference
+
         autodiff_deltas: List[float] = []
 
-        # TODO: check constraint types and warn if they have changed
-
         return sensitivity_update_new_callable(
-            self.sens_state,
-            self.sens_variable_types,
+            self._sens_state,
+            self._sens_variable_types,
             constraint_types,
             fitness_func,
             grad_func,
@@ -513,15 +578,31 @@ class optgra:
     def linear_update_delta(
         self, constraint_delta: List[float]
     ) -> Tuple[List[float], List[float]]:
+        """
+        Perform a single optimization step on the linear approximation prepared with prepare_sensitivity.
+        For this, no new function calls to the problem callable are performed, making this potentially very fast.
 
-        if self.sens_state is None or len(self.sens_state) == 0:
+        Args:
+            constraint_delta: A list of deltas against the stored constraints. They are subtracted from the stored values.
+
+        Returns:
+
+            tuple of new_x, new_y
+
+        Raises:
+
+            RuntimeError: If prepare_sensitivity has not been called on this instance
+            ValueError: If number of deltas does not fit number of constraints.
+
+        """
+
+        if self._sens_state is None or len(self._sens_state) == 0:
             raise RuntimeError("Please call prepare_sensitivity first")
 
-        # TODO: check that delta is of right dimension
         return sensitivity_update_constraint_delta(
-            self.sens_state,
-            self.sens_variable_types,
-            self.sens_constraint_types,
+            self._sens_state,
+            self._sens_variable_types,
+            self._sens_constraint_types,
             constraint_delta,
             self.max_distance_per_iteration,
             self.perturbation_for_snd_order_derivatives,
