@@ -410,9 +410,22 @@ class optgra:
 
         best_x, best_f, finopt = result
 
-        # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
-        pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
-        population.set_xf(idx, best_x, list(pagmo_fitness))
+        violated = False
+        if self.force_bounds:
+            lb, ub = problem.get_bounds()
+            for i in range(problem.get_nx()):
+                if best_x[i] < lb[i]:
+                    best_x[i] = lb[i]
+                    violated = True
+                if best_x[i] > ub[i]:
+                    best_x[i] = ub[i]
+                    violated = True
+        if violated:
+            population.set_x(idx, best_x)
+        else:
+            # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
+            pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
+            population.set_xf(idx, best_x, list(pagmo_fitness))
 
         return population
 
