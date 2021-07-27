@@ -48,14 +48,26 @@ class optgra:
 
     @staticmethod
     def _wrap_fitness_func(
-        problem, bounds_to_constraints: bool = True
-    ):  # TODO: add bounds here
+        problem,
+        bounds_to_constraints: bool = True,
+        force_bounds: bool = False,
+    ):
         def wrapped_fitness(x):
-            result = deque(problem.fitness(x))
+
+            fixed_x = x
+            lb, ub = problem.get_bounds()
+
+            if force_bounds:
+                for i in range(problem.get_nx()):
+                    if x[i] < lb[i]:
+                        fixed_x[i] = lb[i]
+                    if x[i] > ub[i]:
+                        fixed_x[i] = ub[i]
+
+            result = deque(problem.fitness(fixed_x))
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                lb, ub = problem.get_bounds()
                 for i in range(len(lb)):
                     if isfinite(lb[i]):
                         result.append(x[i] - lb[i])
@@ -71,14 +83,26 @@ class optgra:
         return wrapped_fitness
 
     @staticmethod
-    def _wrap_gradient_func(problem, bounds_to_constraints: bool = True):
+    def _wrap_gradient_func(
+        problem, bounds_to_constraints: bool = True, force_bounds=False
+    ):
 
         sparsity_pattern = problem.gradient_sparsity()
 
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
-            sparse_values = problem.gradient(x)
+            lb, ub = problem.get_bounds()
+            fixed_x = x
+
+            if force_bounds:
+                for i in range(problem.get_nx()):
+                    if x[i] < lb[i]:
+                        fixed_x[i] = lb[i]
+                    if x[i] > ub[i]:
+                        fixed_x[i] = ub[i]
+
+            sparse_values = problem.gradient(fixed_x)
 
             nnz = len(sparse_values)
 
@@ -124,6 +148,8 @@ class optgra:
         constraint_priorities: List[int] = [],  # f_dim
         bounds_to_constraints: bool = True,
         bound_constraints_tolerance: float = 1e-6,
+        # bound_constraints_scalar: float = 1,
+        force_bounds: bool = False,
         optimization_method: int = 2,
         verbosity: int = 0,
     ) -> None:
@@ -154,6 +180,9 @@ class optgra:
                 constraints of the problem come first, followed by those derived from the lower box bounds, then those
                 from the upper box bounds. Infinite bounds are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived from bounds
+            force_bounds: optional - whether to force the bounds given by the problem. If false (default), the
+                fitness function might also be called with values of x that are outside of the bounds. Set to true
+                if the fitness function cannot handle that.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
             verbosity: 0 has no output, 4 and higher have maximum output
@@ -178,6 +207,9 @@ class optgra:
 
         self.bounds_to_constraints = bounds_to_constraints
         self.bound_constraints_tolerance = bound_constraints_tolerance
+
+        self.force_bounds = force_bounds
+        # self.bound_violation_penalty = bound_violation_penalty
 
         self.log_level = verbosity
         self._sens_state = None
@@ -315,11 +347,15 @@ class optgra:
 
         idx = list(population.get_ID()).index(selected[0][0])
 
-        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
+        fitness_func = optgra._wrap_fitness_func(
+            problem, self.bounds_to_constraints, self.force_bounds
+        )
         grad_func = None
         derivatives_computation = 2
         if problem.has_gradient():
-            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
+            grad_func = optgra._wrap_gradient_func(
+                problem, self.bounds_to_constraints, self.force_bounds
+            )
             derivatives_computation = 1
 
         # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
@@ -374,9 +410,22 @@ class optgra:
 
         best_x, best_f, finopt = result
 
-        # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
-        pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
-        population.set_xf(idx, best_x, list(pagmo_fitness))
+        violated = False
+        if self.force_bounds:
+            lb, ub = problem.get_bounds()
+            for i in range(problem.get_nx()):
+                if best_x[i] < lb[i]:
+                    best_x[i] = lb[i]
+                    violated = True
+                if best_x[i] > ub[i]:
+                    best_x[i] = ub[i]
+                    violated = True
+        if violated:
+            population.set_x(idx, best_x)
+        else:
+            # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
+            pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
+            population.set_xf(idx, best_x, list(pagmo_fitness))
 
         return population
 
