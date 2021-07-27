@@ -567,7 +567,7 @@ class optgra_test(unittest.TestCase):
                 return ([-10, -10, -10, -10, -10], [10, 10, 10, 10, 10])
 
             def fitness(self, x):
-                result = [sum(x), sum([(x[i] - i - 7) ** 2 for i in range(len(x))])]
+                result = [sum(x), sum([(x[i] - 5*i + 10) ** 2 for i in range(len(x))])]
                 lb, ub = self.get_bounds()
                 for i in range(len(lb)):
                     if x[i] < lb[i]:
@@ -598,6 +598,22 @@ class optgra_test(unittest.TestCase):
         pop = algo.evolve(pop)
         extracted = pop.problem.extract(_prob_bound_test)
         self.assertFalse(extracted._bounds_violated)
+
+        # check that population has valid members
+        algo = pygmo.algorithm(
+            pyoptgra.optgra(force_bounds=True, bounds_to_constraints=False)
+        )
+        prob = pygmo.problem(_prob_bound_test_no_gradient())
+        pop = pygmo.population(prob, size=1)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertFalse(extracted._bounds_violated)
+        pop = algo.evolve(pop)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertFalse(extracted._bounds_violated)
+        lb, ub = prob.get_bounds()
+        for i in range(prob.get_nx()):
+            self.assertTrue(pop.champion_x[i] >= lb[i])
+            self.assertTrue(pop.champion_x[i] <= ub[i])
 
 
 if __name__ == "__main__":
