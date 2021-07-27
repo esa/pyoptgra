@@ -81,13 +81,56 @@ class luksan_vlcek:
     def gradient(self, x):
         return pygmo.estimate_gradient_h(lambda x: self.fitness(x), x)
 
-class _prob(object):
 
+class _prob(object):
     def get_bounds(self):
         return ([0, 0], [1, 1])
 
     def fitness(self, a):
         return [42]
+
+
+class _prob_bound_test(object):
+    def __init__(self):
+        self._bounds_violated = False
+
+    def get_bounds(self):
+        return ([-10, -10, -10, -10, -10], [10, 10, 10, 10, 10])
+
+    def fitness(self, x):
+        result = [sum(x), sum([(x[i] - i) ** 2 for i in range(len(x))])]
+        lb, ub = self.get_bounds()
+        for i in range(len(lb)):
+            if x[i] < lb[i]:
+                self._bounds_violated = True
+            if x[i] > ub[i]:
+                self._bounds_violated = True
+        return result
+
+    def gradient(self, x):
+        grad = []
+        x_dim = len(self.get_bounds()[0])
+
+        lb, ub = self.get_bounds()
+        for i in range(len(lb)):
+            if x[i] < lb[i]:
+                self._bounds_violated = True
+            if x[i] > ub[i]:
+                self._bounds_violated = True
+
+        for i in range(x_dim):  # merit gradient
+            grad.append(1)
+
+        for i in range(x_dim):  # constraint gradient
+            grad.append(2 * (x[i] - 1))
+
+        return grad
+
+    def has_gradient(self):
+        return True
+
+    def get_nic(self):
+        return 1
 
 
 class optgra_test(unittest.TestCase):
@@ -105,6 +148,9 @@ class optgra_test(unittest.TestCase):
         self.sensitivity_matrices_test()
         self.sensitivity_new_callable_test()
         self.sensitivity_constraint_delta_test()
+        self.force_bounds_test()
+        self.force_bounds_fitness_test()
+        self.force_bounds_gradient_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -312,6 +358,7 @@ class optgra_test(unittest.TestCase):
     def archipelago_evolve_test(self):
         from pygmo import archipelago, rosenbrock, mp_island, evolve_status
         from copy import deepcopy
+
         a = archipelago()
         self.assertTrue(a.status == evolve_status.idle)
         a = archipelago(5, algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
@@ -328,8 +375,9 @@ class optgra_test(unittest.TestCase):
         a.evolve(10)
         a2 = deepcopy(a)
         a.wait_check()
-        a = archipelago(5, udi=mp_island(), algo=pyoptgra.optgra(),
-                        prob=rosenbrock(), pop_size=10)
+        a = archipelago(
+            5, udi=mp_island(), algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10
+        )
         a.evolve(10)
         a.evolve(10)
         str(a)
@@ -344,18 +392,31 @@ class optgra_test(unittest.TestCase):
         a2 = deepcopy(a)
         a.wait_check()
         # Throws on wait_check().
-        a = archipelago(5, algo=pyoptgra.optgra(variable_scaling_factors=[0.5]*3), prob=rosenbrock(), pop_size=3)
+        a = archipelago(
+            5,
+            algo=pyoptgra.optgra(variable_scaling_factors=[0.5] * 3),
+            prob=rosenbrock(),
+            pop_size=3,
+        )
         a.evolve()
         self.assertRaises(RuntimeError, lambda: a.wait_check())
 
-
     def archipelago_pickle_test(self):
-        from pygmo import archipelago, rosenbrock, mp_island, ring, migration_type, migrant_handling
+        from pygmo import (
+            archipelago,
+            rosenbrock,
+            mp_island,
+            ring,
+            migration_type,
+            migrant_handling,
+        )
         from pickle import dumps, loads
+
         a = archipelago(5, algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
         self.assertEqual(repr(a), repr(loads(dumps(a))))
-        a = archipelago(5, algo=pyoptgra.optgra(), prob=_prob(),
-                        pop_size=10, udi=mp_island())
+        a = archipelago(
+            5, algo=pyoptgra.optgra(), prob=_prob(), pop_size=10, udi=mp_island()
+        )
         self.assertEqual(repr(a), repr(loads(dumps(a))))
 
     def prepare_sensitivity_input_check_test(self):
@@ -376,7 +437,7 @@ class optgra_test(unittest.TestCase):
         opt = pyoptgra.optgra()
         mprob = pygmo.problem(toy_multi_problem())
         with self.assertRaises(ValueError):
-            opt.prepare_sensitivity(mprob, [0,0])
+            opt.prepare_sensitivity(mprob, [0, 0])
 
         class toy_stochastic_problem(object):
             def __init__(self):
@@ -402,26 +463,28 @@ class optgra_test(unittest.TestCase):
         opt = pyoptgra.optgra(variable_scaling_factors=[1] * 29)
         prob = pygmo.problem(pygmo.schwefel(30))
         with self.assertRaises(ValueError):
-            opt.prepare_sensitivity(prob, [0]*30)
+            opt.prepare_sensitivity(prob, [0] * 30)
 
         # Correct size
-        opt = pyoptgra.optgra(variable_scaling_factors = [1 for _ in range(30)], bounds_to_constraints=False)
-        opt.prepare_sensitivity(prob, [0]*30)
+        opt = pyoptgra.optgra(
+            variable_scaling_factors=[1 for _ in range(30)], bounds_to_constraints=False
+        )
+        opt.prepare_sensitivity(prob, [0] * 30)
 
         # Check that constraint priorities of wrong size are rejected
         opt = pyoptgra.optgra(constraint_priorities=[1] * 2)
         prob = pygmo.problem(pygmo.schwefel(30))
         with self.assertRaises(ValueError):
-            opt.prepare_sensitivity(prob, [0]*30)
+            opt.prepare_sensitivity(prob, [0] * 30)
 
         # Correct size
         opt = pyoptgra.optgra(constraint_priorities=[1] * 61)
-        opt.prepare_sensitivity(prob, [0]*30)
+        opt.prepare_sensitivity(prob, [0] * 30)
 
     def prepare_sensitivity_test(self):
         opt = pyoptgra.optgra()
         prob = pygmo.problem(luksan_vlcek())
-        opt.prepare_sensitivity(prob, [0]*6)
+        opt.prepare_sensitivity(prob, [0] * 6)
 
     def sensitivity_matrices_test(self):
         opt = pyoptgra.optgra()
@@ -431,12 +494,12 @@ class optgra_test(unittest.TestCase):
             opt.sensitivity_matrices()
 
         prob = pygmo.problem(luksan_vlcek())
-        opt.prepare_sensitivity(prob, [0]*6)
+        opt.prepare_sensitivity(prob, [0] * 6)
 
         matrices = opt.sensitivity_matrices()
         self.assertEqual(len(matrices), 5)
 
-        #TODO: test matrix sizes and content
+        # TODO: test matrix sizes and content
 
     def sensitivity_new_callable_test(self):
         opt = pyoptgra.optgra()
@@ -447,8 +510,14 @@ class optgra_test(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             opt.linear_update_new_callable(prob)
 
-        opt.prepare_sensitivity(prob, [0]*6)
+        opt.prepare_sensitivity(prob, [0] * 6)
 
+        # test problem of different type
+        prob2 = pygmo.problem(pygmo.schwefel(30))
+        with self.assertRaises(ValueError):
+            opt.linear_update_new_callable(prob2)
+
+        # test correct problem
         opt.linear_update_new_callable(prob)
 
     def sensitivity_constraint_delta_test(self):
@@ -456,15 +525,79 @@ class optgra_test(unittest.TestCase):
 
         # test illegal state
         with self.assertRaises(RuntimeError):
-            opt.linear_update_delta([1]*16)
+            opt.linear_update_delta([1] * 16)
 
         prob = pygmo.problem(luksan_vlcek())
-        opt.prepare_sensitivity(prob, [0]*6)
+        opt.prepare_sensitivity(prob, [0] * 6)
 
-        opt.linear_update_delta([1]*18)
+        opt.linear_update_delta([1] * 18)
 
+    def force_bounds_fitness_test(self):
+        prob = pygmo.problem(_prob_bound_test())
+        f = pyoptgra.optgra._wrap_fitness_func(prob, False, False)
+        f([-20, 20, 0, 0, 0])
+        extracted = prob.extract(_prob_bound_test)
+        self.assertTrue(extracted._bounds_violated)
 
-        
+        prob2 = pygmo.problem(_prob_bound_test())
+        f = pyoptgra.optgra._wrap_fitness_func(prob2, False, True)
+        f([-20, 20, 0, 0, 0])
+        extracted = prob2.extract(_prob_bound_test)
+        self.assertFalse(extracted._bounds_violated)
+
+    def force_bounds_gradient_test(self):
+        prob = pygmo.problem(_prob_bound_test())
+        g = pyoptgra.optgra._wrap_gradient_func(prob, False, False)
+        g([-20, 20, 0, 0, 0])
+        extracted = prob.extract(_prob_bound_test)
+        self.assertTrue(extracted._bounds_violated)
+
+        prob2 = pygmo.problem(_prob_bound_test())
+        g = pyoptgra.optgra._wrap_gradient_func(prob2, False, True)
+        g([-20, 20, 0, 0, 0])
+        extracted = prob2.extract(_prob_bound_test)
+        self.assertFalse(extracted._bounds_violated)
+
+    def force_bounds_test(self):
+        class _prob_bound_test_no_gradient(object):
+            def __init__(self):
+                self._bounds_violated = False
+
+            def get_bounds(self):
+                return ([-10, -10, -10, -10, -10], [10, 10, 10, 10, 10])
+
+            def fitness(self, x):
+                result = [sum(x), sum([(x[i] - i - 7) ** 2 for i in range(len(x))])]
+                lb, ub = self.get_bounds()
+                for i in range(len(lb)):
+                    if x[i] < lb[i]:
+                        self._bounds_violated = True
+                    if x[i] > ub[i]:
+                        self._bounds_violated = True
+                return result
+
+            def get_nic(self):
+                return 1
+
+        # check bounds violation with normal optgra
+        algo = pygmo.algorithm(pyoptgra.optgra(force_bounds=False))
+        prob = pygmo.problem(_prob_bound_test_no_gradient())
+        pop = pygmo.population(prob, size=1)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertFalse(extracted._bounds_violated)
+        pop = algo.evolve(pop)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertTrue(extracted._bounds_violated)
+
+        # check bounds are forced when setting the argument
+        algo = pygmo.algorithm(pyoptgra.optgra(force_bounds=True))
+        prob = pygmo.problem(_prob_bound_test())
+        pop = pygmo.population(prob, size=1)
+        extracted = pop.problem.extract(_prob_bound_test)
+        self.assertFalse(extracted._bounds_violated)
+        pop = algo.evolve(pop)
+        extracted = pop.problem.extract(_prob_bound_test)
+        self.assertFalse(extracted._bounds_violated)
 
 
 if __name__ == "__main__":

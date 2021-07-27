@@ -51,7 +51,7 @@ class optgra:
         problem,
         bounds_to_constraints: bool = True,
         force_bounds: bool = False,
-    ):  # TODO: add bounds here
+    ):
         def wrapped_fitness(x):
 
             fixed_x = x
