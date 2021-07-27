@@ -70,7 +70,17 @@ int main(int argn, char** argc)
 	for (int i = 0; i < 1 + 1; i++) {
 		cout << best_orig[i] << " ";
 	}
-	cout << endl;	
+	cout << endl;
+
+	std::vector<double> sens_x = {0.000183705, 1, 1.99982, 2.99963, 3.99945};
+	std::vector<double> sens_f = {5.06211e-07, 9.99908};
+
+	//std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+    // std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+
+	std::ignore = compute_sensitivity_matrices(bestx, {0,-1}, f, g, true);
+
+	std::ignore =  prepare_sensitivity_state(bestx, {0,-1}, f, g, true);
 
    return 0;
 }

@@ -1,10 +1,16 @@
 from collections import deque
 from math import isfinite
-from typing import List
+from typing import List, Tuple, Union
 
 from pygmo import s_policy, select_best
 
-from .core import optimize
+from .core import (
+    get_sensitivity_matrices,
+    optimize,
+    prepare_sensitivity_state,
+    sensitivity_update_constraint_delta,
+    sensitivity_update_new_callable,
+)
 
 
 class optgra:
@@ -41,13 +47,27 @@ class optgra:
         return resultTypes
 
     @staticmethod
-    def _wrap_fitness_func(problem, bounds_to_constraints: bool = True):
+    def _wrap_fitness_func(
+        problem,
+        bounds_to_constraints: bool = True,
+        force_bounds: bool = False,
+    ):
         def wrapped_fitness(x):
-            result = deque(problem.fitness(x))
+
+            fixed_x = x
+            lb, ub = problem.get_bounds()
+
+            if force_bounds:
+                for i in range(problem.get_nx()):
+                    if x[i] < lb[i]:
+                        fixed_x[i] = lb[i]
+                    if x[i] > ub[i]:
+                        fixed_x[i] = ub[i]
+
+            result = deque(problem.fitness(fixed_x))
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                lb, ub = problem.get_bounds()
                 for i in range(len(lb)):
                     if isfinite(lb[i]):
                         result.append(x[i] - lb[i])
@@ -63,14 +83,26 @@ class optgra:
         return wrapped_fitness
 
     @staticmethod
-    def _wrap_gradient_func(problem, bounds_to_constraints: bool = True):
+    def _wrap_gradient_func(
+        problem, bounds_to_constraints: bool = True, force_bounds=False
+    ):
 
         sparsity_pattern = problem.gradient_sparsity()
 
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
-            sparse_values = problem.gradient(x)
+            lb, ub = problem.get_bounds()
+            fixed_x = x
+
+            if force_bounds:
+                for i in range(problem.get_nx()):
+                    if x[i] < lb[i]:
+                        fixed_x[i] = lb[i]
+                    if x[i] > ub[i]:
+                        fixed_x[i] = ub[i]
+
+            sparse_values = problem.gradient(fixed_x)
 
             nnz = len(sparse_values)
 
@@ -116,6 +148,8 @@ class optgra:
         constraint_priorities: List[int] = [],  # f_dim
         bounds_to_constraints: bool = True,
         bound_constraints_tolerance: float = 1e-6,
+        # bound_constraints_scalar: float = 1,
+        force_bounds: bool = False,
         optimization_method: int = 2,
         verbosity: int = 0,
     ) -> None:
@@ -146,6 +180,9 @@ class optgra:
                 constraints of the problem come first, followed by those derived from the lower box bounds, then those
                 from the upper box bounds. Infinite bounds are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived from bounds
+            force_bounds: optional - whether to force the bounds given by the problem. If false (default), the
+                fitness function might also be called with values of x that are outside of the bounds. Set to true
+                if the fitness function cannot handle that.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
             verbosity: 0 has no output, 4 and higher have maximum output
@@ -171,7 +208,12 @@ class optgra:
         self.bounds_to_constraints = bounds_to_constraints
         self.bound_constraints_tolerance = bound_constraints_tolerance
 
+        self.force_bounds = force_bounds
+        # self.bound_violation_penalty = bound_violation_penalty
+
         self.log_level = verbosity
+        self._sens_state = None
+        self._sens_constraint_types: Union[List[int], None] = None
 
         if optimization_method not in [
             0,
@@ -305,11 +347,15 @@ class optgra:
 
         idx = list(population.get_ID()).index(selected[0][0])
 
-        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
+        fitness_func = optgra._wrap_fitness_func(
+            problem, self.bounds_to_constraints, self.force_bounds
+        )
         grad_func = None
         derivatives_computation = 2
         if problem.has_gradient():
-            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
+            grad_func = optgra._wrap_gradient_func(
+                problem, self.bounds_to_constraints, self.force_bounds
+            )
             derivatives_computation = 1
 
         # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
@@ -338,6 +384,7 @@ class optgra:
         variable_names: List[str] = []
         constraint_names: List[str] = []
         autodiff_deltas: List[float] = []
+        variable_types: List[int] = []
 
         result = optimize(
             initial_x=population.get_x()[idx],
@@ -357,13 +404,257 @@ class optgra:
             optimization_method=self.optimization_method,
             derivatives_computation=derivatives_computation,
             autodiff_deltas=autodiff_deltas,
+            variable_types=variable_types,
             log_level=self.log_level,
         )
 
         best_x, best_f, finopt = result
 
-        # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
-        pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
-        population.set_xf(idx, best_x, list(pagmo_fitness))
+        violated = False
+        if self.force_bounds:
+            lb, ub = problem.get_bounds()
+            for i in range(problem.get_nx()):
+                if best_x[i] < lb[i]:
+                    best_x[i] = lb[i]
+                    violated = True
+                if best_x[i] > ub[i]:
+                    best_x[i] = ub[i]
+                    violated = True
+        if violated:
+            population.set_x(idx, best_x)
+        else:
+            # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
+            pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
+            population.set_xf(idx, best_x, list(pagmo_fitness))
 
         return population
+
+    def prepare_sensitivity(self, problem, x: List[float]) -> None:
+        """
+        Prepare OPTGRA for sensitivity analysis at x. This is independant from previous and later calls to evolve,
+        but enables calls to sensitivity_matrices, linear_update_new_callable and linear_update_delta on this instance.
+
+        This works by creating a linearization of the problem's fitness function around x.
+
+        Args:
+
+            problem: The problem being analyzed.
+            x: The value of x around which linearization is performed
+
+        Raises:
+
+            ValueError: If the problem contains multiple objectives
+            ValueError: If the problem is stochastic
+            ValueError: If the problem dimensions don't fit to constraint_priorities
+                or variable_scaling_factors that were passed to the wrapper constructor
+            ValueError: If the problem has finite box bounds and bounds_to_constraints was
+                set to True in the wrapper constructor (default), constraint_priorities
+                were also passed but don't cover the additional bound-derived constraints
+        """
+
+        if problem.get_nobj() > 1:
+            raise ValueError(
+                "Multiple objectives detected in "
+                + problem.get_name()
+                + " instance. Optgra cannot deal with them"
+            )
+
+        if problem.is_stochastic():
+            raise ValueError(
+                problem.get_name()
+                + " appears to be stochastic, optgra cannot deal with it"
+            )
+
+        scaling_len = len(self.variable_scaling_factors)
+        if scaling_len > 0 and scaling_len != problem.get_nx():
+            raise ValueError(
+                str(scaling_len)
+                + " variable scaling factors passed for problem"
+                + " with "
+                + str(problem.get_nx())
+                + " parameters."
+            )
+
+        bound_types = []
+        if self.bounds_to_constraints:
+            bound_types = optgra._constraint_types_from_box_bounds(problem)
+
+        num_function_output = (
+            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        )
+        prio_len = len(self.constraint_priorities)
+        if prio_len > 0 and prio_len != num_function_output:
+            raise ValueError(
+                str(prio_len)
+                + " constraint priorities passed for problem"
+                + " with "
+                + str(num_function_output)
+                + " function outputs."
+            )
+
+        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
+        grad_func = None
+        derivatives_computation = 2
+        if problem.has_gradient():
+            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
+            derivatives_computation = 1
+
+        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
+
+        # adjust constraint priorities if adding constraints from box bound
+        constraint_priorities = self.constraint_priorities
+        if self.bounds_to_constraints:
+            constraint_priorities = constraint_priorities + [0] * len(bound_types)
+
+        # still to set: variable_names, constraint_names, autodiff_deltas
+        autodiff_deltas: List[float] = []
+        variable_types: List[float] = [
+            0 for _ in x
+        ]  # TODO: extend to set variable types
+
+        state = prepare_sensitivity_state(
+            x=x,
+            constraint_types=constraint_types,
+            fitness_callback=fitness_func,
+            gradient_callback=grad_func,
+            has_gradient=problem.has_gradient(),
+            max_distance_per_iteration=self.max_distance_per_iteration,
+            perturbation_for_snd_order_derivatives=self.perturbation_for_snd_order_derivatives,
+            variable_scaling_factors=self.variable_scaling_factors,
+            derivatives_computation=derivatives_computation,
+            autodiff_deltas=autodiff_deltas,
+            variable_types=variable_types,
+            log_level=self.log_level,
+        )
+
+        self._sens_state = state
+        self._sens_constraint_types = constraint_types
+        self._sens_variable_types = variable_types
+
+    def sensitivity_matrices(self):
+        """
+        Get stored sensitivity matrices prepared by earlier call to _prepare_sensivitity.
+        Note that the active constraints are constraints that are currently violated,
+        while parameters refer to variables whose variable type was declared as fixed.
+
+        Returns:
+
+            A tuple of one list and four matrices: a boolean list of whether each constraint is active,
+            the sensitivity of constraints + merit function with respect to active constraints,
+            the sensitivity of constraints + merit function with respect to parameters,
+            the sensitivity of variables with respect to active constraints,
+            and the sensitivity of variables with respect to parameters.
+
+        Raises:
+
+            RuntimeError: If prepare_sensitivity has not been called on this instance
+
+        """
+
+        if self._sens_state is None or len(self._sens_state) == 0:
+            raise RuntimeError("Please call prepare_sensitivity first")
+
+        return get_sensitivity_matrices(
+            self._sens_variable_types, self._sens_constraint_types, self._sens_state
+        )
+
+    def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
+        """
+        Perform a single optimization step on the stored value of x, but with a new callable
+
+        Args:
+            problem: A problem containing the new callable.
+                     Has to have same dimensions and types as the problem passed to prepare_sensitivity
+
+        Returns:
+
+            tuple of new_x, new_y
+
+        Raises:
+
+            RuntimeError: If prepare_sensitivity has not been called on this instance
+            ValueError: If number or type of constraints has changed against prepare_sensitivity
+
+        """
+
+        if self._sens_state is None or len(self._sens_state) == 0:
+            raise RuntimeError("Please call prepare_sensitivity first")
+
+        bound_types = []
+        if self.bounds_to_constraints:
+            bound_types = optgra._constraint_types_from_box_bounds(problem)
+
+        fitness_func = optgra._wrap_fitness_func(problem, self.bounds_to_constraints)
+        grad_func = None
+        derivatives_computation = 2
+        if problem.has_gradient():
+            grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
+            derivatives_computation = 1
+
+        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
+
+        if constraint_types != self._sens_constraint_types:
+            raise ValueError(
+                "Derived constraint types from new problem are, "
+                + str(constraint_types)
+                + ", but stored types for analysis are "
+                + str(constraint_types)
+            )  # TOOD: maybe report exact index of difference
+
+        autodiff_deltas: List[float] = []
+
+        return sensitivity_update_new_callable(
+            self._sens_state,
+            self._sens_variable_types,
+            constraint_types,
+            fitness_func,
+            grad_func,
+            problem.has_gradient(),
+            self.max_distance_per_iteration,
+            self.perturbation_for_snd_order_derivatives,
+            self.variable_scaling_factors,
+            derivatives_computation,
+            autodiff_deltas,
+            self.log_level,
+        )
+
+    def linear_update_delta(
+        self, constraint_delta: List[float]
+    ) -> Tuple[List[float], List[float]]:
+        """
+        Perform a single optimization step on the linear approximation prepared with prepare_sensitivity.
+        For this, no new function calls to the problem callable are performed, making this potentially very fast.
+
+        Args:
+            constraint_delta: A list of deltas against the stored constraints. They are subtracted from the stored values.
+
+        Returns:
+
+            tuple of new_x, new_y
+
+        Raises:
+
+            RuntimeError: If prepare_sensitivity has not been called on this instance
+            ValueError: If number of deltas does not fit number of constraints.
+
+        """
+
+        if self._sens_state is None or len(self._sens_state) == 0:
+            raise RuntimeError("Please call prepare_sensitivity first")
+
+        return sensitivity_update_constraint_delta(
+            self._sens_state,
+            self._sens_variable_types,
+            self._sens_constraint_types,
+            constraint_delta,
+            self.max_distance_per_iteration,
+            self.perturbation_for_snd_order_derivatives,
+            self.variable_scaling_factors,
+            self.log_level,
+        )

@@ -42,17 +42,20 @@ set (OPTGRAFILES
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogeval.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogexcl.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogexec.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/oggsst.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogincl.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/oginit.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogiter.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogleft.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogomet.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogopti.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogrigt.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogsens.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogsopt.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogomet.F"
- "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogopti.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogssst.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvsca.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvstr.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvtyp.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwlog.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwrit.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogdata.inc"
@@ -63,6 +66,9 @@ target_include_directories(optgra PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/c
 
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
+
+add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/raiitest.cpp")
+target_link_libraries(raii-test optgra)
 
 pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(core PRIVATE optgra)
