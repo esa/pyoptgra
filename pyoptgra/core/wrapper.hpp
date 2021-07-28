@@ -234,7 +234,7 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
-    std::tuple<int, int> initialize_sensitivity_data(std::vector<double> x, fitness_callback fitness, gradient_callback gradient) {
+    std::tuple<std::vector<double>, std::vector<double>, int, int> initialize_sensitivity_data(std::vector<double> x, fitness_callback fitness, gradient_callback gradient) {
         if (int(x.size()) != num_variables) {
             throw(std::invalid_argument("Expected " + std::to_string(num_variables) + ", but got " + std::to_string(x.size())));
         }
@@ -261,7 +261,7 @@ struct optgra_raii {
         static_callable_store::set_fitness_callable(fitness_callback());
         static_callable_store::set_gradient_callable(gradient_callback());
 
-        return std::make_tuple(finopt, finite);
+        return std::make_tuple(valvar, valcon, finopt, finite);
     }
 
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
@@ -397,12 +397,29 @@ struct optgra_raii {
 
         std::tie(senvar, senqua, sencon, senact, sender) = state_tuple;
 
-        //TODO: verify dimensions
+        if (int(senvar.size()) != num_variables) {
+            throw(std::invalid_argument("First vector needs to be of size num_variables."));
+        }
+
+        if (int(senqua.size()) != num_constraints+1) {
+            throw(std::invalid_argument("Second, third and fourth vector need to be of size num_constraints+1."));
+        }
+
+        if (int(sencon.size()) != num_constraints+1) {
+            throw(std::invalid_argument("Second, third and fourth vector need to be of size num_constraints+1."));
+        }
+
+        if (int(senact.size()) != num_constraints+1) {
+            throw(std::invalid_argument("Second, third and fourth vector need to be of size num_constraints+1."));
+        }
+
+        if (int(sender.size()) != ((num_constraints+1)*num_variables)) {
+            throw(std::invalid_argument("Fifth vector needs to be of size (num_constraints+1)*num_variables."));
+        }
 
         ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
 
         initialized_sensitivity = true;
-
     }
 
     sensitivity_state get_sensitivity_state_data() const {
@@ -527,7 +544,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     return raii_object.exec(initial_x, fitness, gradient);
 }
 
-sensitivity_state prepare_sensitivity_state(const std::vector<double> &x,
+std::tuple<sensitivity_state, std::vector<double>> prepare_sensitivity_state(const std::vector<double> &x,
     const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
     double max_distance_per_iteration = 10, // VARMAX
     double perturbation_for_snd_order_derivatives = 1, // VARSND
@@ -569,9 +586,13 @@ sensitivity_state prepare_sensitivity_state(const std::vector<double> &x,
         autodiff_deltas,
         log_level);
 
-    raii_object.initialize_sensitivity_data(x, fitness, gradient);
 
-    return raii_object.get_sensitivity_state_data();
+    std::vector<double> x_new;
+    std::vector<double> y_new;
+    std::tie(x_new, y_new, std::ignore, std::ignore) = raii_object.initialize_sensitivity_data(x, fitness, gradient);
+    sensitivity_state state = raii_object.get_sensitivity_state_data();
+
+    return std::make_tuple(state, x_new);
 }
 
 /***
