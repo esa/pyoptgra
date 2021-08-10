@@ -11,7 +11,7 @@ C INP | ACTSEN(NUMCON+1) | R*8 | STORED CONSTRAINTS ACTIVE
 C INP | DERSEN(NUMCON+1, | R*8 | STORED DERIVATIVE
 C                NUMVAR) |     | 
 C ======================================================================
-C 2008/01/16 | J. SCHOENMAEKERS | NEW
+C 2021/07/19 | M. von Looz | NEW
 C ======================================================================
       IMPLICIT NONE
 C ======================================================================

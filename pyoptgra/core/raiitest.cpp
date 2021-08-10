@@ -204,7 +204,7 @@ int main(int argn, char** argc)
 	}
 	cout << "-----------------------------------------------" << endl;
 
-    optgra_raii raii_object({0}, {-1,-1});
+    optgra_raii raii_object({0}, {-1,-1}, 150, 90, 1);
 
  	raii_object.initialize_sensitivity_data({2}, f_simple, g_simple);
 

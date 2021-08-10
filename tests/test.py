@@ -498,6 +498,9 @@ class optgra_test(unittest.TestCase):
 
         matrices = opt.sensitivity_matrices()
         self.assertEqual(len(matrices), 5)
+        self.assertEqual(len(matrices[0]), 6+12) #luksan_vlcek has 6 constraints and 12 bounds
+        self.assertLessEqual(max(matrices[0]), 1)
+        self.assertGreaterEqual(min(matrices[0]), 0)
 
         # TODO: test matrix sizes and content
 

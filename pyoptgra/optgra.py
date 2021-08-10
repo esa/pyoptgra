@@ -429,7 +429,7 @@ class optgra:
 
         return population
 
-    def prepare_sensitivity(self, problem, x: List[float]) -> None:
+    def prepare_sensitivity(self, problem, x: List[float]) -> List[float]:
         """
         Prepare OPTGRA for sensitivity analysis at x. This is independant from previous and later calls to evolve,
         but enables calls to sensitivity_matrices, linear_update_new_callable and linear_update_delta on this instance.
@@ -515,7 +515,7 @@ class optgra:
             0 for _ in x
         ]  # TODO: extend to set variable types
 
-        state = prepare_sensitivity_state(
+        state, new_x = prepare_sensitivity_state(
             x=x,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
@@ -533,6 +533,8 @@ class optgra:
         self._sens_state = state
         self._sens_constraint_types = constraint_types
         self._sens_variable_types = variable_types
+
+        return new_x
 
     def sensitivity_matrices(self):
         """
@@ -558,7 +560,9 @@ class optgra:
             raise RuntimeError("Please call prepare_sensitivity first")
 
         return get_sensitivity_matrices(
-            self._sens_variable_types, self._sens_constraint_types, self._sens_state
+            self._sens_state,
+            self._sens_variable_types,
+            self._sens_constraint_types,
         )
 
     def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
