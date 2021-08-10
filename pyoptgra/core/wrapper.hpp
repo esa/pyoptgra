@@ -265,7 +265,7 @@ struct optgra_raii {
     }
 
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices() {
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity_matrices() {
 
         if (!initialized_sensitivity) {
             throw(std::runtime_error("Please call initialize_sensitivity_data first."));
@@ -360,7 +360,7 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
-    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_delta(std::vector<double> constraint_delta) {
+    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_delta(std::vector<double> constraint_delta) {
 
         if (!initialized_sensitivity) {
             throw(std::runtime_error("Please call initialize_sensitivity_data first."));
@@ -623,7 +623,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 
     raii_object.initialize_sensitivity_data(x, fitness, gradient);
 
-    return raii_object.get_sensitivity_matrices();
+    return raii_object.sensitivity_matrices();
 }
 
 /// Create a state tuple usable for sensitivity updates
@@ -722,7 +722,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 
         optgra_raii raii_object(variable_types, constraint_types);
         raii_object.set_sensitivity_state_data(state_tuple);
-        return raii_object.get_sensitivity_matrices();
+        return raii_object.sensitivity_matrices();
 }
 
 /// Perform one optimization step with a new fitness callable, starting from the value of x that was set with prepare_sensitivity_state
@@ -830,7 +830,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_con
 
     raii_object.set_sensitivity_state_data(state_tuple);
 
-    return raii_object.sensitivity_update_constraint_delta(delta);
+    return raii_object.sensitivity_update_delta(delta);
 
 }
 
