@@ -71,7 +71,7 @@ struct static_callable_store {
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
 
-        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector); //TODO: check for correct dimension of return value
+        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector);
 
         int num_constraints = gradient_vector.size();
         if (num_constraints != c_dim) {
@@ -457,7 +457,8 @@ std::mutex optgra_raii::optgra_mutex;
  *
  * @param initial_x the initial guess for the decision vector
  * @param constraint_types types of constraints. Set 0 for equality constraints,
- *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+ *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints.
+ *    Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems.
  * @param fitness a callable for the fitness values. It is called with the current x,
  *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
  * @param gradient a callable for the gradient values, optional. It is called with the current x,
@@ -550,6 +551,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 * @param x the decision vector around which the sensitivity analysis is to be performed
 * @param constraint_types types of constraints. Set 0 for equality constraints,
 *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+*    Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems.
 * @param fitness a callable for the fitness values. It is called with the current x,
 *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
 * @param gradient a callable for the gradient values, optional. It is called with the current x,
@@ -631,6 +633,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 * @param x the decision vector around which the sensitivity analysis is to be performed
 * @param constraint_types types of constraints. Set 0 for equality constraints,
 *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+*    Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems.
 * @param fitness a callable for the fitness values. It is called with the current x,
 *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
 * @param gradient a callable for the gradient values, optional. It is called with the current x,
