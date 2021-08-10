@@ -7,6 +7,10 @@ The pyoptgra module
 .. autoclass:: pyoptgra.optgra(*args)
 
 	.. automethod:: evolve(population pop)
+	.. automethod:: prepare_sensitivity(problem, x)
+	.. automethod:: sensitivity_matrices()
+	.. automethod:: linear_update_new_callable()
+	.. automethod:: linear_update_delta(constraint_delta)
 
 ======================
 The optgra C++ wrapper

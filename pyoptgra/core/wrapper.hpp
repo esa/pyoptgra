@@ -794,6 +794,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new
 * @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
 * @param constraint_types types of constraints. Set 0 for equality constraints,
 *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+* @param delta constraint delta which is subtracted from all values of constraints
 * @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
 * @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
 *    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
