@@ -457,7 +457,7 @@ std::mutex optgra_raii::optgra_mutex;
  *
  * @param initial_x the initial guess for the decision vector
  * @param constraint_types types of constraints. Set 0 for equality constraints,
- *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints
+ *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
  * @param fitness a callable for the fitness values. It is called with the current x,
  *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
  * @param gradient a callable for the gradient values, optional. It is called with the current x,
@@ -486,6 +486,7 @@ std::mutex optgra_raii::optgra_mutex;
  *    2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing.
  *    Parameter VARDER in Fortran.
  * @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
+ * @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
  * @param log_level 0 has no output, 4 and higher have maximum output
  *
  * @return a tuple of the best value of x, the fitness of that x, and a status flag of optgra
@@ -544,59 +545,36 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
     return raii_object.exec(initial_x, fitness, gradient);
 }
 
-std::tuple<sensitivity_state, std::vector<double>> prepare_sensitivity_state(const std::vector<double> &x,
-    const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
-    double max_distance_per_iteration = 10, // VARMAX
-    double perturbation_for_snd_order_derivatives = 1, // VARSND
-    std::vector<double> variable_scaling_factors = {},
-    int derivatives_computation = 1, //VARDER
-    std::vector<double> autodiff_deltas = {},
-    std::vector<int> variable_types = {},
-    int log_level = 1
- ) {
-
-    int num_variables = x.size();
-
-    if (variable_types.size() == 0) {
-            variable_types = std::vector<int>(num_variables, 0);
-        }
-
-    if (variable_types.size() != x.size()) {
-        throw(std::invalid_argument("Got initial_x vector of size" + std::to_string(x.size())
-                 + " but variable_types vector of size " + std::to_string(variable_types.size()) + "."));
-    }
-
-    if (derivatives_computation == 1 && !has_gradient) {
-        std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
-        derivatives_computation = 3;
-    }
-
-    optgra_raii raii_object(variable_types, constraint_types,
-        1, //max_iterations, // MAXITE
-        1, //max_correction_iterations, // CORITE
-        max_distance_per_iteration, // VARMAX
-        perturbation_for_snd_order_derivatives, // VARSND
-        {}, //convergence_thresholds,
-        variable_scaling_factors,
-        {}, //constraint_priorities,
-        {}, //variable_names,
-        {}, //constraint_names,
-        2, //optimization_method, // OPTMET
-        derivatives_computation, //VARDER
-        autodiff_deltas,
-        log_level);
-
-
-    std::vector<double> x_new;
-    std::vector<double> y_new;
-    std::tie(x_new, y_new, std::ignore, std::ignore) = raii_object.initialize_sensitivity_data(x, fitness, gradient);
-    sensitivity_state state = raii_object.get_sensitivity_state_data();
-
-    return std::make_tuple(state, x_new);
-}
-
-/***
-* Sensitivity Function
+/// Compute sensitivity state and matrices in one go, without creating a sensitivity state tuple.
+/**
+* @param x the decision vector around which the sensitivity analysis is to be performed
+* @param constraint_types types of constraints. Set 0 for equality constraints,
+*    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+* @param fitness a callable for the fitness values. It is called with the current x,
+*    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
+* @param gradient a callable for the gradient values, optional. It is called with the current x,
+*    expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j.
+* @param has_gradient whether the problem has a gradient. If set to False, the gradient callable will not be called
+*    and numerical differentiation will be used instead.
+* @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
+* @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
+*    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
+* @param variable_scaling_factors scaling factors for the input variables.
+*    If passed, must be positive and as many as there are variables
+* @param variable_names Not yet implemented
+* @param constraint_names Not yet implemented
+* @param derivatives_computation method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function,
+*    2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing.
+*    Parameter VARDER in Fortran.
+* @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
+* @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
+* @param log_level 0 has no output, 4 and higher have maximum output
+*
+* @return  A tuple of one list and four matrices: a boolean list of whether each constraint is active,
+            the sensitivity of constraints + merit function with respect to active constraints,
+            the sensitivity of constraints + merit function with respect to parameters,
+            the sensitivity of variables with respect to active constraints,
+            and the sensitivity of variables with respect to parameters.
 */
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> compute_sensitivity_matrices(const std::vector<double> &x,
@@ -648,17 +626,130 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
     return raii_object.get_sensitivity_matrices();
 }
 
+/// Create a state tuple usable for sensitivity updates
+/**
+* @param x the decision vector around which the sensitivity analysis is to be performed
+* @param constraint_types types of constraints. Set 0 for equality constraints,
+*    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+* @param fitness a callable for the fitness values. It is called with the current x,
+*    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
+* @param gradient a callable for the gradient values, optional. It is called with the current x,
+*    expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j.
+* @param has_gradient whether the problem has a gradient. If set to False, the gradient callable will not be called
+*    and numerical differentiation will be used instead.
+* @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
+* @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
+*    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
+* @param variable_scaling_factors scaling factors for the input variables.
+*    If passed, must be positive and as many as there are variables
+* @param derivatives_computation method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function,
+*    2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing.
+*    Parameter VARDER in Fortran.
+* @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
+* @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
+* @param log_level 0 has no output, 4 and higher have maximum output
+*
+* @return A tuple of the current sensitivity state and the x for which the sensitivity analysis was performed.
+*            It may be different from the x given as argument, if optimization steps were performed in the meantime.
+*/ 
+std::tuple<sensitivity_state, std::vector<double>> prepare_sensitivity_state(const std::vector<double> &x,
+    const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
+    double max_distance_per_iteration = 10, // VARMAX
+    double perturbation_for_snd_order_derivatives = 1, // VARSND
+    std::vector<double> variable_scaling_factors = {},
+    int derivatives_computation = 1, //VARDER
+    std::vector<double> autodiff_deltas = {},
+    std::vector<int> variable_types = {},
+    int log_level = 1
+ ) {
 
+    int num_variables = x.size();
+
+    if (variable_types.size() == 0) {
+            variable_types = std::vector<int>(num_variables, 0);
+        }
+
+    if (variable_types.size() != x.size()) {
+        throw(std::invalid_argument("Got initial_x vector of size" + std::to_string(x.size())
+                 + " but variable_types vector of size " + std::to_string(variable_types.size()) + "."));
+    }
+
+    if (derivatives_computation == 1 && !has_gradient) {
+        std::cout << "No user-defined gradient available, switching to numeric differentiation." << std::endl;
+        derivatives_computation = 3;
+    }
+
+    optgra_raii raii_object(variable_types, constraint_types,
+        1, //max_iterations, // MAXITE
+        1, //max_correction_iterations, // CORITE
+        max_distance_per_iteration, // VARMAX
+        perturbation_for_snd_order_derivatives, // VARSND
+        {}, //convergence_thresholds,
+        variable_scaling_factors,
+        {}, //constraint_priorities,
+        {}, //variable_names,
+        {}, //constraint_names,
+        2, //optimization_method, // OPTMET
+        derivatives_computation, //VARDER
+        autodiff_deltas,
+        log_level);
+
+
+    std::vector<double> x_new;
+    std::vector<double> y_new;
+    std::tie(x_new, y_new, std::ignore, std::ignore) = raii_object.initialize_sensitivity_data(x, fitness, gradient);
+    sensitivity_state state = raii_object.get_sensitivity_state_data();
+
+    return std::make_tuple(state, x_new);
+}
+
+/// Compute sensitivity matrics from a sensitivity state tuple
+/*
+* @param state_tuple A tuple of vectors representing the internal state of optgra prepared for the sensitivity analysis
+* @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
+* @param constraint_types types of constraints. Set 0 for equality constraints,
+*    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+*
+* @return  A tuple of one list and four matrices: a boolean list of whether each constraint is active,
+            the sensitivity of constraints + merit function with respect to active constraints,
+            the sensitivity of constraints + merit function with respect to parameters,
+            the sensitivity of variables with respect to active constraints,
+            and the sensitivity of variables with respect to parameters.
+*/
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(const std::vector<int> &variable_types, vector<int> constraint_types,
-      sensitivity_state state_tuple) {//TODO: I don't even need the number of variables and constraints here, can be derived from the tuple.
-     //TODO: I do need the constraint types and variable types, though.
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(sensitivity_state state_tuple, const std::vector<int> &variable_types,
+     vector<int> constraint_types) {
 
         optgra_raii raii_object(variable_types, constraint_types);
         raii_object.set_sensitivity_state_data(state_tuple);
         return raii_object.get_sensitivity_matrices();
 }
 
+/// Perform one optimization step with a new fitness callable, starting from the value of x that was set with prepare_sensitivity_state
+/*
+* @param state_tuple A tuple of vectors representing the internal state of optgra prepared for the sensitivity analysis
+* @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
+* @param constraint_types types of constraints. Set 0 for equality constraints,
+*    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+* @param fitness a callable for the fitness values. It is called with the current x,
+*    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
+* @param gradient a callable for the gradient values, optional. It is called with the current x,
+*    expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j.
+* @param has_gradient whether the problem has a gradient. If set to False, the gradient callable will not be called
+*    and numerical differentiation will be used instead.
+* @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
+* @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
+*    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
+* @param variable_scaling_factors scaling factors for the input variables.
+*    If passed, must be positive and as many as there are variables
+* @param derivatives_computation method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function,
+*    2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing.
+*    Parameter VARDER in Fortran.
+* @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
+* @param log_level 0 has no output, 4 and higher have maximum output
+*
+* @return a tuple of the new value of x, the fitness of that x, and a status flag of optgra
+*/
 std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new_callable(sensitivity_state state_tuple, const std::vector<int> &variable_types,
     const std::vector<int> &constraint_types, fitness_callback fitness, gradient_callback gradient, bool has_gradient,
     double max_distance_per_iteration = 10, // VARMAX
@@ -697,6 +788,21 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_new
 
 }
 
+/// Perform an update step based on the prepared sensitivity state, without any calls to the fitness callbacks
+/*
+* @param state_tuple A tuple of vectors representing the internal state of optgra prepared for the sensitivity analysis
+* @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
+* @param constraint_types types of constraints. Set 0 for equality constraints,
+*    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+* @param max_distance_per_iteration maximum scaled distance traveled in each iteration. Optional, defaults to 10 
+* @param perturbation_for_snd_order_derivatives used as delta for numerically computing second order errors
+*    of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1
+* @param variable_scaling_factors scaling factors for the input variables.
+*    If passed, must be positive and as many as there are variables
+* @param log_level 0 has no output, 4 and higher have maximum output
+*
+* @return a tuple of the new value of x, the fitness of that x, and a status flag of optgra
+*/
 std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_delta(sensitivity_state state_tuple,
     const std::vector<int> &variable_types,
     const std::vector<int> &constraint_types, vector<double>& delta,

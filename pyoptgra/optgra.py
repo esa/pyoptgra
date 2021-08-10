@@ -560,7 +560,7 @@ class optgra:
             raise RuntimeError("Please call prepare_sensitivity first")
 
         return get_sensitivity_matrices(
-            self._sens_variable_types, self._sens_constraint_types, self._sens_state
+            self._sens_state, self._sens_variable_types, self._sens_constraint_types, 
         )
 
     def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
