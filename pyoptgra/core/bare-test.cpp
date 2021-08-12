@@ -13,7 +13,7 @@ using namespace optgra;
 std::vector<double> f_simple(std::vector<double> x) {
         std::vector<double> con(2);
         con[0] = 10 - x[0];
-        con[1] = x[0];
+        con[1] = 2*x[0];
         cout << "f_simple called with " << x[0];
         cout << endl;
         return con;
@@ -26,11 +26,12 @@ std::vector<std::vector<double>> g_simple(std::vector<double> x) {
         der[1].resize(1);
 
         der[0][0] = -1;
-        der[1][0] = 1;
+        der[1][0] = 2;
         return der;
 }
 
-vector<int> call_optgra(const std::vector<int> &variable_types, const std::vector<int> &constraint_types,
+std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> call_optgra(const std::vector<int> &variable_types, const std::vector<int> &constraint_types,
         std::vector<double> x,
         fitness_callback fitness,
         gradient_callback gradient,
@@ -93,17 +94,94 @@ vector<int> call_optgra(const std::vector<int> &variable_types, const std::vecto
 
         // call ogsens
         ogsens_(constraint_status.data(), concon.data(), convar.data(), varcon.data(), varvar.data());
-        return constraint_status;
+        
+        // allocate unflattened sensitivity matrices
+        std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
+        std::vector<std::vector<double>> constraints_to_parameters(num_constraints+1);
+        std::vector<std::vector<double>> variables_to_active_constraints(x_dim);
+        std::vector<std::vector<double>> variables_to_parameters(x_dim);
 
+        // copy values for constraints_to_active_constraints and constraints_to_parameters
+        for ( int i = 0; i < (num_constraints+1); i++) {
+            constraints_to_active_constraints[i].resize(num_constraints);
+            constraints_to_parameters[i].resize(x_dim);
+
+            for (int j = 0; j < num_constraints; j++) {
+                constraints_to_active_constraints[i][j] = concon[j*num_constraints+i];
+            }
+
+            for (int j = 0; j < x_dim; j++) {
+                constraints_to_parameters[i][j] = convar[j*num_constraints+i];
+            }
+        }
+
+        // copy values for variables_to_active_constraints and variables_to_parameters
+        for ( int i = 0; i < x_dim; i++) {
+            variables_to_active_constraints[i].resize(num_constraints);
+            variables_to_parameters[i].resize(x_dim);
+
+            for (int j = 0; j < num_constraints; j++) {
+                variables_to_active_constraints[i][j] = varcon[j*x_dim+i];
+            }
+
+            for (int j = 0; j < x_dim; j++) {
+                variables_to_parameters[i][j] = varvar[j*x_dim+i];
+            }
+        }
+
+        return std::make_tuple(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
+         variables_to_active_constraints, variables_to_parameters);
 }
 
 int main(int argn, char** argc)
 {
-        std::vector<int> constraint_status = call_optgra({0}, {-1,-1}, {10}, f_simple, g_simple);
         int num_constraints = 1;
+        int num_variables = 1;
+        std::vector<int> constraint_status(num_constraints);
+        std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
+        std::vector<std::vector<double>> constraints_to_parameters(num_constraints+1);
+        std::vector<std::vector<double>> variables_to_active_constraints(num_variables);
+        std::vector<std::vector<double>> variables_to_parameters(num_variables);
+
+        std::tie(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
+         variables_to_active_constraints, variables_to_parameters) = call_optgra({0}, {-1,-1}, {10}, f_simple, g_simple);
+
         cout << "Active constraints:" << endl;
         for (int i = 0; i < num_constraints; i++) {
                 cout << constraint_status[i] << " ";
         }
         cout << endl;
+
+        cout << "Constraints to active constraints:" << endl;
+        for (int i = 0; i < num_constraints+1; i++) {
+            for (int j = 0; j < num_constraints; j++) {
+                cout << constraints_to_active_constraints[i][j] << " ";
+            }
+            cout << endl;
+        }
+
+        cout << "Constraints to parameters:" << endl;
+        for (int i = 0; i < num_constraints+1; i++) {
+            for (int j = 0; j < num_variables; j++) {
+                cout << constraints_to_parameters[i][j] << " ";
+            }
+            cout << endl;
+        }
+
+        cout << "Variables to active constraints:" << endl;
+        for (int i = 0; i < num_variables; i++) {
+            for (int j = 0; j < num_constraints; j++) {
+                cout << variables_to_active_constraints[i][j] << " ";
+            }
+            cout << endl;
+        }
+
+        cout << "Variables to parameters:" << endl;
+        for (int i = 0; i < num_variables; i++) {
+            for (int j = 0; j < num_variables; j++) {
+                cout << variables_to_parameters[i][j] << " ";
+            }
+            cout << endl;
+        }
+
 }
