@@ -148,6 +148,7 @@ class optgra_test(unittest.TestCase):
         self.sensitivity_matrices_test()
         self.sensitivity_new_callable_test()
         self.sensitivity_constraint_delta_test()
+        self.sensitivity_active_constraints_test()
         self.force_bounds_test()
         self.force_bounds_fitness_test()
         self.force_bounds_gradient_test()
