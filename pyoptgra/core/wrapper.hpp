@@ -20,13 +20,15 @@ extern"C" {
          void (*)(double*, double*), void (*)(double*, double*, double*));
     void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
-    void oggsst_(double * senvar, double * senqua, double * sencon, int * senact, double * sender);
+    void oggsst_(double * senvar, double * senqua, double * sencon, int * senact, double * sender,
+        int * actcon, int * conact, double * conred);
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
     void ogsens_(int * consta, double * concon, double * convar, double * varcon, double * varvar);
     void ogsopt_(int * optsen);
-    void ogssst_(const double * senvar, const double * senqua, const double * sencon, const int * senact, const double * sender);
+    void ogssst_(const double * senvar, const double * senqua, const double * sencon, const int * senact, const double * sender,
+        const int * actcon, const int * conact, const double * conred);
     void ogvsca_(double * scavar);
     void ogvtyp_(const int* vartyp);
     void ogvstr_(char ** strvar, int * lenvar);
@@ -44,7 +46,8 @@ namespace optgra {
     using std::tuple;
     using std::function;
 
-    typedef tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>> sensitivity_state;
+    //senvar, senqua, sencon, senact, sender, actcon, conact, conred
+    typedef tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>, vector<int>, vector<int>, vector<double>> sensitivity_state;
 
 /** This struct is just to connect the std::functions passed from python
  *  to the unholy mess of static function pointers, which are requried by Fortran.
@@ -394,8 +397,11 @@ struct optgra_raii {
         vector<double> sencon;
         vector<int> senact;
         vector<double> sender;
+        vector<int> actcon;
+        vector<int> conact;
+        vector<double> conred;
 
-        std::tie(senvar, senqua, sencon, senact, sender) = state_tuple;
+        std::tie(senvar, senqua, sencon, senact, sender, actcon, conact, conred) = state_tuple;
 
         if (int(senvar.size()) != num_variables) {
             throw(std::invalid_argument("First vector needs to be of size num_variables."));
@@ -417,7 +423,9 @@ struct optgra_raii {
             throw(std::invalid_argument("Fifth vector needs to be of size (num_constraints+1)*num_variables."));
         }
 
-        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
+        //TODO: check sizes of actcon, conact, conred
+
+        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data());
 
         initialized_sensitivity = true;
     }
@@ -428,10 +436,13 @@ struct optgra_raii {
         vector<double> sencon(num_constraints+1);
         vector<int> senact(num_constraints+1);
         vector<double> sender((num_constraints+1)*num_variables);
+        vector<int> actcon(num_constraints+1);
+        vector<int> conact(num_constraints+4);
+        vector<double> conred((num_constraints+3)*num_variables);
 
-        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
+        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data());
         
-        return std::make_tuple(senvar, senqua, sencon, senact, sender);
+        return std::make_tuple(senvar, senqua, sencon, senact, sender, actcon, conact, conred);
     }
 
     ~optgra_raii()

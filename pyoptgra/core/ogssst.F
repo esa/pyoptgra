@@ -1,4 +1,5 @@
-      SUBROUTINE OGSSST (VARSEN, QUASEN, CONSEN, ACTSEN, DERSEN)
+      SUBROUTINE OGSSST (VARSEN, QUASEN, CONSEN, ACTSEN, DERSEN, 
+     &                   ACTSAV, CONSAV, REDSAV)
 C ======================================================================
 C NEAR-LINEAR OPTIMISATION TOOL SENSITIVITY ANALYSIS
 C Function to get sensitivity state data, necessary for serialization.
@@ -10,6 +11,10 @@ C INP | CONSEN(NUMCON+1) | R*8 | STORED CONSTRAINTS VALUE
 C INP | ACTSEN(NUMCON+1) | R*8 | STORED CONSTRAINTS ACTIVE
 C INP | DERSEN(NUMCON+1, | R*8 | STORED DERIVATIVE
 C                NUMVAR) |     | 
+C INP | ACTSAV(NUMCON+1) | I*4 | STORED ACTIVE CONSTRAINTS
+C INP | CONSAV(NUMCON+4) | I*4 | STORED ACTIVE CONSTRAINTS
+C INP | REDSAV(NUMCON+3, | R*8 | STORED DERIVATIVE
+C                NUMVAR) |     |     
 C ======================================================================
 C 2021/07/19 | M. von Looz | NEW
 C ======================================================================
@@ -22,6 +27,9 @@ C ======================================================================
       REAL(8)      CONSEN(NUMCON+1) 
       INTEGER(4)   ACTSEN(NUMCON+1)
       REAL(8)      DERSEN(NUMCON+1,NUMVAR)
+      INTEGER(4)   ACTSAV(NUMCON+1)
+      INTEGER(4)   CONSAV(NUMCON+4)
+      REAL(8)      REDSAV(NUMCON+3,NUMVAR)
 
 C ======================================================================
       INTEGER(4)    VAR, CON
@@ -38,6 +46,22 @@ C ----------------------------------------------------------------------
          SENACT(CON) = ACTSEN(CON)
          DO VAR = 1, NUMVAR
             SENDER(CON,VAR) = DERSEN(CON,VAR)
+         ENDDO
+      ENDDO
+C ======================================================================
+C Temporary status saved of which constraints are active
+C ----------------------------------------------------------------------
+      DO CON = 1, NUMCON+1
+         ACTCON(CON) = ACTSAV(CON)
+      ENDDO
+
+      DO CON = 1, NUMCON+4
+         CONACT(CON) = CONSAV(CON)
+      ENDDO
+
+      DO CON = 1, NUMCON+3
+         DO VAR = 1, NUMVAR
+            CONRED(CON,VAR) = REDSAV(CON,VAR)
          ENDDO
       ENDDO
 C ======================================================================
