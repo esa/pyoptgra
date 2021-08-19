@@ -431,6 +431,10 @@ struct optgra_raii {
     }
 
     sensitivity_state get_sensitivity_state_data() const {
+        if (!initialized_sensitivity) {
+            throw(std::runtime_error("Please call initialize_sensitivity_data first."));
+        }
+
         vector<double> senvar(num_variables);
         vector<double> senqua(num_constraints+1);
         vector<double> sencon(num_constraints+1);
