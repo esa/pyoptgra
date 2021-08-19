@@ -23,7 +23,10 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/_install" CACHE PATH "Prefix prepended to install directories" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-set(PYBIND11_NOPYTHON ON)
+execute_process (
+    COMMAND bash -c "which python"
+    OUTPUT_VARIABLE PYTHON_EXECUTABLE
+)
 
 # build/configure use of ext libraries
 include(cmake/modules/Update_submodules.cmake)
