@@ -549,7 +549,7 @@ class optgra_test(unittest.TestCase):
 
         prob = pygmo.problem(_prob())
         opt = pyoptgra.optgra(
-            bounds_to_constraints=False, verbosity=4, max_distance_per_iteration=0
+            bounds_to_constraints=False, verbosity=4, max_distance_per_iteration=1
         )
         x = [10]
         opt.prepare_sensitivity(prob, x)
