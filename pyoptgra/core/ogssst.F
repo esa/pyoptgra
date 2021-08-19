@@ -1,5 +1,5 @@
       SUBROUTINE OGSSST (VARSEN, QUASEN, CONSEN, ACTSEN, DERSEN, 
-     &                   ACTSAV, CONSAV, REDSAV)
+     &                   ACTSAV, CONSAV, REDSAV, ACTNUM)
 C ======================================================================
 C NEAR-LINEAR OPTIMISATION TOOL SENSITIVITY ANALYSIS
 C Function to get sensitivity state data, necessary for serialization.
@@ -32,10 +32,13 @@ C ======================================================================
       REAL(8)      REDSAV(NUMCON+3,NUMVAR)
 
 C ======================================================================
+      INTEGER(4)    ACTNUM
       INTEGER(4)    VAR, CON
 C ======================================================================
 C Variable values saved for sensitivity
 C ----------------------------------------------------------------------
+      NUMACT = ACTNUM
+
       DO VAR = 1, NUMVAR
          SENVAR(VAR) = VARSEN(VAR)
       ENDDO

@@ -94,8 +94,9 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
         vector<int> actcon(num_constraints+1);
         vector<int> conact(num_constraints+4);
         vector<double> conred((num_constraints+3)*num_variables);
+        int numact = 0;
 
-        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data());
+        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data(), &numact);
 
         cout << "senact: ";
         for (int i = 0; i < num_constraints+1; i++) {

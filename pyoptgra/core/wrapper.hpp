@@ -5,6 +5,7 @@
 #include <tuple>
 #include <iostream>
 #include <functional>
+#include <numeric>
 #include <mutex>
 
 extern"C" {
@@ -21,14 +22,14 @@ extern"C" {
     void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
     void oggsst_(double * senvar, double * senqua, double * sencon, int * senact, double * sender,
-        int * actcon, int * conact, double * conred);
+        int * actcon, int * conact, double * conred, int * actnum);
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
     void ogsens_(int * consta, double * concon, double * convar, double * varcon, double * varvar);
     void ogsopt_(int * optsen);
     void ogssst_(const double * senvar, const double * senqua, const double * sencon, const int * senact, const double * sender,
-        const int * actcon, const int * conact, const double * conred);
+        const int * actcon, const int * conact, const double * conred, int * actnum);
     void ogvsca_(double * scavar);
     void ogvtyp_(const int* vartyp);
     void ogvstr_(char ** strvar, int * lenvar);
@@ -423,9 +424,11 @@ struct optgra_raii {
             throw(std::invalid_argument("Fifth vector needs to be of size (num_constraints+1)*num_variables."));
         }
 
+        int numact = std::accumulate(senact.begin(), senact.end(), 0);
+
         //TODO: check sizes of actcon, conact, conred
 
-        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data());
+        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data(), &numact);
 
         initialized_sensitivity = true;
     }
@@ -443,8 +446,14 @@ struct optgra_raii {
         vector<int> actcon(num_constraints+1);
         vector<int> conact(num_constraints+4);
         vector<double> conred((num_constraints+3)*num_variables);
+        int numact = 0;
 
-        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data());
+        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data(), &numact);
+        int measured_numact = std::accumulate(senact.begin(), senact.end(), 0);
+
+        if (numact != measured_numact) {
+            std::cout << "Warning: Got " << measured_numact << " constraints reported as active, but numact is " << numact << std::endl;
+        }
         
         return std::make_tuple(senvar, senqua, sencon, senact, sender, actcon, conact, conred);
     }
