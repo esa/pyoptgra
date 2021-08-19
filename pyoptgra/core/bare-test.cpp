@@ -85,6 +85,36 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
         ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
          static_callable_store::fitness, static_callable_store::gradient);
 
+        //call and output oggsst to compare
+        vector<double> senvar(num_variables);
+        vector<double> senqua(num_constraints+1);
+        vector<double> sencon(num_constraints+1);
+        vector<int> senact(num_constraints+1);
+        vector<double> sender((num_constraints+1)*num_variables);
+        vector<int> actcon(num_constraints+1);
+        vector<int> conact(num_constraints+4);
+        vector<double> conred((num_constraints+3)*num_variables);
+
+        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data());
+
+        cout << "senact: ";
+        for (int i = 0; i < num_constraints+1; i++) {
+                cout << senact[i] << " ";
+        }
+        cout << endl;
+
+        cout << "actcon: ";
+        for (int i = 0; i < num_constraints+1; i++) {
+                cout << senact[i] << " ";
+        }
+        cout << endl;
+
+        cout << "conact: ";
+        for (int i = 0; i < num_constraints+1; i++) {
+                cout << senact[i] << " ";
+        }
+        cout << endl;
+
         int x_dim = num_variables;
         std::vector<int> constraint_status(num_constraints);
         std::vector<double> concon((num_constraints+1)*num_constraints);
