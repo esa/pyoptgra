@@ -23,11 +23,11 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/_install" CACHE PATH "Prefix prepended to install directories" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
+set(PYBIND11_NOPYTHON ON)
+
 # build/configure use of ext libraries
 include(cmake/modules/Update_submodules.cmake)
 include(cmake/modules/Pybind11.cmake)
-
-set(PYBIND11_NOPYTHON ON)
 
 set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir when using SKBUILD
 
