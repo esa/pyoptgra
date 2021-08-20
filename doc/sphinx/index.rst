@@ -12,3 +12,4 @@ API Reference
    :maxdepth: 1
 
    api
+   sensitivity
