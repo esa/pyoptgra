@@ -39,9 +39,15 @@ When using optgra to optimize this problem, the function will be called a few ti
 	>>> prob.c_tol = 1e-6
 	>>> pop = pygmo.population(prob, 1, seed=1)
 	f called with [19.88739233]
-	>>> algo = pygmo.algorithm(pyoptgra.optgra())
-	>>> pop = algo.evolve(pop)
-	f called with [19.88739233]
+
+.. testcode::
+
+	algo = pygmo.algorithm(pyoptgra.optgra())
+	pop = algo.evolve(pop)
+
+.. testoutput::
+
+    f called with [19.88739233]
     f called with [19.89739233]
     f called with [19.87739233]
     f called with [19.88739233]
@@ -56,6 +62,9 @@ When using optgra to optimize this problem, the function will be called a few ti
     f called with [10.01]
     f called with [9.99]
     f called with [10.]
+
+.. doctest::
+
 	>>> print(pop.champion_x, pop.champion_f)
 	[10.] [2.00000000e+01 1.77635684e-15]
 
