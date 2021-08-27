@@ -31,7 +31,7 @@ PYBIND11_MODULE(core, m) {
         py::arg("derivatives_computation") = 1, py::arg("autodiff_deltas"), py::arg("variable_types"), py::arg("log_level") = 1);
 
     m.def("get_sensitivity_matrices", &optgra::get_sensitivity_matrices, "Get sensitivity matrices from prepared sensitivity state",
-        py::arg("state_tuple"), py::arg("variable_types"), py::arg("constraint_types"));
+        py::arg("state_tuple"), py::arg("variable_types"), py::arg("constraint_types"), py::arg("max_distance_per_iteration"));
 
     m.def("sensitivity_update_new_callable", &optgra::sensitivity_update_new_callable, "Perform a single step given a new callable",
         py::arg("state_tuple"), py::arg("variable_types"),
