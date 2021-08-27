@@ -77,7 +77,7 @@ The sensitivity analysis available by optgra consists of four functions:
 3) linear_update_new_callable(new_problem) - evaluates *new_problem* at *x* and performs one optimization step
 4) linear_update_delta(constraint_delta) - adds *constraint_delta* to the constraints of *problem* at *x* and performs one optimization step.
 
-The first output of the function sensitivity_matrices is whether each constraint is *active*. Constraints are considered active if they are fulfilled, but not more than *max_distance_per_iteration* away from being unfulfilled, meaning they could be violated during the next optimization step.
+The first output of the function sensitivity_matrices is whether each constraint is *active*. Constraints are considered active if they are fulfilled, but not more than* max_distance_per_iteration* away from being unfulfilled, meaning they could be violated during the next optimization step.
 
 For example, for *max_distance_per_iteration* = 1 the inequality constraint of x_0 >= 10 is *active* for x_0 in \[10, 11\] and inactive for x_0 < 10 or x_0 > 11.
 
@@ -125,3 +125,5 @@ x_0 = 12, constraint x_0 >= 10 is fulfilled and distance of two away from being 
 	>>> opt.prepare_sensitivity(prob, [12])
 	>>> opt.sensitivity_matrices()[0]
 	[0]
+
+	
