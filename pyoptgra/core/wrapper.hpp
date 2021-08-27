@@ -745,9 +745,9 @@ std::tuple<sensitivity_state, std::vector<double>> prepare_sensitivity_state(con
 */
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(sensitivity_state state_tuple, const std::vector<int> &variable_types,
-     vector<int> constraint_types) {
+     vector<int> constraint_types, double max_distance_per_iteration = 10) {
 
-        optgra_raii raii_object(variable_types, constraint_types);
+        optgra_raii raii_object(variable_types, constraint_types, 1, 1, max_distance_per_iteration);
         raii_object.set_sensitivity_state_data(state_tuple);
         return raii_object.sensitivity_matrices();
 }

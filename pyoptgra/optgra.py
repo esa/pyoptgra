@@ -563,6 +563,7 @@ class optgra:
             self._sens_state,
             self._sens_variable_types,
             self._sens_constraint_types,
+            self.max_distance_per_iteration,
         )
 
     def linear_update_new_callable(self, problem) -> Tuple[List[float], List[float]]:
