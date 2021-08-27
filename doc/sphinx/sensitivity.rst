@@ -1,3 +1,5 @@
+.. _sec:sensitivity-analysis:
+
 Sensitivity Analysis
 ====================
 

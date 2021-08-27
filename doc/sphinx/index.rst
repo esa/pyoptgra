@@ -5,6 +5,14 @@
 
 .. include:: ../../README.rst
 
+Further reading
+---------------
+
+ - You can set scaling factors for variables and constraints, see :ref:`sec:variable-scaling-factors`.
+ - Constraint tolerances can be set with the c_tol attribute of the passed problem, see :ref:`sec:constraint-tolerances`.
+ - Optgra offers several functions for :ref:`sec:sensitivity-analysis` of a problem with respect to constraints and parameters, as well as functions for local updates. This feature is still under development.
+ - If you have previously used the fortran interface of Optgra, you might be interested in the internals of how pyoptgra calls the underlying fortran code: :ref:`sec:internals`
+
 API Reference
 =============
 
@@ -12,5 +20,3 @@ API Reference
    :maxdepth: 1
 
    api
-   sensitivity
-   changes-from-fortran
