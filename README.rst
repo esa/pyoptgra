@@ -23,3 +23,10 @@ Pyoptgra is designed as a `pygmo <https://esa.github.io/pygmo2/>` user-defined a
 >>> pop = pygmo.population(prob, 1)
 >>> algo = pygmo.algorithm(pyoptgra.optgra())
 >>> pop = algo.evolve(pop) # the actual call to OPTGRA
+
+License
+=======
+
+Pyoptgra/Optgra is available under two different licenses. The version to be found at Github and the Python Package Index (pypi) is available under version 3 of the GNU General Public License, while the version available at the Space Codev platform is available under the ESA Software Community Licence (ESCL). The versions are otherwise identical in content.
+
+We explicitly reserve the right to release future versions of Pyoptgra and Optgra under different licenses.
