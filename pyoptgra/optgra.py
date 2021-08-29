@@ -536,9 +536,10 @@ class optgra:
 
     def sensitivity_matrices(self):
         """
-        Get stored sensitivity matrices prepared by earlier call to _prepare_sensivitity.
-        Note that the active constraints are constraints that are currently violated,
-        while parameters refer to variables whose variable type was declared as fixed.
+        Get stored sensitivity matrices prepared by earlier call to prepare_sensivitity.
+        Note that active constraints are constraints that are currently fulfilled,
+        but could be violated in the next iteration.
+        Parameters refer to variables whose variable type was declared as fixed.
 
         Returns:
 
@@ -579,7 +580,8 @@ class optgra:
         Raises:
 
             RuntimeError: If prepare_sensitivity has not been called on this instance
-            ValueError: If number or type of constraints has changed against prepare_sensitivity
+            ValueError: If number or type of constraints of the new problem are different from
+                those of the problem passed to prepare_sensitivity
 
         """
 
