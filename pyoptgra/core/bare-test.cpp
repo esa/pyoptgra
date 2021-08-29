@@ -160,8 +160,80 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
             }
         }
 
+        ogclos_();
+
         return std::make_tuple(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
          variables_to_active_constraints, variables_to_parameters);
+}
+
+
+std::tuple<std::vector<double>, std::vector<double>, int, int> update_delta(const std::vector<int> &variable_types, const std::vector<int> &constraint_types,
+        std::vector<double> x,
+        fitness_callback fitness,
+        gradient_callback gradient,
+        std::vector<double> delta,
+        int max_iterations = 150, // MAXITE
+        int max_correction_iterations = 90, // CORITE
+        double max_distance_per_iteration = 1, // VARMAX
+        double perturbation_for_snd_order_derivatives = 1) // VARSND) 
+        {
+
+        int num_variables = variable_types.size();
+        int num_constraints = constraint_types.size() - 1;
+        std::vector<double> autodiff_deltas = std::vector<double>(num_variables, 0.01);
+        int derivatives_computation = 2;
+
+        oginit_(&num_variables, &num_constraints);
+        ogctyp_(constraint_types.data());
+        ogderi_(&derivatives_computation, autodiff_deltas.data());
+        ogdist_(&max_distance_per_iteration, &perturbation_for_snd_order_derivatives);
+
+        ogvtyp_(variable_types.data());
+
+        // Haven't figured out what the others do, but maxiter is an upper bound anyway
+        int otheriters = max_iterations; // TODO: figure out what it does.
+        ogiter_(&max_iterations, &max_correction_iterations, &otheriters, &otheriters, &otheriters);
+
+        int optimization_method = 2;
+        ogomet_(&optimization_method);
+
+        int log_unit = 6;
+        int log_level = 1;
+        ogwlog_(&log_unit, &log_level);
+
+        int finopt = 0;
+        int finite = 0;
+
+        std::vector<double> valvar(x);
+        std::vector<double> valcon(num_constraints+1);
+
+        static_callable_store::set_fitness_callable(fitness);
+        static_callable_store::set_gradient_callable(gradient);
+        static_callable_store::set_x_dim(num_variables);
+        static_callable_store::set_c_dim(num_constraints+1);
+
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
+
+        int sensitivity_mode = -1;
+        ogsopt_(&sensitivity_mode);
+        
+        valvar = x;
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
+
+        sensitivity_mode = 2;
+        ogsopt_(&sensitivity_mode);
+
+        ogcdel_(delta.data());
+
+        //valvar = x;
+        ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
+         static_callable_store::fitness, static_callable_store::gradient);
+
+        ogclos_();
+
+        return std::make_tuple(valvar, valcon, finopt, finite);
 }
 
 int main(int argn, char** argc)
@@ -214,5 +286,25 @@ int main(int argn, char** argc)
             }
             cout << endl;
         }
+
+        cout << "---------------" << endl;
+
+        int finopt, finite;
+        std::vector<double> x;
+        std::vector<double> y;
+
+        std::tie(x,y, finopt, finite) = update_delta({0}, {-1,-1}, {10}, f_simple, g_simple, {1});
+
+        cout << "x:";
+        for (int i = 0; i < num_variables; i++) {
+            cout << x[i] << " ";
+        }
+        cout << endl;
+
+        cout << "y:";
+        for (int i = 0; i < num_constraints+1; i++) {
+            cout << y[i] << " ";
+        }
+        cout << endl;
 
 }
