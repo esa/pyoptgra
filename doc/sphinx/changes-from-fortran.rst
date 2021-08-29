@@ -50,7 +50,7 @@ The method prepare_sensitivity calls the same initialization functions of Optgra
  - *ogomet* - set optimization method
  - *ogwlog* - set logging
 
-Following the initialization, it calls *ogsopt*(-1) and *ogexec* to initialize the sensitivity analysis in Optgra.
+Following the initialization, it calls *ogsopt* (-1) and *ogexec* to initialize the sensitivity analysis in Optgra.
 The values of the common block variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED are then copied (using the new function *oggsst*) and stored in the python object, these will later be used to set a new instance of OPTGRA to the prepared state.
 Finally, *ogclos* is called to de-allocate the Optgra memory. 
 
@@ -71,7 +71,7 @@ linear_update_new_callable
 --------------------------
 The method linear_update_new_callable first initializes the Optgra memory by calling the same initialization functions as prepare_sensitivity, then sets the sensitivity state captured in the variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED.
 
-It then calls *ogsopt*(1) to initialize the correct sensitivity mode, followed by *ogexec* with the new callable.
+It then calls *ogsopt* (1) to initialize the correct sensitivity mode, followed by *ogexec* with the new callable.
 
 Finally, *ogclos* is called to deallocate the Fortran memory.
 
