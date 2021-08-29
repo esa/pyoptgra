@@ -115,7 +115,7 @@ int main(int argn, char** argc)
     std::vector<std::vector<double>> variables_to_parameters(num_variables);
 
 	std::tie(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
-	 variables_to_active_constraints, variables_to_parameters) = raii_object.get_sensitivity_matrices();
+	 variables_to_active_constraints, variables_to_parameters) = raii_object.sensitivity_matrices();
 
 	cout << "Active constraints:" << endl;
 	for (int i = 0; i < num_constraints; i++) {
@@ -181,7 +181,7 @@ int main(int argn, char** argc)
 
 	std::vector<double> delta = {1};
 
-	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update_constraint_delta(delta);
+	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update_delta(delta);
 
 	cout << "Best x:";
 	for (int i = 0; i < num_variables; i++) {
@@ -215,7 +215,7 @@ int main(int argn, char** argc)
     std::vector<std::vector<double>> variables_to_parameters(num_variables);
 
  	std::tie(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
-	 variables_to_active_constraints, variables_to_parameters) = raii_object.get_sensitivity_matrices();
+	 variables_to_active_constraints, variables_to_parameters) = raii_object.sensitivity_matrices();
 
  	num_constraints = 1;
  	num_variables = 1;

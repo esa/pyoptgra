@@ -5,6 +5,7 @@
 #include <tuple>
 #include <iostream>
 #include <functional>
+#include <numeric>
 #include <mutex>
 
 extern"C" {
@@ -20,13 +21,15 @@ extern"C" {
          void (*)(double*, double*), void (*)(double*, double*, double*));
     void ogexec_(double * valvar, double * valcon, int * finopt, int * finite,
         void (*)(double*, double*, int*), void (*)(double*, double*, double*));
-    void oggsst_(double * senvar, double * senqua, double * sencon, int * senact, double * sender);
+    void oggsst_(double * senvar, double * senqua, double * sencon, int * senact, double * sender,
+        int * actcon, int * conact, double * conred, int * actnum);
     void oginit_(int * varnum, int * connum);
     void ogiter_(int * itemax, int * itecor, int * iteopt, int * itediv, int * itecnv);
     void ogomet_(int * metopt);
     void ogsens_(int * consta, double * concon, double * convar, double * varcon, double * varvar);
     void ogsopt_(int * optsen);
-    void ogssst_(const double * senvar, const double * senqua, const double * sencon, const int * senact, const double * sender);
+    void ogssst_(const double * senvar, const double * senqua, const double * sencon, const int * senact, const double * sender,
+        const int * actcon, const int * conact, const double * conred, int * actnum);
     void ogvsca_(double * scavar);
     void ogvtyp_(const int* vartyp);
     void ogvstr_(char ** strvar, int * lenvar);
@@ -44,7 +47,8 @@ namespace optgra {
     using std::tuple;
     using std::function;
 
-    typedef tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>> sensitivity_state;
+    //senvar, senqua, sencon, senact, sender, actcon, conact, conred
+    typedef tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>, vector<int>, vector<int>, vector<double>> sensitivity_state;
 
 /** This struct is just to connect the std::functions passed from python
  *  to the unholy mess of static function pointers, which are requried by Fortran.
@@ -71,7 +75,7 @@ struct static_callable_store {
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
 
-        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector); //TODO: check for correct dimension of return value
+        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector);
 
         int num_constraints = gradient_vector.size();
         if (num_constraints != c_dim) {
@@ -265,7 +269,7 @@ struct optgra_raii {
     }
 
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices() {
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> sensitivity_matrices() {
 
         if (!initialized_sensitivity) {
             throw(std::runtime_error("Please call initialize_sensitivity_data first."));
@@ -360,7 +364,7 @@ struct optgra_raii {
         return std::make_tuple(valvar, valcon, finopt);
     }
 
-    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_constraint_delta(std::vector<double> constraint_delta) {
+    std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_delta(std::vector<double> constraint_delta) {
 
         if (!initialized_sensitivity) {
             throw(std::runtime_error("Please call initialize_sensitivity_data first."));
@@ -394,8 +398,11 @@ struct optgra_raii {
         vector<double> sencon;
         vector<int> senact;
         vector<double> sender;
+        vector<int> actcon;
+        vector<int> conact;
+        vector<double> conred;
 
-        std::tie(senvar, senqua, sencon, senact, sender) = state_tuple;
+        std::tie(senvar, senqua, sencon, senact, sender, actcon, conact, conred) = state_tuple;
 
         if (int(senvar.size()) != num_variables) {
             throw(std::invalid_argument("First vector needs to be of size num_variables."));
@@ -417,21 +424,38 @@ struct optgra_raii {
             throw(std::invalid_argument("Fifth vector needs to be of size (num_constraints+1)*num_variables."));
         }
 
-        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
+        int numact = std::accumulate(senact.begin(), senact.end(), 0);
+
+        //TODO: check sizes of actcon, conact, conred
+
+        ogssst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data(), &numact);
 
         initialized_sensitivity = true;
     }
 
     sensitivity_state get_sensitivity_state_data() const {
+        if (!initialized_sensitivity) {
+            throw(std::runtime_error("Please call initialize_sensitivity_data first."));
+        }
+
         vector<double> senvar(num_variables);
         vector<double> senqua(num_constraints+1);
         vector<double> sencon(num_constraints+1);
         vector<int> senact(num_constraints+1);
         vector<double> sender((num_constraints+1)*num_variables);
+        vector<int> actcon(num_constraints+1);
+        vector<int> conact(num_constraints+4);
+        vector<double> conred((num_constraints+3)*num_variables);
+        int numact = 0;
 
-        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data());
+        oggsst_(senvar.data(), senqua.data(), sencon.data(), senact.data(), sender.data(), actcon.data(), conact.data(), conred.data(), &numact);
+        int measured_numact = std::accumulate(senact.begin(), senact.end(), 0);
+
+        if (numact != measured_numact) {
+            std::cout << "Warning: Got " << measured_numact << " constraints reported as active, but numact is " << numact << std::endl;
+        }
         
-        return std::make_tuple(senvar, senqua, sencon, senact, sender);
+        return std::make_tuple(senvar, senqua, sencon, senact, sender, actcon, conact, conred);
     }
 
     ~optgra_raii()
@@ -457,7 +481,8 @@ std::mutex optgra_raii::optgra_mutex;
  *
  * @param initial_x the initial guess for the decision vector
  * @param constraint_types types of constraints. Set 0 for equality constraints,
- *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+ *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints.
+ *    Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems.
  * @param fitness a callable for the fitness values. It is called with the current x,
  *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
  * @param gradient a callable for the gradient values, optional. It is called with the current x,
@@ -550,6 +575,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> optimize(const std::ve
 * @param x the decision vector around which the sensitivity analysis is to be performed
 * @param constraint_types types of constraints. Set 0 for equality constraints,
 *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+*    Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems.
 * @param fitness a callable for the fitness values. It is called with the current x,
 *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
 * @param gradient a callable for the gradient values, optional. It is called with the current x,
@@ -623,7 +649,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 
     raii_object.initialize_sensitivity_data(x, fitness, gradient);
 
-    return raii_object.get_sensitivity_matrices();
+    return raii_object.sensitivity_matrices();
 }
 
 /// Create a state tuple usable for sensitivity updates
@@ -631,6 +657,7 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
 * @param x the decision vector around which the sensitivity analysis is to be performed
 * @param constraint_types types of constraints. Set 0 for equality constraints,
 *    -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints
+*    Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems.
 * @param fitness a callable for the fitness values. It is called with the current x,
 *    expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function
 * @param gradient a callable for the gradient values, optional. It is called with the current x,
@@ -718,11 +745,11 @@ std::tuple<sensitivity_state, std::vector<double>> prepare_sensitivity_state(con
 */
 std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> get_sensitivity_matrices(sensitivity_state state_tuple, const std::vector<int> &variable_types,
-     vector<int> constraint_types) {
+     vector<int> constraint_types, double max_distance_per_iteration = 10) {
 
-        optgra_raii raii_object(variable_types, constraint_types);
+        optgra_raii raii_object(variable_types, constraint_types, 1, 1, max_distance_per_iteration);
         raii_object.set_sensitivity_state_data(state_tuple);
-        return raii_object.get_sensitivity_matrices();
+        return raii_object.sensitivity_matrices();
 }
 
 /// Perform one optimization step with a new fitness callable, starting from the value of x that was set with prepare_sensitivity_state
@@ -830,7 +857,7 @@ std::tuple<std::vector<double>, std::vector<double>, int> sensitivity_update_con
 
     raii_object.set_sensitivity_state_data(state_tuple);
 
-    return raii_object.sensitivity_update_constraint_delta(delta);
+    return raii_object.sensitivity_update_delta(delta);
 
 }
 

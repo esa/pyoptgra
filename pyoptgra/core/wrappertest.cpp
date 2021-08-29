@@ -44,6 +44,26 @@ std::vector<std::vector<double>> g(std::vector<double> x) {
 	return der;
 }
 
+std::vector<double> f_simple(std::vector<double> x) {
+        std::vector<double> con(2);
+        con[0] = 10 - x[0];
+        con[1] = 2*x[0];
+        cout << "f_simple called with " << x[0];
+        cout << endl;
+        return con;
+}
+
+std::vector<std::vector<double>> g_simple(std::vector<double> x) {
+        cout << "g_simple called with " << x[0] << endl;
+        std::vector<std::vector<double>> der(2);
+        der[0].resize(1);
+        der[1].resize(1);
+
+        der[0][0] = -1;
+        der[1][0] = 2;
+        return der;
+}
+
 int main(int argn, char** argc)
 {
 	std::vector<double> initial_x = {1,1,1,1,1};
@@ -72,15 +92,70 @@ int main(int argn, char** argc)
 	}
 	cout << endl;
 
+	// Testing sensitivity
+
 	std::vector<double> sens_x = {0.000183705, 1, 1.99982, 2.99963, 3.99945};
 	std::vector<double> sens_f = {5.06211e-07, 9.99908};
 
-	//std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-    // std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+    std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple = compute_sensitivity_matrices(bestx, {0,-1}, f, g, true);
 
-	std::ignore = compute_sensitivity_matrices(bestx, {0,-1}, f, g, true);
+    std::tuple<sensitivity_state, std::vector<double>> state_tuple = prepare_sensitivity_state(bestx, {0,-1}, f, g, true);
 
-	std::ignore = prepare_sensitivity_state(bestx, {0,-1}, f, g, true);
+    std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple_indirect 
+     = get_sensitivity_matrices(std::get<0>(state_tuple), {0,0,0,0,0}, {0, -1});
+
+    if (matrixtuple == matrixtuple_indirect) {
+    	cout << "matrices are equal" << endl;
+    } else {
+    	cout << "matrices are not equal" << endl;
+    }
+
+    cout << "-----------------" << endl;
+
+	int num_variables = 1;
+	int num_constraints = 1;
+
+	vector<double> senvar(num_variables);
+    vector<double> senqua(num_constraints+1);
+    vector<double> sencon(num_constraints+1);
+    vector<int> senact(num_constraints+1);
+    vector<double> sender((num_constraints+1)*num_variables);
+    vector<int> actcon(num_constraints+1);
+    vector<int> conact(num_constraints+4);
+    vector<double> conred((num_constraints+3)*num_variables);
+
+    sensitivity_state tuplecache;
+    std::tie(tuplecache, std::ignore) = prepare_sensitivity_state({10}, {-1,-1}, f_simple, g_simple, true);
+    std::tie(senvar, senqua, sencon, senact, sender, actcon, conact, conred) = tuplecache;
+
+    cout << "senact: ";
+    for (int i = 0; i < num_constraints+1; i++) {
+            cout << senact[i] << " ";
+    }
+    cout << endl;
+
+    cout << "actcon: ";
+    for (int i = 0; i < num_constraints+1; i++) {
+            cout << senact[i] << " ";
+    }
+    cout << endl;
+
+    cout << "conact: ";
+    for (int i = 0; i < num_constraints+1; i++) {
+            cout << senact[i] << " ";
+    }
+    cout << endl;
+
+    matrixtuple_indirect 
+     = get_sensitivity_matrices(tuplecache, {0}, {-1, -1});
+
+     cout << "constraints_active: ";
+    for (int i = 0; i < num_constraints+1; i++) {
+            cout << std::get<0>(matrixtuple_indirect)[i] << " ";
+    }
+    cout << endl;
 
    return 0;
 }

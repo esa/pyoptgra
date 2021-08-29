@@ -148,6 +148,7 @@ class optgra_test(unittest.TestCase):
         self.sensitivity_matrices_test()
         self.sensitivity_new_callable_test()
         self.sensitivity_constraint_delta_test()
+        self.sensitivity_active_constraints_test()
         self.force_bounds_test()
         self.force_bounds_fitness_test()
         self.force_bounds_gradient_test()
@@ -406,9 +407,6 @@ class optgra_test(unittest.TestCase):
             archipelago,
             rosenbrock,
             mp_island,
-            ring,
-            migration_type,
-            migrant_handling,
         )
         from pickle import dumps, loads
 
@@ -498,7 +496,9 @@ class optgra_test(unittest.TestCase):
 
         matrices = opt.sensitivity_matrices()
         self.assertEqual(len(matrices), 5)
-        self.assertEqual(len(matrices[0]), 6+12) #luksan_vlcek has 6 constraints and 12 bounds
+        self.assertEqual(
+            len(matrices[0]), 6 + 12
+        )  # luksan_vlcek has 6 constraints and 12 bounds
         self.assertLessEqual(max(matrices[0]), 1)
         self.assertGreaterEqual(min(matrices[0]), 0)
 
@@ -535,6 +535,26 @@ class optgra_test(unittest.TestCase):
 
         opt.linear_update_delta([1] * 18)
 
+    def sensitivity_active_constraints_test(self):
+        class _prob(object):
+            def get_bounds(self):
+                return ([-10], [10])
+
+            def fitness(self, x):
+                result = [2 * x[0], 10 - x[0]]
+                return result
+
+            def get_nic(self):
+                return 1
+
+        prob = pygmo.problem(_prob())
+        opt = pyoptgra.optgra(
+            bounds_to_constraints=False, verbosity=4, max_distance_per_iteration=1
+        )
+        x = [10]
+        opt.prepare_sensitivity(prob, x)
+        self.assertEqual(opt.sensitivity_matrices()[0], [1])
+
     def force_bounds_fitness_test(self):
         prob = pygmo.problem(_prob_bound_test())
         f = pyoptgra.optgra._wrap_fitness_func(prob, False, False)
@@ -570,7 +590,10 @@ class optgra_test(unittest.TestCase):
                 return ([-10, -10, -10, -10, -10], [10, 10, 10, 10, 10])
 
             def fitness(self, x):
-                result = [sum(x), sum([(x[i] - 5*i + 10) ** 2 for i in range(len(x))])]
+                result = [
+                    sum(x),
+                    sum([(x[i] - 5 * i + 10) ** 2 for i in range(len(x))]),
+                ]
                 lb, ub = self.get_bounds()
                 for i in range(len(lb)):
                     if x[i] < lb[i]:
@@ -608,7 +631,7 @@ class optgra_test(unittest.TestCase):
         )
         prob = pygmo.problem(_prob_bound_test_no_gradient())
         pop = pygmo.population(prob, size=0)
-        pop.push_back([2.47192039, -1.45880516, -9.03600606, -9.33306356,  3.85509973])
+        pop.push_back([2.47192039, -1.45880516, -9.03600606, -9.33306356, 3.85509973])
         extracted = pop.problem.extract(_prob_bound_test_no_gradient)
         self.assertFalse(extracted._bounds_violated)
         pop = algo.evolve(pop)
