@@ -235,6 +235,13 @@ class optgra_test(unittest.TestCase):
         with self.assertRaises(ValueError):
             algo.evolve(pop)
 
+        # Check that types of wrong size are rejected
+        algo = pygmo.algorithm(pyoptgra.optgra(variable_types=[0] * 29))
+        prob = pygmo.problem(pygmo.schwefel(30))
+        pop = pygmo.population(prob, 1)
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
+
         # Correct size
         algo = pygmo.algorithm(pyoptgra.optgra(variable_scaling_factors=[1] * 30))
         algo.evolve(pop)

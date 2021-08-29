@@ -145,6 +145,7 @@ class optgra:
         max_distance_per_iteration: int = 10,
         perturbation_for_snd_order_derivatives: int = 1,
         variable_scaling_factors: List[float] = [],  # x_dim
+        variable_types: List[int] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
         bounds_to_constraints: bool = True,
         bound_constraints_tolerance: float = 1e-6,
@@ -171,6 +172,9 @@ class optgra:
                 of the constraints in the optimization step
             variable_scaling_factors: optional - Scaling factors for the input variables.
                 If passed, must be positive and as many as there are variables
+            variable_types: optional - Flags to set variables to either free (0) or fixed (1). Fixed variables
+                are also called parameters in sensitivity analysis.
+                If passed, must be as many flags as there are variables
             constraint_priorities: optional - lower constraint priorities are fulfilled earlier.
                 During the initial constraint correction phase, only constraints with a priority at most k
                 are considered in iteration k. Defaults to zero, so that all constraints are considered
@@ -201,6 +205,7 @@ class optgra:
             perturbation_for_snd_order_derivatives
         )
         self.variable_scaling_factors = variable_scaling_factors
+        self.variable_types = variable_types
         self.constraint_priorities = constraint_priorities
         self.optimization_method = optimization_method
         self.selection = s_policy(select_best(rate=1))
@@ -318,6 +323,18 @@ class optgra:
                 + " parameters."
             )
 
+        if (
+            len(self.variable_types) > 0
+            and len(self.variable_types) != problem.get_nx()
+        ):
+            raise ValueError(
+                str(len(self.variable_types))
+                + " variable types passed for problem"
+                + " with "
+                + str(problem.get_nx())
+                + " parameters."
+            )
+
         bound_types = []
         if self.bounds_to_constraints:
             bound_types = optgra._constraint_types_from_box_bounds(problem)
@@ -384,7 +401,10 @@ class optgra:
         variable_names: List[str] = []
         constraint_names: List[str] = []
         autodiff_deltas: List[float] = []
-        variable_types: List[int] = []
+
+        variable_types: List[int] = self.variable_types
+        if len(variable_types) == 0:
+            variable_types = [0 for _ in range(problem.get_nx())]
 
         result = optimize(
             initial_x=population.get_x()[idx],
@@ -511,9 +531,9 @@ class optgra:
 
         # still to set: variable_names, constraint_names, autodiff_deltas
         autodiff_deltas: List[float] = []
-        variable_types: List[float] = [
-            0 for _ in x
-        ]  # TODO: extend to set variable types
+        variable_types: List[int] = self.variable_types
+        if len(variable_types) == 0:
+            variable_types = [0 for _ in x]
 
         state, new_x = prepare_sensitivity_state(
             x=x,
@@ -637,7 +657,7 @@ class optgra:
         For this, no new function calls to the problem callable are performed, making this potentially very fast.
 
         Args:
-            constraint_delta: A list of deltas against the stored constraints. They are subtracted from the stored values.
+            constraint_delta: A list of deltas against the constraints. They are subtracted from the stored values.
 
         Returns:
 
