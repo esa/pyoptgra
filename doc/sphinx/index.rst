@@ -13,6 +13,17 @@ Further reading
  - Optgra offers several functions for :ref:`sec:sensitivity-analysis` of a problem with respect to constraints and parameters, as well as functions for local updates. This feature is still under development.
  - If you have previously used the fortran interface of Optgra, you might be interested in the internals of how pyoptgra calls the underlying fortran code: :ref:`sec:internals`
 
+
+Table of Content
+----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   sensitivity
+   scaling-and-tolerances
+   changes-from-fortran
+
 API Reference
 =============
 
