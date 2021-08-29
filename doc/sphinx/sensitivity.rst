@@ -5,7 +5,7 @@ Sensitivity Analysis
 
 Optgra supports sensitivity analysis with respect to the active constraints. An inequality constraint is considered active if it is fulfilled but close to being violated. Equality constraints are always active.
 
-As an example, we take a problem with one variable (x_0) one minimization objective 2x_0 and one inequality constraint (x_0) >= 10. To make the problem bounded, we add bounds of \[-20, 20\]
+As an example, we take a problem with one variable (x_0) one minimization objective 2*x_0 and one inequality constraint (x_0) >= 10. To make the problem bounded, we add bounds of \[-20, 20\]
 
 .. testcode::
 
@@ -106,13 +106,13 @@ x_0 = 9, constraint x_0 >= 10 is violated, thus inactive:
 	>>> opt.sensitivity_matrices()[0]
 	[0]
 
-x_0 = 11, constraint x_0 >= 10 is fulfilled and distance of one away from being violated, active:
+x_0 = 11, constraint x_0 >= 10 is fulfilled and distance of one away from being violated, active when setting the maximum distance per iteration to 1:
 
 .. doctest::
 
 	>>> import pygmo
 	>>> prob = pygmo.problem(_prob(silent=True))
-	>>> opt = pyoptgra.optgra(bounds_to_constraints=False)
+	>>> opt = pyoptgra.optgra(bounds_to_constraints=False, max_distance_per_iteration=1)
 	>>> opt.prepare_sensitivity(prob, [11])
 	>>> opt.sensitivity_matrices()[0]
 	[1]
@@ -178,13 +178,14 @@ The function linear_update_delta() uses a linear approximation of the cost funct
 It is designed especially for problems that are near-linear and expensive to evaluate.
 
 As an example, we take our initial problem with one dimension, the merit function 2*x_0 to be minimized and the constraint x_0 >= 10.
-Since it does not provide a gradient, Optgra uses numerical differentiation to approximate it.
 
 .. testcode::
 
 	opt = pyoptgra.optgra(bounds_to_constraints=False, verbosity=0)
 	prob = pygmo.problem(_prob(silent=False))
 	opt.prepare_sensitivity(prob, [10])
+
+Since the problem does not provide a gradient, Optgra uses numerical differentiation to approximate it.
 
 .. testoutput::
 
