@@ -580,7 +580,8 @@ class optgra:
         Raises:
 
             RuntimeError: If prepare_sensitivity has not been called on this instance
-            ValueError: If number or type of constraints has changed against prepare_sensitivity
+            ValueError: If number or type of constraints of the new problem are different from
+                those of the problem passed to prepare_sensitivity
 
         """
 
