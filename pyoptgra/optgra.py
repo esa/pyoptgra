@@ -325,7 +325,7 @@ class optgra:
             and len(self.variable_types) != problem.get_nx()
         ):
             raise ValueError(
-                len(self.variable_types)
+                str(len(self.variable_types))
                 + " variable types passed for problem"
                 + " with "
                 + str(problem.get_nx())
@@ -399,6 +399,10 @@ class optgra:
         constraint_names: List[str] = []
         autodiff_deltas: List[float] = []
 
+        variable_types: List[int] = self.variable_types
+        if len(variable_types) == 0:
+            variable_types = [0 for _ in range(problem.get_nx())]
+
         result = optimize(
             initial_x=population.get_x()[idx],
             constraint_types=constraint_types,
@@ -417,7 +421,7 @@ class optgra:
             optimization_method=self.optimization_method,
             derivatives_computation=derivatives_computation,
             autodiff_deltas=autodiff_deltas,
-            variable_types=self.variable_types,
+            variable_types=variable_types,
             log_level=self.log_level,
         )
 
@@ -526,7 +530,7 @@ class optgra:
         autodiff_deltas: List[float] = []
         variable_types: List[int] = self.variable_types
         if len(variable_types) == 0:
-            [0 for _ in x]
+            variable_types = [0 for _ in x]
 
         state, new_x = prepare_sensitivity_state(
             x=x,
