@@ -160,6 +160,8 @@ This example problem is identical to the one above, except the constraint is x_0
 	    def get_nic(self):
 	        return 1
 
+Initializing the sensitivity analysis with it causes one function call for each call to linear_update_new_callable:
+
 .. doctest::
 
 	>>> prob2 = pygmo.problem(_new_prob())
@@ -185,7 +187,7 @@ As an example, we take our initial problem with one dimension, the merit functio
 	prob = pygmo.problem(_prob(silent=False))
 	opt.prepare_sensitivity(prob, [10])
 
-Since the problem does not provide a gradient, Optgra uses numerical differentiation to approximate it.
+Since the problem does not provide a gradient, Optgra uses numerical differentiation to approximate it, leading to several function calls:
 
 .. testoutput::
 
