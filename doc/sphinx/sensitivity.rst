@@ -117,15 +117,87 @@ x_0 = 11, constraint x_0 >= 10 is fulfilled and distance of one away from being 
 	>>> opt.sensitivity_matrices()[0]
 	[1]
 
-x_0 = 12, constraint x_0 >= 10 is fulfilled and distance of two away from being violated, reported as inactive:
+x_0 = 12, constraint x_0 >= 10 is fulfilled and distance of two away from being violated, reported as inactive when setting the maximum distance per iteration to 1:
 
 .. doctest::
 
 	>>> import pygmo
 	>>> prob = pygmo.problem(_prob(silent=True))
-	>>> opt = pyoptgra.optgra(bounds_to_constraints=False)
+	>>> opt = pyoptgra.optgra(bounds_to_constraints=False, max_distance_per_iteration=1)
 	>>> opt.prepare_sensitivity(prob, [12])
 	>>> opt.sensitivity_matrices()[0]
 	[0]
 
+.. _sec:sensitivity-new-callable:
 	
+Linear Updates With New Callable
+--------------------------------
+
+The function linear_update_new_callable(new_problem) evaluates the new problem on the stored *x* and performs a single correction and optimization step.
+This is designed to test multiple variants of a problem which differ slightly in their constraints. The dimensions of the problem and types of constraints must stay the same.
+
+This example problem is identical to the one above, except the constraint is x_0 >= 12 instead of x_0 >= 10.
+
+.. testcode::
+
+	import pygmo
+	import pyoptgra
+
+	class _new_prob(object):
+	    
+	    def __init__(self, silent=False):
+	        self.silent = silent
+	    
+	    def get_bounds(self):
+	        return ([-20], [20])
+
+	    def fitness(self, x):
+	        result = [2*x[0], -x[0] + 12]
+	        if not self.silent:
+	            print("f called with", x)
+	        return result
+	    
+	    def get_nic(self):
+	        return 1
+
+.. doctest::
+
+	>>> prob2 = pygmo.problem(_new_prob())
+	>>> opt = pyoptgra.optgra(bounds_to_constraints=False)
+	>>> opt.prepare_sensitivity(prob, [10])
+	>>> opt.linear_update_new_callable(prob2)
+	f called with [10.]
+	([10.0], [2.0, 20.0], 0)
+
+.. _sec:sensitivity-constraint-delta:
+
+Linear Updates With Constraint Delta
+------------------------------------
+
+The function linear_update_delta() uses a linear approximation of the cost function to avoid additional evaluations.
+It is designed especially for problems that are near-linear and expensive to evaluate.
+
+As an example, we take our initial problem with one dimension, the merit function 2*x_0 to be minimized and the constraint x_0 >= 10.
+Since it does not provide a gradient, Optgra uses numerical differentiation to approximate it.
+
+.. testcode::
+
+	opt = pyoptgra.optgra(bounds_to_constraints=False, verbosity=0)
+	prob = pygmo.problem(_prob(silent=False))
+	opt.prepare_sensitivity(prob, [10])
+
+.. testoutput::
+
+	f called with [10.]
+	f called with [10.01]
+	f called with [9.99]
+	f called with [10.]
+
+Now, we can use linear_update_delta without triggering new function calls:
+
+.. doctest::
+
+	>>> opt.linear_update_delta([2])
+	([10.0], [-2.0, 20.0], 0)
+	>>> opt.linear_update_delta([5])
+	([10.0], [-5.0, 20.0], 0)
