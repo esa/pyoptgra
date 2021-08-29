@@ -536,9 +536,10 @@ class optgra:
 
     def sensitivity_matrices(self):
         """
-        Get stored sensitivity matrices prepared by earlier call to _prepare_sensivitity.
-        Note that the active constraints are constraints that are currently violated,
-        while parameters refer to variables whose variable type was declared as fixed.
+        Get stored sensitivity matrices prepared by earlier call to prepare_sensivitity.
+        Note that active constraints are constraints that are currently fulfilled,
+        but could be violated in the next iteration.
+        Parameters refer to variables whose variable type was declared as fixed.
 
         Returns:
 
