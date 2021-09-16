@@ -31,6 +31,9 @@ endif()
 include(cmake/modules/Update_submodules.cmake)
 include(cmake/modules/Pybind11.cmake)
 
+# add targets for unit testing framework on C level
+add_subdirectory(ext/Catch2)
+
 set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir when using SKBUILD
 
 set (OPTGRAFILES 
