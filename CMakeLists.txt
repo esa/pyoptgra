@@ -71,10 +71,10 @@ set (OPTGRAFILES
 add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrapper.hpp" ${OPTGRAFILES})
 target_include_directories(optgra PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core")
 
-add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
+add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
 
-add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/raiitest.cpp")
+add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/raiitest.cpp")
 target_link_libraries(raii-test optgra)
 target_link_libraries(raii-test Catch2::Catch2WithMain)
 
