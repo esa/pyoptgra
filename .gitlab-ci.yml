@@ -47,7 +47,7 @@ test:
   script:
     - python setup.py install --user
     - pip install pytest-cov coverage
-    - cd tests # move into test directory to ensure that the installed package is tested, not the source
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=100
 

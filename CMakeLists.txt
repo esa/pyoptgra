@@ -76,8 +76,9 @@ target_link_libraries(optgra-test optgra)
 
 add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/raiitest.cpp")
 target_link_libraries(raii-test optgra)
+target_link_libraries(raii-test Catch2::Catch2WithMain)
 
-add_executable(bare-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bare-test.cpp")
+add_executable(bare-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/bare-test.cpp")
 target_link_libraries(bare-test optgra)
 target_link_libraries(bare-test Catch2::Catch2WithMain)
 
