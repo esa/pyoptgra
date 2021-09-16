@@ -73,6 +73,7 @@ target_include_directories(optgra PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/c
 
 add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
+target_link_libraries(optgra-test Catch2::Catch2WithMain)
 
 add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/raiitest.cpp")
 target_link_libraries(raii-test optgra)

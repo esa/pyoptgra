@@ -2,6 +2,9 @@
 #include <vector>
 #include <tuple>
 
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
+
 #include "wrapper.hpp"
 
 using std::cout;
@@ -9,6 +12,7 @@ using std::endl;
 using std::vector;
 
 using namespace optgra;
+using Catch::Approx;
 
 ///Fitness callable implementing a constraint function of \sum_0^4 (x_i - i)^2 and a merit function of \sum_0^4 x_i
 std::vector<double> f(std::vector<double> x) {
@@ -64,7 +68,7 @@ std::vector<std::vector<double>> g_simple(std::vector<double> x) {
         return der;
 }
 
-int main(int argn, char** argc)
+TEST_CASE( "Wrapper optimizes", "[wrapper-optimize]" )
 {
 	std::vector<double> initial_x = {1,1,1,1,1};
 	int dim = initial_x.size();
@@ -92,28 +96,39 @@ int main(int argn, char** argc)
 	}
 	cout << endl;
 
+    // check that bestx is close to 0, 1, 2, 3, 4
+    REQUIRE (bestx[0] == Approx(0.0).margin(0.01));
+    REQUIRE (bestx[1] == Approx(1.0).margin(0.01));
+    REQUIRE (bestx[2] == Approx(2.0).margin(0.01));
+    REQUIRE (bestx[3] == Approx(3.0).margin(0.01));
+    REQUIRE (bestx[4] == Approx(4.0).margin(0.01));
+  
+    // check that bestf is close to 0 10
+    REQUIRE (bestf[0] == Approx(0.0).margin(0.01));
+    REQUIRE (bestf[1] == Approx(10.0).margin(0.01));
+}
+
+TEST_CASE( "Wrapper computes sensitivity matrices", "[wrapper-sensitivity]" )
+{
 	// Testing sensitivity
 
 	std::vector<double> sens_x = {0.000183705, 1, 1.99982, 2.99963, 3.99945};
 	std::vector<double> sens_f = {5.06211e-07, 9.99908};
 
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple = compute_sensitivity_matrices(bestx, {0,-1}, f, g, true);
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple = compute_sensitivity_matrices(sens_x, {0,-1}, f, g, true);
 
-    std::tuple<sensitivity_state, std::vector<double>> state_tuple = prepare_sensitivity_state(bestx, {0,-1}, f, g, true);
+    std::tuple<sensitivity_state, std::vector<double>> state_tuple = prepare_sensitivity_state(sens_x, {0,-1}, f, g, true);
 
     std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple_indirect 
      = get_sensitivity_matrices(std::get<0>(state_tuple), {0,0,0,0,0}, {0, -1});
 
-    if (matrixtuple == matrixtuple_indirect) {
-    	cout << "matrices are equal" << endl;
-    } else {
-    	cout << "matrices are not equal" << endl;
-    }
+    REQUIRE (matrixtuple == matrixtuple_indirect);
+}
 
-    cout << "-----------------" << endl;
-
+TEST_CASE( "Wrapper computes sensitivity state", "[wrapper-sensitivity-state]" )
+{
 	int num_variables = 1;
 	int num_constraints = 1;
 
@@ -148,7 +163,8 @@ int main(int argn, char** argc)
     }
     cout << endl;
 
-    matrixtuple_indirect 
+    std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
+     std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple_indirect
      = get_sensitivity_matrices(tuplecache, {0}, {-1, -1});
 
      cout << "constraints_active: ";
@@ -156,6 +172,4 @@ int main(int argn, char** argc)
             cout << std::get<0>(matrixtuple_indirect)[i] << " ";
     }
     cout << endl;
-
-   return 0;
 }
