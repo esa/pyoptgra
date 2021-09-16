@@ -2,6 +2,9 @@
 #include <vector>
 #include <tuple>
 
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
+
 #include "wrapper.hpp"
 
 using std::cout;
@@ -9,6 +12,7 @@ using std::endl;
 using std::vector;
 
 using namespace optgra;
+using Catch::Approx;
 
 std::vector<double> f_simple(std::vector<double> x) {
         std::vector<double> con(2);
@@ -30,16 +34,17 @@ std::vector<std::vector<double>> g_simple(std::vector<double> x) {
         return der;
 }
 
-std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::vector<double>>,
-     std::vector<std::vector<double>>, std::vector<std::vector<double>>> call_optgra(const std::vector<int> &variable_types, const std::vector<int> &constraint_types,
-        std::vector<double> x,
-        fitness_callback fitness,
-        gradient_callback gradient,
-        int max_iterations = 150, // MAXITE
-        int max_correction_iterations = 90, // CORITE
-        double max_distance_per_iteration = 1, // VARMAX
-        double perturbation_for_snd_order_derivatives = 1) // VARSND) 
-        {
+TEST_CASE( "Low-level C-Fortran interface works and computes sensitivity matrices", "[bare-interface]" ) {
+        const std::vector<int> variable_types = {0};
+        const std::vector<int> constraint_types = {-1,-1};
+        std::vector<double> x = {10};
+
+        fitness_callback fitness = f_simple;
+        gradient_callback gradient = g_simple;
+        int max_iterations = 150; // MAXITE
+        int max_correction_iterations = 90; // CORITE
+        double max_distance_per_iteration = 1; // VARMAX
+        double perturbation_for_snd_order_derivatives = 1; // VARSND) 
 
         int num_variables = variable_types.size();
         int num_constraints = constraint_types.size() - 1;
@@ -161,22 +166,20 @@ std::tuple<std::vector<int>, std::vector<std::vector<double>>, std::vector<std::
         }
 
         ogclos_();
-
-        return std::make_tuple(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
-         variables_to_active_constraints, variables_to_parameters);
 }
 
+TEST_CASE( "Sensitivity update with constraint delta is computed", "[bare-update_delta]" ) {
+        const std::vector<int> variable_types = {0};
+        const std::vector<int> &constraint_types = {-1,-1};
 
-std::tuple<std::vector<double>, std::vector<double>, int, int> update_delta(const std::vector<int> &variable_types, const std::vector<int> &constraint_types,
-        std::vector<double> x,
-        fitness_callback fitness,
-        gradient_callback gradient,
-        std::vector<double> delta,
-        int max_iterations = 150, // MAXITE
-        int max_correction_iterations = 90, // CORITE
-        double max_distance_per_iteration = 1, // VARMAX
-        double perturbation_for_snd_order_derivatives = 1) // VARSND) 
-        {
+        std::vector<double> x = {10};
+        fitness_callback fitness = f_simple;
+        gradient_callback gradient = g_simple;
+        std::vector<double> delta = {-2};
+        int max_iterations = 150;// MAXITE
+        int max_correction_iterations = 90;// CORITE
+        double max_distance_per_iteration = 10;// VARMAX
+        double perturbation_for_snd_order_derivatives = 1; // VARSND) 
 
         int num_variables = variable_types.size();
         int num_constraints = constraint_types.size() - 1;
@@ -232,79 +235,6 @@ std::tuple<std::vector<double>, std::vector<double>, int, int> update_delta(cons
          static_callable_store::fitness, static_callable_store::gradient);
 
         ogclos_();
-
-        return std::make_tuple(valvar, valcon, finopt, finite);
-}
-
-int main(int argn, char** argc)
-{
-        int num_constraints = 1;
-        int num_variables = 1;
-        std::vector<int> constraint_status(num_constraints);
-        std::vector<std::vector<double>> constraints_to_active_constraints(num_constraints+1);
-        std::vector<std::vector<double>> constraints_to_parameters(num_constraints+1);
-        std::vector<std::vector<double>> variables_to_active_constraints(num_variables);
-        std::vector<std::vector<double>> variables_to_parameters(num_variables);
-
-        std::tie(constraint_status, constraints_to_active_constraints, constraints_to_parameters,
-         variables_to_active_constraints, variables_to_parameters) = call_optgra({0}, {-1,-1}, {10}, f_simple, g_simple);
-
-        cout << "Active constraints:" << endl;
-        for (int i = 0; i < num_constraints; i++) {
-                cout << constraint_status[i] << " ";
-        }
-        cout << endl;
-
-        cout << "Constraints to active constraints:" << endl;
-        for (int i = 0; i < num_constraints+1; i++) {
-            for (int j = 0; j < num_constraints; j++) {
-                cout << constraints_to_active_constraints[i][j] << " ";
-            }
-            cout << endl;
-        }
-
-        cout << "Constraints to parameters:" << endl;
-        for (int i = 0; i < num_constraints+1; i++) {
-            for (int j = 0; j < num_variables; j++) {
-                cout << constraints_to_parameters[i][j] << " ";
-            }
-            cout << endl;
-        }
-
-        cout << "Variables to active constraints:" << endl;
-        for (int i = 0; i < num_variables; i++) {
-            for (int j = 0; j < num_constraints; j++) {
-                cout << variables_to_active_constraints[i][j] << " ";
-            }
-            cout << endl;
-        }
-
-        cout << "Variables to parameters:" << endl;
-        for (int i = 0; i < num_variables; i++) {
-            for (int j = 0; j < num_variables; j++) {
-                cout << variables_to_parameters[i][j] << " ";
-            }
-            cout << endl;
-        }
-
-        cout << "---------------" << endl;
-
-        int finopt, finite;
-        std::vector<double> x;
-        std::vector<double> y;
-
-        std::tie(x,y, finopt, finite) = update_delta({0}, {-1,-1}, {10}, f_simple, g_simple, {1});
-
-        cout << "x:";
-        for (int i = 0; i < num_variables; i++) {
-            cout << x[i] << " ";
-        }
-        cout << endl;
-
-        cout << "y:";
-        for (int i = 0; i < num_constraints+1; i++) {
-            cout << y[i] << " ";
-        }
-        cout << endl;
-
+        // check that x was moved
+        REQUIRE( valvar[0] == Approx(12.0) );
 }
