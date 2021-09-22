@@ -124,7 +124,11 @@ TEST_CASE( "Wrapper computes sensitivity matrices", "[wrapper-sensitivity]" )
      std::vector<std::vector<double>>, std::vector<std::vector<double>>> matrixtuple_indirect 
      = get_sensitivity_matrices(std::get<0>(state_tuple), {0,0,0,0,0}, {0, -1});
 
-    REQUIRE (matrixtuple == matrixtuple_indirect);
+    REQUIRE (std::get<0>(matrixtuple) == std::get<0>(matrixtuple_indirect));
+    REQUIRE (std::get<1>(matrixtuple) == std::get<1>(matrixtuple_indirect));
+    REQUIRE (std::get<2>(matrixtuple) == std::get<2>(matrixtuple_indirect));
+    REQUIRE (std::get<3>(matrixtuple) == std::get<3>(matrixtuple_indirect));
+    REQUIRE (std::get<4>(matrixtuple) == std::get<4>(matrixtuple_indirect));
 }
 
 TEST_CASE( "Wrapper computes sensitivity state", "[wrapper-sensitivity-state]" )
