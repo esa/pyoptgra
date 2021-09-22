@@ -169,7 +169,7 @@ Initializing the sensitivity analysis with it causes one function call for each 
 	>>> opt.prepare_sensitivity(prob, [10])
 	>>> opt.linear_update_new_callable(prob2)
 	f called with [10.]
-	([10.0], [2.0, 20.0], 0)
+	([12.000000000000043], [-0.0, 20.0], 1)
 
 .. _sec:sensitivity-constraint-delta:
 
@@ -201,6 +201,6 @@ Now, we can use linear_update_delta without triggering new function calls:
 .. doctest::
 
 	>>> opt.linear_update_delta([2])
-	([10.0], [-2.0, 20.0], 0)
+	([7.999999999999957], [-0.0, 20.0], 1)
 	>>> opt.linear_update_delta([5])
-	([10.0], [-5.0, 20.0], 0)
+	([4.999999999999893], [-0.0, 20.0], 1)
