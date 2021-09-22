@@ -6,6 +6,7 @@
 #include <catch2/catch_approx.hpp>
 
 #include "wrapper.hpp"
+#include "test-callables.hpp"
 
 using std::cout;
 using std::endl;
@@ -13,26 +14,6 @@ using std::vector;
 
 using namespace optgra;
 using Catch::Approx;
-
-std::vector<double> f_simple(std::vector<double> x) {
-        std::vector<double> con(2);
-        con[0] = 10 - x[0];
-        con[1] = 2*x[0];
-        cout << "f_simple called with " << x[0];
-        cout << endl;
-        return con;
-}
-
-std::vector<std::vector<double>> g_simple(std::vector<double> x) {
-        cout << "g_simple called with " << x[0] << endl;
-        std::vector<std::vector<double>> der(2);
-        der[0].resize(1);
-        der[1].resize(1);
-
-        der[0][0] = -1;
-        der[1][0] = 2;
-        return der;
-}
 
 TEST_CASE( "Low-level C-Fortran interface works and computes sensitivity matrices", "[bare-interface]" ) {
         const std::vector<int> variable_types = {0};
@@ -168,7 +149,7 @@ TEST_CASE( "Low-level C-Fortran interface works and computes sensitivity matrice
         ogclos_();
 }
 
-TEST_CASE( "Sensitivity update with constraint delta is computed", "[bare-update_delta]" ) {
+TEST_CASE( "Sensitivity update with constraint delta is computed", "[bare-update-delta]" ) {
         const std::vector<int> variable_types = {0};
         const std::vector<int> &constraint_types = {-1,-1};
 
