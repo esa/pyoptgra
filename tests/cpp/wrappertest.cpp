@@ -24,25 +24,6 @@ TEST_CASE( "Wrapper optimizes", "[wrapper-optimize]" )
 	
 	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, true);
 
-	cout << "Best x:";
-	for (int i = 0; i < dim; i++) {
-		cout << bestx[i] << " ";
-	}
-	cout << endl;
-
-	cout << "Best f:";
-	for (int i = 0; i < 1 + 1; i++) {
-		cout << bestf[i] << " ";
-	}
-	cout << endl;
-
-	cout << "f(best_x):";
-	auto best_orig = f(bestx);
-	for (int i = 0; i < 1 + 1; i++) {
-		cout << best_orig[i] << " ";
-	}
-	cout << endl;
-
     // check that bestx is close to 0, 1, 2, 3, 4
     REQUIRE (bestx[0] == Approx(0.0).margin(0.01));
     REQUIRE (bestx[1] == Approx(1.0).margin(0.01));
@@ -91,10 +72,11 @@ TEST_CASE( "Wrapper computes sensitivity state", "[wrapper-sensitivity-state]" )
     vector<int> actcon(num_constraints+1);
     vector<int> conact(num_constraints+4);
     vector<double> conred((num_constraints+3)*num_variables);
+    vector<double> conder((num_constraints+3)*num_variables);
 
     sensitivity_state tuplecache;
     std::tie(tuplecache, std::ignore) = prepare_sensitivity_state({10}, {-1,-1}, f_simple, g_simple, true);
-    std::tie(senvar, senqua, sencon, senact, sender, actcon, conact, conred) = tuplecache;
+    std::tie(senvar, senqua, sencon, senact, sender, actcon, conact, conred, conder) = tuplecache;
 
     cout << "senact: ";
     for (int i = 0; i < num_constraints+1; i++) {
@@ -123,4 +105,25 @@ TEST_CASE( "Wrapper computes sensitivity state", "[wrapper-sensitivity-state]" )
             cout << std::get<0>(matrixtuple_indirect)[i] << " ";
     }
     cout << endl;
+}
+
+TEST_CASE( "Wrapper performs sensitivity updates", "[wrapper-sensitivity-update-delta]" )
+{
+    const std::vector<int> variable_types = {0};
+    const std::vector<int> constraint_types = {-1,-1};
+
+    std::vector<double> x = {10};
+    fitness_callback fitness = f_simple;
+    gradient_callback gradient = g_simple;
+    std::vector<double> delta = {-2};
+    sensitivity_state state_tuple = std::get<0>(prepare_sensitivity_state(x, constraint_types, fitness, gradient, true));
+
+    std::vector<double> bestx, bestf, best_orig;
+    int finopt;
+    std::tie(bestx, bestf, finopt) = sensitivity_update_constraint_delta(state_tuple, variable_types, constraint_types, delta);
+
+    REQUIRE( bestx[0] == Approx(12.0) );
+    best_orig = fitness(bestx);
+    REQUIRE( best_orig[0] == Approx(delta[0]) );
+
 }

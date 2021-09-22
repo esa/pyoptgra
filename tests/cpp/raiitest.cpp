@@ -149,7 +149,7 @@ TEST_CASE( "RAII supports sensitivity updates with new callable", "[raii-sensiti
 }
 
 
-TEST_CASE( "Sensitivity update with constraint delta is computed", "[raii-update-delta-simple]" ) {
+TEST_CASE( "RAII supports sensitivity update with constraint delta and simple function", "[raii-update-delta-simple]" ) {
         const std::vector<int> variable_types = {0};
         const std::vector<int> constraint_types = {-1,-1};
 
@@ -181,7 +181,7 @@ TEST_CASE( "Sensitivity update with constraint delta is computed", "[raii-update
         REQUIRE( best_orig[0] == Approx(delta[0]) );
 }
 
-TEST_CASE( "RAII supports sensitivity updates with constraint delta", "[raii-sensitivity-update-delta]" )
+TEST_CASE( "RAII supports sensitivity updates with constraint delta and non-trivial function", "[raii-sensitivity-update-delta]" )
 {
 	std::vector<double> sens_x = {0, 0.99, 2, 3, 4};
 	int num_variables = sens_x.size();
@@ -284,4 +284,41 @@ TEST_CASE("RAII sensitivity_matrices with simple function", "[raii-sensitivity-m
 		}
 		cout << endl;
 	}
+}
+
+TEST_CASE( "RAII supports sensitvity update with saved state", "[raii-update-delta-simple-state]" ) {
+        const std::vector<int> variable_types = {0};
+        const std::vector<int> constraint_types = {-1,-1};
+
+        std::vector<double> x = {10};
+        fitness_callback fitness = f_simple;
+        gradient_callback gradient = g_simple;
+        std::vector<double> delta = {-2};
+        
+        int num_variables = variable_types.size();
+        int num_constraints = constraint_types.size() - 1;
+        
+        sensitivity_state sens_state;
+        {
+        	optgra_raii raii_object(variable_types, constraint_types);
+
+			raii_object.initialize_sensitivity_data(x, fitness, gradient);
+
+        	sens_state = raii_object.get_sensitivity_state_data();
+        }
+
+        std::vector<double> bestx, bestf, best_orig;
+		int finopt;
+
+		{
+        	optgra_raii raii_object(variable_types, constraint_types);
+
+        	raii_object.set_sensitivity_state_data(sens_state);
+
+        	std::tie(bestx, bestf, finopt) = raii_object.sensitivity_update_delta(delta);
+        }
+
+        REQUIRE( bestx[0] == Approx(12.0) );
+        best_orig = fitness(bestx);
+        REQUIRE( best_orig[0] == Approx(delta[0]) );
 }
