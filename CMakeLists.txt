@@ -31,6 +31,9 @@ endif()
 include(cmake/modules/Update_submodules.cmake)
 include(cmake/modules/Pybind11.cmake)
 
+# add targets for unit testing framework on C level
+add_subdirectory(ext/Catch2)
+
 set(SKBUILD_INSTALL_DIR _sk_install ) # set install dir when using SKBUILD
 
 set (OPTGRAFILES 
@@ -68,14 +71,17 @@ set (OPTGRAFILES
 add_library(optgra "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrapper.hpp" ${OPTGRAFILES})
 target_include_directories(optgra PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core")
 
-add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/wrappertest.cpp")
+add_executable(optgra-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/wrappertest.cpp")
 target_link_libraries(optgra-test optgra)
+target_link_libraries(optgra-test Catch2::Catch2WithMain)
 
-add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/raiitest.cpp")
+add_executable(raii-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/raiitest.cpp")
 target_link_libraries(raii-test optgra)
+target_link_libraries(raii-test Catch2::Catch2WithMain)
 
-add_executable(bare-test "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bare-test.cpp")
+add_executable(bare-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/bare-test.cpp")
 target_link_libraries(bare-test optgra)
+target_link_libraries(bare-test Catch2::Catch2WithMain)
 
 pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(core PRIVATE optgra)
