@@ -31,8 +31,10 @@ c++-test:
   script:
     - mkdir build && cd build
     - cmake ..
-    - make optgra-test
-    - chmod u+x optgra-test
+    - make optgra-test raii-test bare-test
+    - chmod u+x optgra-test raii-test bare-test
+    - ./bare-test
+    - ./raii-test
     - ./optgra-test
 
 # check the python code compiles and the tests run
