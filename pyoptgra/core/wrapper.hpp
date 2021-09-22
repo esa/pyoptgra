@@ -51,7 +51,7 @@ namespace optgra {
     typedef tuple<vector<double>, vector<double>, vector<double>, vector<int>, vector<double>, vector<int>, vector<int>, vector<double>, vector<double>> sensitivity_state;
 
 /** This struct is just to connect the std::functions passed from python
- *  to the unholy mess of static function pointers, which are requried by Fortran.
+ *  to the unholy mess of static function pointers which are required by Fortran.
  *  It is emphatically not thread safe.
  */
 struct static_callable_store {
@@ -60,7 +60,13 @@ struct static_callable_store {
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
 
-        std::vector<double> fitness_vector = f_callable(x_vector);
+        std::vector<double> fitness_vector;
+        try {
+            fitness_vector = f_callable(x_vector);
+        } catch (const std::bad_function_call& e) {
+            throw(std::runtime_error("Empty fitness function was called."));
+        }
+
         if (int(fitness_vector.size()) != c_dim) {
             throw(std::invalid_argument("Got vector of size" + std::to_string(fitness_vector.size())
                  + " from fitness callable, but expected " + std::to_string(c_dim) + " constraints+fitness."));
@@ -74,8 +80,12 @@ struct static_callable_store {
 
         std::vector<double> x_vector(x_dim);
         std::copy(x, x+x_dim, x_vector.begin());
-
-        std::vector<std::vector<double>> gradient_vector = g_callable(x_vector);
+        std::vector<std::vector<double>> gradient_vector;
+        try {
+            gradient_vector = g_callable(x_vector);
+        } catch (const std::bad_function_call& e) {
+            throw(std::runtime_error("Empty gradient function was called."));
+        }
 
         int num_constraints = gradient_vector.size();
         if (num_constraints != c_dim) {
