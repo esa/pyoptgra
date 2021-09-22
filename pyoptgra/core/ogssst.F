@@ -68,6 +68,11 @@ C ----------------------------------------------------------------------
       DO CON = 1, NUMCON+3
          DO VAR = 1, NUMVAR
             CONRED(CON,VAR) = REDSAV(CON,VAR)
+         ENDDO
+      ENDDO
+
+      DO CON = 1, NUMCON
+         DO VAR = 1, NUMVAR
             CONDER(CON,VAR) = DERSAV(CON,VAR)
          ENDDO
       ENDDO
