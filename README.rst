@@ -27,6 +27,4 @@ Pyoptgra is designed as a `pygmo <https://esa.github.io/pygmo2/>` user-defined a
 License
 =======
 
-Pyoptgra/Optgra is available under two different licenses. The version to be found at Github and the Python Package Index (pypi) is available under version 3 of the GNU General Public License, while the version available at the Space Codev platform is available under the ESA Software Community Licence (ESCL). The versions are otherwise identical in content.
-
-We explicitly reserve the right to release future versions of Pyoptgra and Optgra under different licenses.
+Pyoptgra/Optgra is available under two different licenses. You may choose to license and use it under version 3 of the GNU General Public License or under the ESA Software Community Licence (ESCL) 2.4 Weak Copyleft. We explicitly reserve the right to release future versions of Pyoptgra and Optgra under different licenses.
