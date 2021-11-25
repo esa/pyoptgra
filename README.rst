@@ -27,4 +27,10 @@ Pyoptgra is designed as a `pygmo <https://esa.github.io/pygmo2/>` user-defined a
 License
 =======
 
+Copyright 2008, 2021 European Space Agency
+
 Pyoptgra/Optgra is available under two different licenses. You may choose to license and use it under version 3 of the GNU General Public License or under the ESA Software Community Licence (ESCL) 2.4 Weak Copyleft. We explicitly reserve the right to release future versions of Pyoptgra and Optgra under different licenses.
+
+Copies of GPL3 and ESCL 2.4 can be found in the root directory of this package,
+you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
+and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
