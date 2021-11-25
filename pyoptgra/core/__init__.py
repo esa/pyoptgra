@@ -1,6 +1,6 @@
 # Copyright 2008, 2021 European Space Agency
 #
-# This file is part of the pyoptgra, a pygmo affiliated library.
+# This file is part of pyoptgra, a pygmo affiliated library.
 #
 # This Source Code Form is available under two different licenses.
 # You may choose to license and use it under version 3 of the
