@@ -163,6 +163,7 @@ class optgra:
         constraint_priorities: List[int] = [],  # f_dim
         bounds_to_constraints: bool = True,
         bound_constraints_tolerance: float = 1e-6,
+        merit_function_threshold: float = 1e-6,
         # bound_constraints_scalar: float = 1,
         force_bounds: bool = False,
         optimization_method: int = 2,
@@ -198,6 +199,7 @@ class optgra:
                 constraints of the problem come first, followed by those derived from the lower box bounds, then those
                 from the upper box bounds. Infinite bounds are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived from bounds
+            merit_function_threshold: optional - convergence threshold for merit function
             force_bounds: optional - whether to force the bounds given by the problem. If false (default), the
                 fitness function might also be called with values of x that are outside of the bounds. Set to true
                 if the fitness function cannot handle that.
@@ -226,6 +228,7 @@ class optgra:
 
         self.bounds_to_constraints = bounds_to_constraints
         self.bound_constraints_tolerance = bound_constraints_tolerance
+        self.merit_function_threshold = merit_function_threshold
 
         self.force_bounds = force_bounds
         # self.bound_violation_penalty = bound_violation_penalty
@@ -403,7 +406,7 @@ class optgra:
             convergence_thresholds = (
                 c_tol_list
                 + [self.bound_constraints_tolerance] * len(bound_types)
-                + [1e-6]
+                + [self.merit_function_threshold]
             )
 
         # adjust constraint priorities if adding constraints from box bound
