@@ -13,3 +13,5 @@
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
 from .optgra import optgra  # noqa
+
+__version__ = "0.1.0"

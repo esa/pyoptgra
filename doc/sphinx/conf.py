@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Pyoptgra'
-copyright = '2021, Moritz v. Looz'
-author = 'Moritz v. Looz'
+copyright = '2021, European Space Agency'
+author = 'Moritz v. Looz, Johannes Schoenmaekers'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.1.0'
 
 
 # -- General configuration ---------------------------------------------------
