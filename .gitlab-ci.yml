@@ -43,7 +43,7 @@ test:
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran --yes
   script:
-    - python setup.py install --user
+    - python -m pip install .
     - pip install pytest-cov coverage
     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
@@ -58,7 +58,7 @@ doctest:
     - apt update && apt install gfortran --yes
     - pip install sphinx breathe
   script:
-    - python setup.py install --user
+    - python -m pip install .
     - cd doc/sphinx
     - make doctest
 
@@ -71,7 +71,7 @@ documentation:
     - apt update && apt install gfortran doxygen --yes
     - pip install sphinx breathe sphinx-rtd-theme
   script:
-    - python setup.py install --user
+    - python -m pip install .
     - cd doc/doxygen
     - doxygen Doxyfile
     - cd ../sphinx
@@ -86,8 +86,9 @@ python-sdist:
   needs: []
   before_script:
     - apt update && apt install gfortran doxygen --yes
+    - pip install build
   script:
-    - python setup.py sdist
+    - python -m build
     - mv dist/pyoptgra-*.tar.gz .
   artifacts:
     name: python-package

@@ -9,7 +9,7 @@ license = "GPL3 or ESCL"
 readme = "README.rst"
 
 [dependencies]
-pygmo
+pygmo = "^2.16.0"
 
 [build-system]
 requires = ["setuptools", "wheel", "scikit-build", "cmake", "ninja", "setuptools_scm"]
