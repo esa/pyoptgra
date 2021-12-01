@@ -12,8 +12,6 @@ static:
   stage: test
   image: python:3.8
   allow_failure: false
-  before_script:  # install this project's dependencies using the requirements.txt file
-    - pip install --extra-index-url https://gitlab-ci-token:$CI_BUILD_TOKEN@gitlab.esa.int/api/v4/projects/2014/packages/pypi/simple -r requirements.txt
   script:
     - pip install black flake8 isort mypy
     - mypy --ignore-missing-imports pyoptgra/*.py
@@ -44,10 +42,8 @@ test:
   allow_failure: false
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
   script:
-    - python setup.py install --user
+    - python -m pip install .
     - pip install pytest-cov coverage
     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
@@ -60,11 +56,9 @@ doctest:
   allow_failure: false
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
     - pip install sphinx breathe
   script:
-    - python setup.py install --user
+    - python -m pip install .
     - cd doc/sphinx
     - make doctest
 
@@ -75,11 +69,9 @@ documentation:
   allow_failure: false
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran doxygen --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
     - pip install sphinx breathe sphinx-rtd-theme
   script:
-    - python setup.py install --user
+    - python -m pip install .
     - cd doc/doxygen
     - doxygen Doxyfile
     - cd ../sphinx
@@ -94,10 +86,9 @@ python-sdist:
   needs: []
   before_script:
     - apt update && apt install gfortran doxygen --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
+    - pip install build
   script:
-    - python setup.py sdist
+    - python -m build
     - mv dist/pyoptgra-*.tar.gz .
   artifacts:
     name: python-package
@@ -121,8 +112,6 @@ python-wheels:manylinux2010:
 test-wheels:
   stage: test-package
   image: python:3.6
-  before_script:
-    - pip install -r requirements.txt
   script:
     - pip install pyoptgra*cp36-cp36m*manylinux2010_x86_64.whl
     - mkdir test-install

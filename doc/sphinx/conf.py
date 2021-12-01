@@ -22,8 +22,8 @@ copyright = '2021, European Space Agency'
 author = 'Moritz v. Looz, Johannes Schoenmaekers'
 
 # The full version, including alpha/beta/rc tags
-from importlib.metadata import version
-release = version('pyoptgra')
+from importlib.metadata import version as pv
+release = pv('pyoptgra')
 
 # -- General configuration ---------------------------------------------------
 
