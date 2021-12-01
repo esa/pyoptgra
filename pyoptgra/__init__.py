@@ -14,4 +14,5 @@
 
 from .optgra import optgra  # noqa
 
-__version__ = "0.1.0"
+from ._version import version as __version__
+from ._version import version_tuple as __version_tuple__

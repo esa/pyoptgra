@@ -18,8 +18,8 @@ from skbuild import setup
 
 setup(
     name="pyoptgra",
-    version='0.1.0',
+    use_scm_version= {"write_to" : "pyoptgra/_version.py"},
     packages=["pyoptgra"],
-    setup_requires=["cmake", "ninja"],
+    setup_requires=["cmake", "ninja","setuptools_scm"],
     cmake_install_dir="pyoptgra/core",
 )
