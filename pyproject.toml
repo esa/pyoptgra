@@ -1,3 +1,16 @@
+[project]
+name = "pyoptgra"
+description = "A python-wrapped version of OPTGRA, an algorithm for constrained optimization"
+authors = [
+    "Johannes Schoenmaekers <johannes.schoenmaekers@esa.int>",
+    "Moritz von Looz <moritz.von.looz@esa.int>"
+]
+license = "GPL3 or ESCL"
+readme = "README.rst"
+
+[dependencies]
+pygmo
+
 [build-system]
 requires = ["setuptools", "wheel", "scikit-build", "cmake", "ninja", "setuptools_scm"]
 build-backend = "setuptools.build_meta"

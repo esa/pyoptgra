@@ -12,8 +12,6 @@ static:
   stage: test
   image: python:3.8
   allow_failure: false
-  before_script:  # install this project's dependencies using the requirements.txt file
-    - pip install --extra-index-url https://gitlab-ci-token:$CI_BUILD_TOKEN@gitlab.esa.int/api/v4/projects/2014/packages/pypi/simple -r requirements.txt
   script:
     - pip install black flake8 isort mypy
     - mypy --ignore-missing-imports pyoptgra/*.py
@@ -44,8 +42,6 @@ test:
   allow_failure: false
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
   script:
     - python setup.py install --user
     - pip install pytest-cov coverage
@@ -60,8 +56,6 @@ doctest:
   allow_failure: false
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
     - pip install sphinx breathe
   script:
     - python setup.py install --user
@@ -75,8 +69,6 @@ documentation:
   allow_failure: false
   before_script:  # install this project's dependencies
     - apt update && apt install gfortran doxygen --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
     - pip install sphinx breathe sphinx-rtd-theme
   script:
     - python setup.py install --user
@@ -94,8 +86,6 @@ python-sdist:
   needs: []
   before_script:
     - apt update && apt install gfortran doxygen --yes
-    - pip install -r build-requirements.txt
-    - pip install -r requirements.txt
   script:
     - python setup.py sdist
     - mv dist/pyoptgra-*.tar.gz .
@@ -121,8 +111,6 @@ python-wheels:manylinux2010:
 test-wheels:
   stage: test-package
   image: python:3.6
-  before_script:
-    - pip install -r requirements.txt
   script:
     - pip install pyoptgra*cp36-cp36m*manylinux2010_x86_64.whl
     - mkdir test-install
