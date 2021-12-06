@@ -2,6 +2,7 @@ name: GitHub Pyoptgra workflow
 on: [push]
 jobs:
   static:
+    runs-on: ubuntu-latest
     container: python:3.8
     steps:
       - uses: actions/checkout@v2
@@ -12,6 +13,7 @@ jobs:
       - run: isort --profile black --check pyoptgra
 
   c++-test:
+    runs-on: ubuntu-latest
     container: python:3.8
     steps:
       - uses: actions/checkout@v2
@@ -25,6 +27,7 @@ jobs:
       - run: ./optgra-test
 
   python-test:
+    runs-on: ubuntu-latest
     container: python:3.8
     steps:
       - uses: actions/checkout@v2
@@ -36,6 +39,7 @@ jobs:
       - run: coverage report --fail-under=100
 
   doctest:
+    runs-on: ubuntu-latest
     container: python:3.8
     steps:
     - uses: actions/checkout@v2
@@ -46,6 +50,7 @@ jobs:
     - run: make doctest
 
   documentation:
+    runs-on: ubuntu-latest
     container: python:3.8
     steps:
     - uses: actions/checkout@v2
