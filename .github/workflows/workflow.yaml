@@ -1,0 +1,58 @@
+name: GitHub Pyoptgra workflow
+on: [push]
+jobs:
+  static:
+    container: python:3.8
+    steps:
+      - uses: actions/checkout@v2
+      - run: pip install black flake8 isort mypy
+      - run: mypy --ignore-missing-imports pyoptgra/*.py
+      - run: black --check pyoptgra/*.py
+      - run: flake8 --max-line-length 125 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
+      - run: isort --profile black --check pyoptgra
+
+  c++-test:
+    container: python:3.8
+    steps:
+      - uses: actions/checkout@v2
+      - run: apt update && apt install gfortran g++ cmake --yes
+      - run: mkdir build && cd build
+      - run: cmake ..
+      - run: make optgra-test raii-test bare-test
+      - run: chmod u+x optgra-test raii-test bare-test
+      - run: ./bare-test
+      - run: ./raii-test
+      - run: ./optgra-test
+
+  python-test:
+    container: python:3.8
+    steps:
+      - uses: actions/checkout@v2
+      - run: apt update && apt install gfortran --yes
+      - run: python -m pip install .
+      - run: pip install pytest-cov coverage
+      - run: cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+      - run: pytest --cov pyoptgra --cov-report term-missing test.py
+      - run: coverage report --fail-under=100
+
+  doctest:
+    container: python:3.8
+    steps:
+    - uses: actions/checkout@v2
+    - run: apt update && apt install gfortran --yes
+    - run: pip install sphinx breathe
+    - run: python -m pip install .
+    - run: cd doc/sphinx
+    - run: make doctest
+
+  documentation:
+    container: python:3.8
+      steps:
+      - uses: actions/checkout@v2
+      - run: apt update && apt install gfortran doxygen --yes
+      - run: pip install sphinx breathe sphinx-rtd-theme
+      - run: python -m pip install .
+      - run: cd doc/doxygen
+      - run: doxygen Doxyfile
+      - run: cd ../sphinx
+      - run: make html
