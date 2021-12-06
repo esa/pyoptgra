@@ -4,9 +4,6 @@ stages:
   - test-package
   - deploy
   
-variables:
-  TWINE_REPOSITORY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
-  
 # check the code adheres to the coding standards
 static:
   stage: test
@@ -127,16 +124,16 @@ publish:
   script:
     - pip install twine
     # upload to the project pypi (whl)
-    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN pyoptgra-*.whl
+    - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.whl
     # upload to the project pypi (sdist)
-    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_BUILD_TOKEN pyoptgra-*.tar.gz
+    - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.tar.gz
   needs:
     - python-sdist
     - test-wheels
     - python-wheels:manylinux2010
   only:
-    refs:
-      - master
+    - tags
+  when: manual
 
 pages:
   stage: deploy
@@ -152,6 +149,6 @@ pages:
     - public
     - doc/sphinx/_build
   only:
-    refs:
-      - master
+    - tags
+  when: manual
     
