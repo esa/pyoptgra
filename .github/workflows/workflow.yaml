@@ -47,12 +47,12 @@ jobs:
 
   documentation:
     container: python:3.8
-      steps:
-      - uses: actions/checkout@v2
-      - run: apt update && apt install gfortran doxygen --yes
-      - run: pip install sphinx breathe sphinx-rtd-theme
-      - run: python -m pip install .
-      - run: cd doc/doxygen
-      - run: doxygen Doxyfile
-      - run: cd ../sphinx
-      - run: make html
+    steps:
+    - uses: actions/checkout@v2
+    - run: apt update && apt install gfortran doxygen --yes
+    - run: pip install sphinx breathe sphinx-rtd-theme
+    - run: python -m pip install .
+    - run: cd doc/doxygen
+    - run: doxygen Doxyfile
+    - run: cd ../sphinx
+    - run: make html
