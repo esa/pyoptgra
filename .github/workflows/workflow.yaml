@@ -3,7 +3,6 @@ on: [push]
 jobs:
   static:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
       - uses: actions/checkout@v2
       - run: pip install black flake8 isort mypy
@@ -14,7 +13,6 @@ jobs:
 
   c++-test:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
       - uses: actions/checkout@v2
       - run: apt update && apt install gfortran g++ cmake --yes
@@ -28,7 +26,6 @@ jobs:
 
   python-test:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
       - uses: actions/checkout@v2
       - run: apt update && apt install gfortran --yes
@@ -40,7 +37,6 @@ jobs:
 
   doctest:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
     - uses: actions/checkout@v2
     - run: apt update && apt install gfortran --yes
@@ -51,7 +47,6 @@ jobs:
 
   documentation:
     runs-on: ubuntu-latest
-    container: python:3.8
     steps:
     - uses: actions/checkout@v2
     - run: apt update && apt install gfortran doxygen --yes
