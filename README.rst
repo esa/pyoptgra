@@ -10,7 +10,11 @@ Installation
 With Pip
 --------
 
+If you are within the VPN of ESA, you can use one of the pre-built binaries:
+
 * ```pip install pyoptgra --extra-index-url https://gitlab.esa.int/api/v4/projects/4531/packages/pypi/simple```
+
+To compile from source, first install a C++ compiler, a fortran compiler and cmake, then clone the repository and build with ``python -m build``
 
 Usage
 =====

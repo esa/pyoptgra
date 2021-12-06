@@ -8,3 +8,4 @@ pyoptgra/.mypy_cache/
 tests/.coverage
 doc/_build/
 tests/coverage.json
+pyoptgra/_version.py
