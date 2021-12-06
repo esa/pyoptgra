@@ -137,6 +137,7 @@ publish:
   only:
     refs:
       - master
+  when: manual
 
 pages:
   stage: deploy
@@ -154,4 +155,5 @@ pages:
   only:
     refs:
       - master
+  when: manual
     
