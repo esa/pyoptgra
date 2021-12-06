@@ -1,4 +1,4 @@
-name: GitHub Pyoptgra workflow
+name: Testing
 on: [push]
 jobs:
   static:
