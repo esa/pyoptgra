@@ -11,25 +11,6 @@ jobs:
       - run: flake8 --max-line-length 125 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
       - run: isort --profile black --check pyoptgra
 
-  cplusplus-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: sudo apt update && sudo apt install gfortran g++ cmake --yes
-      - run: mkdir build
-      - run: cmake ..
-      working-directory: build
-      - run: make optgra-test raii-test bare-test
-      working-directory: build
-      - run: chmod u+x optgra-test raii-test bare-test
-      working-directory: build
-      - run: ./bare-test
-      working-directory: build
-      - run: ./raii-test
-      working-directory: build
-      - run: ./optgra-test
-      working-directory: build
-
   python-test:
     runs-on: ubuntu-latest
     steps:
