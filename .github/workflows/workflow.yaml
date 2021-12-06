@@ -17,13 +17,17 @@ jobs:
       - uses: actions/checkout@v2
       - run: sudo apt update && sudo apt install gfortran g++ cmake --yes
       - run: mkdir build
-      - run: |
-          cmake ..
-          make optgra-test raii-test bare-test
-          chmod u+x optgra-test raii-test bare-test
-          ./bare-test
-          ./raii-test
-          ./optgra-test
+      - run: cmake ..
+      working-directory: build
+      - run: make optgra-test raii-test bare-test
+      working-directory: build
+      - run: chmod u+x optgra-test raii-test bare-test
+      working-directory: build
+      - run: ./bare-test
+      working-directory: build
+      - run: ./raii-test
+      working-directory: build
+      - run: ./optgra-test
       working-directory: build
 
   python-test:
