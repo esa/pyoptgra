@@ -12,7 +12,7 @@ With Pip
 
 Pyoptgra is available on PyPi and can be installed with pip:
 
-* ```pip install pyoptgra```
+* ``pip install pyoptgra``
 
 Compile from Source
 -------------------
