@@ -132,7 +132,8 @@ publish:
     - test-wheels
     - python-wheels:manylinux2010
   only:
-    - tags
+    refs:
+        - master
   when: manual
 
 pages:
@@ -149,7 +150,7 @@ pages:
     - public
     - doc/sphinx/_build
   only:
-    - tags
-    - refs: master
+    refs:
+        - master
   when: manual
     
