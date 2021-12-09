@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Optgra &mdash; Pyoptgra 0.1.dev1+g6db6de8 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sensitivity Analysis" href="sensitivity.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> Pyoptgra
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html">Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html#functions-for-sensitivity-analysis">Functions for Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html">Variable Scaling Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html#constraint-tolerances">Constraint Tolerances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes-from-fortran.html">Internal Workings of the Python to Fortran Interface</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">The pyoptgra module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#the-optgra-c-wrapper">The optgra C++ wrapper</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Pyoptgra</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>Optgra</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="optgra">
+<h1>Optgra<a class="headerlink" href="#optgra" title="Permalink to this headline"></a></h1>
+<p>This repository provides <em>pyoptgra</em>, a python package wrapping (and including) OPTGRA.
+OPTGRA is an optimization algorithm developed and implemented by Johannes Schoenmaekers, it is specifically designed for near-linear constrained problems, which commonly occur in trajectory optimization.</p>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
+<section id="with-pip">
+<h2>With Pip<a class="headerlink" href="#with-pip" title="Permalink to this headline"></a></h2>
+<p>Pyoptgra is available on PyPi and can be installed with pip:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyoptgra</span></code></p></li>
+</ul>
+</section>
+<section id="compile-from-source">
+<h2>Compile from Source<a class="headerlink" href="#compile-from-source" title="Permalink to this headline"></a></h2>
+<p>First install a C++ compiler, a fortran compiler, cmake, python and python build, then clone the repository and build with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">build</span></code></p>
+</section>
+</section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h1>
+<p>Pyoptgra is designed as a <cite>pygmo &lt;https://esa.github.io/pygmo2/&gt;</cite> user-defined algorithm: First create an instance of the <em>optgra</em> class with all relevant parameters, then pass a pygmo.population containing your problem to the instance’s <em>evolve</em> method:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pygmo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyoptgra</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prob</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">pygmo</span><span class="o">.</span><span class="n">schwefel</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span> <span class="c1"># using the schwefel test problem from pygmo, with 30 dimensions</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pop</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">population</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">algo</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">algorithm</span><span class="p">(</span><span class="n">pyoptgra</span><span class="o">.</span><span class="n">optgra</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pop</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">evolve</span><span class="p">(</span><span class="n">pop</span><span class="p">)</span> <span class="c1"># the actual call to OPTGRA</span>
+</pre></div>
+</div>
+</section>
+<section id="license">
+<h1>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h1>
+<p>Copyright 2008, 2021 European Space Agency</p>
+<p>Pyoptgra/Optgra is available under two different licenses. You may choose to license and use it under version 3 of the GNU General Public License or under the ESA Software Community Licence (ESCL) 2.4 Weak Copyleft. We explicitly reserve the right to release future versions of Pyoptgra and Optgra under different licenses.</p>
+<p>Copies of GPL3 and ESCL 2.4 can be found in the root directory of this package,
+you can also obtain them at <a class="reference external" href="https://www.gnu.org/licenses/gpl-3.0.txt">https://www.gnu.org/licenses/gpl-3.0.txt</a>
+and <a class="reference external" href="https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft">https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft</a></p>
+<section id="further-reading">
+<h2>Further reading<a class="headerlink" href="#further-reading" title="Permalink to this headline"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>You can set scaling factors for variables and constraints, see <a class="reference internal" href="scaling-and-tolerances.html#sec-variable-scaling-factors"><span class="std std-ref">Variable Scaling Factors</span></a>.</p></li>
+<li><p>Constraint tolerances can be set with the c_tol attribute of the passed problem, see <a class="reference internal" href="scaling-and-tolerances.html#sec-constraint-tolerances"><span class="std std-ref">Constraint Tolerances</span></a>.</p></li>
+<li><p>Optgra offers several functions for <a class="reference internal" href="sensitivity.html#sec-sensitivity-analysis"><span class="std std-ref">Sensitivity Analysis</span></a> of a problem with respect to constraints and parameters, as well as functions for local updates. This feature is still under development.</p></li>
+<li><p>If you have previously used the fortran interface of Optgra, you might be interested in the internals of how pyoptgra calls the underlying fortran code: <a class="reference internal" href="changes-from-fortran.html#sec-internals"><span class="std std-ref">Internal Workings of the Python to Fortran Interface</span></a></p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="table-of-content">
+<h2>Table of Content<a class="headerlink" href="#table-of-content" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html">Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html#functions-for-sensitivity-analysis">Functions for Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html">Variable Scaling Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html#constraint-tolerances">Constraint Tolerances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes-from-fortran.html">Internal Workings of the Python to Fortran Interface</a></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">The pyoptgra module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#the-optgra-c-wrapper">The optgra C++ wrapper</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="sensitivity.html" class="btn btn-neutral float-right" title="Sensitivity Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, European Space Agency.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
