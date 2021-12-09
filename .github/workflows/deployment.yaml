@@ -1,4 +1,4 @@
-name: Deployment
+name: Pages-Deployment
 on: [workflow_dispatch]
 jobs:
   build-and-deploy-documentation:
@@ -13,4 +13,7 @@ jobs:
     - run: make html
       working-directory: doc/sphinx
     - run: bash tools/deploy-docs-to-gh-pages.sh
+      env:
+        - GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - GITHUB_SHA: ${{github.sha}}
   

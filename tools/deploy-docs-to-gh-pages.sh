@@ -2,7 +2,7 @@ git config --global push.default simple
 git config --global user.name "CircleCI"
 git config --global user.email "moritz@vlooz.de"
 set +x
-git clone "https://${{ secrets.GITHUB_TOKEN }}@github.com/esa/pyoptgra.git" pyoptgra_gh_pages -q
+git clone "https://${GITHUB_TOKEN}@github.com/esa/pyoptgra.git" pyoptgra_gh_pages -q
 set -x
 cd pyoptgra_gh_pages
 git checkout -b gh-pages --track origin/gh-pages;
@@ -11,7 +11,7 @@ mv ../doc/sphinx/_build/html/* .;
 git add *;
 # We assume here that a failure in commit means that there's nothing
 # to commit.
-git commit -m "Update Sphinx documentation commit ${{ github.sha }} [skip ci]." || exit 0
+git commit -m "Update Sphinx documentation commit ${GITHUB_SHA} [skip ci]." || exit 0
 PUSH_COUNTER=0
 until git push -q
 do
