@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The pyoptgra module &mdash; Pyoptgra 0.1.dev1+g8c5da0d documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Internal Workings of the Python to Fortran Interface" href="changes-from-fortran.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Pyoptgra
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html">Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html#functions-for-sensitivity-analysis">Functions for Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html">Variable Scaling Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html#constraint-tolerances">Constraint Tolerances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes-from-fortran.html">Internal Workings of the Python to Fortran Interface</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The pyoptgra module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#the-optgra-c-wrapper">The optgra C++ wrapper</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Pyoptgra</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>The pyoptgra module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="the-pyoptgra-module">
+<span id="api"></span><h1>The pyoptgra module<a class="headerlink" href="#the-pyoptgra-module" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyoptgra.optgra">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyoptgra.</span></span><span class="sig-name descname"><span class="pre">optgra</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyoptgra.optgra" title="Permalink to this definition"></a></dt>
+<dd><p>This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written in Fortran.</p>
+<p>It is specifically designed for near-linear optimization problems with many constraints.
+When optimizing a problem, Optgra will first move towards satisfying the constraints,
+then move along the feasible region boundary to optimize the merit function,
+fixing constraint violations as they occur.</p>
+<p>For this, constraints and the merit function are linearized. Optgra will perform less well on
+very non-linear merit functions or constraints.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pygmo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyoptgra</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prob</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">pygmo</span><span class="o">.</span><span class="n">schwefel</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pop</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">population</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">algo</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">algorithm</span><span class="p">(</span><span class="n">pyoptgra</span><span class="o">.</span><span class="n">optgra</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pop</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">evolve</span><span class="p">(</span><span class="n">pop</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Initialize a wrapper instance for the OPTGRA algorithm.</p>
+<p>Some of the construction arguments, for example the scaling factors, depend on the dimension of the problem.
+Passing a problem with a different dimension to the instance’s evolve function will result in an error.</p>
+<p>Some problem-specific options are deduced from the problem in the population given to the evolve function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_iterations</strong> – maximum number of total iterations</p></li>
+<li><p><strong>max_correction_iterations</strong> – number of constraint correction iterations in the beginning
+If no feasible solution is found within that many iterations, Optgra aborts</p></li>
+<li><p><strong>max_distance_per_iteration</strong> – maximum scaled distance traveled in each iteration</p></li>
+<li><p><strong>perturbation_for_snd_order_derivatives</strong> – Used as delta for numerically computing second order errors
+of the constraints in the optimization step</p></li>
+<li><p><strong>variable_scaling_factors</strong> – optional - Scaling factors for the input variables.
+If passed, must be positive and as many as there are variables</p></li>
+<li><p><strong>variable_types</strong> – optional - Flags to set variables to either free (0) or fixed (1). Fixed variables
+are also called parameters in sensitivity analysis.
+If passed, must be as many flags as there are variables</p></li>
+<li><p><strong>constraint_priorities</strong> – optional - lower constraint priorities are fulfilled earlier.
+During the initial constraint correction phase, only constraints with a priority at most k
+are considered in iteration k. Defaults to zero, so that all constraints are considered
+from the beginning.</p></li>
+<li><p><strong>bounds_to_constraints</strong> – optional - if true (default), translate box bounds of the given problems into
+inequality constraints for optgra. Note that when also passing constraint priorities, the original
+constraints of the problem come first, followed by those derived from the lower box bounds, then those
+from the upper box bounds. Infinite bounds are ignored and not counted.</p></li>
+<li><p><strong>bound_constraints_tolerance</strong> – optional - constraint tolerance for the constraints derived from bounds</p></li>
+<li><p><strong>merit_function_threshold</strong> – optional - convergence threshold for merit function</p></li>
+<li><p><strong>force_bounds</strong> – optional - whether to force the bounds given by the problem. If false (default), the
+fitness function might also be called with values of x that are outside of the bounds. Set to true
+if the fitness function cannot handle that.</p></li>
+<li><p><strong>optimization_method</strong> – select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
+2 for spectral conjugate gradient method and 3 for conjugate gradient method</p></li>
+<li><p><strong>verbosity</strong> – 0 has no output, 4 and higher have maximum output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – if optimization_method is not one of 0, 1, 2, or 3</p></li>
+<li><p><strong>ValueError</strong> – if any of max_iterations, max_correction_iterations, max_distance_per_iteration,
+    or perturbation_for_snd_order_derivatives are negative</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyoptgra.optgra.evolve">
+<span class="sig-name descname"><span class="pre">evolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">population</span> <span class="pre">pop</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyoptgra.optgra.evolve" title="Permalink to this definition"></a></dt>
+<dd><p>Call OPTGRA with the best-fitness member of the population as start value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>population</strong> – The population containing the problem and a set of initial solutions.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The changed population.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the population is empty</p></li>
+<li><p><strong>ValueError</strong> – If the problem contains multiple objectives</p></li>
+<li><p><strong>ValueError</strong> – If the problem is stochastic</p></li>
+<li><p><strong>ValueError</strong> – If the problem dimensions don’t fit to constraint_priorities
+    or variable_scaling_factors that were passed to the wrapper constructor</p></li>
+<li><p><strong>ValueError</strong> – If the problem has finite box bounds and bounds_to_constraints was
+    set to True in the wrapper constructor (default), constraint_priorities
+    were also passed but don’t cover the additional bound-derived constraints</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyoptgra.optgra.prepare_sensitivity">
+<span class="sig-name descname"><span class="pre">prepare_sensitivity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyoptgra.optgra.prepare_sensitivity" title="Permalink to this definition"></a></dt>
+<dd><p>Prepare OPTGRA for sensitivity analysis at x. This is independant from previous and later calls to evolve,
+but enables calls to sensitivity_matrices, linear_update_new_callable and linear_update_delta on this instance.</p>
+<p>This works by creating a linearization of the problem’s fitness function around x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>problem</strong> – The problem being analyzed.</p></li>
+<li><p><strong>x</strong> – The value of x around which linearization is performed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the problem contains multiple objectives</p></li>
+<li><p><strong>ValueError</strong> – If the problem is stochastic</p></li>
+<li><p><strong>ValueError</strong> – If the problem dimensions don’t fit to constraint_priorities
+    or variable_scaling_factors that were passed to the wrapper constructor</p></li>
+<li><p><strong>ValueError</strong> – If the problem has finite box bounds and bounds_to_constraints was
+    set to True in the wrapper constructor (default), constraint_priorities
+    were also passed but don’t cover the additional bound-derived constraints</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyoptgra.optgra.sensitivity_matrices">
+<span class="sig-name descname"><span class="pre">sensitivity_matrices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyoptgra.optgra.sensitivity_matrices" title="Permalink to this definition"></a></dt>
+<dd><p>Get stored sensitivity matrices prepared by earlier call to prepare_sensivitity.
+Note that active constraints are constraints that are currently fulfilled,
+but could be violated in the next iteration.
+Parameters refer to variables whose variable type was declared as fixed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a boolean list of whether each constraint is active,
+the sensitivity of constraints + merit function with respect to active constraints,
+the sensitivity of constraints + merit function with respect to parameters,
+the sensitivity of variables with respect to active constraints,
+and the sensitivity of variables with respect to parameters.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of one list and four matrices</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – If prepare_sensitivity has not been called on this instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyoptgra.optgra.linear_update_new_callable">
+<span class="sig-name descname"><span class="pre">linear_update_new_callable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyoptgra.optgra.linear_update_new_callable" title="Permalink to this definition"></a></dt>
+<dd><p>Perform a single optimization step on the stored value of x, but with a new callable</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>problem</strong> – A problem containing the new callable.
+Has to have same dimensions and types as the problem passed to prepare_sensitivity</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple of new_x, new_y</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>RuntimeError</strong> – If prepare_sensitivity has not been called on this instance</p></li>
+<li><p><strong>ValueError</strong> – If number or type of constraints of the new problem are different from
+    those of the problem passed to prepare_sensitivity</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyoptgra.optgra.linear_update_delta">
+<span class="sig-name descname"><span class="pre">linear_update_delta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constraint_delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyoptgra.optgra.linear_update_delta" title="Permalink to this definition"></a></dt>
+<dd><p>Perform a single optimization step on the linear approximation prepared with prepare_sensitivity.
+For this, no new function calls to the problem callable are performed, making this potentially very fast.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>constraint_delta</strong> – A list of deltas against the constraints. They are subtracted from the stored values.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple of new_x, new_y</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>RuntimeError</strong> – If prepare_sensitivity has not been called on this instance</p></li>
+<li><p><strong>ValueError</strong> – If number of deltas does not fit number of constraints.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="the-optgra-c-wrapper">
+<h1>The optgra C++ wrapper<a class="headerlink" href="#the-optgra-c-wrapper" title="Permalink to this headline"></a></h1>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6optgra8optimizeERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbiiddNSt6vectorIdEENSt6vectorIdEENSt6vectorIiEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiiNSt6vectorIdEENSt6vectorIiEEi">
+<span id="_CPPv3N6optgra8optimizeERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbiiddNSt6vectorIdEENSt6vectorIdEENSt6vectorIiEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiiNSt6vectorIdEENSt6vectorIiEEi"></span><span id="_CPPv2N6optgra8optimizeERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbiiddNSt6vectorIdEENSt6vectorIdEENSt6vectorIiEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiiNSt6vectorIdEENSt6vectorIiEEi"></span><span id="optgra::optimize__std::vector:double:CR.std::vector:i:CR.fitness_callback.gradient_callback.b.i.i.double.double.std::vector:double:.std::vector:double:.std::vector:i:.std::vector:ss:.std::vector:ss:.i.i.std::vector:double:.std::vector:i:.i"></span><span class="target" id="wrapper_8hpp_1afe1c465dfca3b29d533bd52d32e663b6"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">optgra</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">optimize</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">initial_x</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">constraint_types</span></span>, <span class="n"><span class="pre">fitness_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fitness</span></span>, <span class="n"><span class="pre">gradient_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">gradient</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">has_gradient</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_iterations</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">150</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_correction_iterations</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">90</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_distance_per_iteration</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">10</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">perturbation_for_snd_order_derivatives</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">convergence_thresholds</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_scaling_factors</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">constraint_priorities</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_names</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">constraint_names</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">optimization_method</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">2</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">derivatives_computation</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">autodiff_deltas</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_types</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">log_level</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6optgra8optimizeERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbiiddNSt6vectorIdEENSt6vectorIdEENSt6vectorIiEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiiNSt6vectorIdEENSt6vectorIiEEi" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Main C++ wrapper function. </p>
+<p>Call optgra to optimize a problem. Most of the parameters are identical to the constructor arguments of pyoptgra, but some additional ones are available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initial_x</strong> – the initial guess for the decision vector </p></li>
+<li><p><strong>constraint_types</strong> – types of constraints. Set 0 for equality constraints, -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints. Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems. </p></li>
+<li><p><strong>fitness</strong> – a callable for the fitness values. It is called with the current x, expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function </p></li>
+<li><p><strong>gradient</strong> – a callable for the gradient values, optional. It is called with the current x, expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j. </p></li>
+<li><p><strong>has_gradient</strong> – whether the problem has a gradient. If set to False, the gradient callable will not be called and numerical differentiation will be used instead. </p></li>
+<li><p><strong>max_iterations</strong> – the maximum number of iterations. Optional, defaults to 150. </p></li>
+<li><p><strong>max_correction_iterations</strong> – number of constraint correction iterations in the beginning. If no feasible solution is found within that many iterations, Optgra aborts. Optional, defaults to 90. </p></li>
+<li><p><strong>max_distance_per_iteration</strong> – maximum scaled distance traveled in each iteration. Optional, defaults to 10 </p></li>
+<li><p><strong>perturbation_for_snd_order_derivatives</strong> – used as delta for numerically computing second order errors of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1 </p></li>
+<li><p><strong>convergence_thresholds</strong> – tolerance a constraint can deviate and still be considered fulfilled. Constraints with lower thresholds will be prioritized during optimization. Thresholds of 0 break the optimization process. </p></li>
+<li><p><strong>variable_scaling_factors</strong> – scaling factors for the input variables. If passed, must be positive and as many as there are variables </p></li>
+<li><p><strong>constraint_priorities</strong> – filter in which to consider constraints. Lower constraint priorities are fulfilled earlier. During the initial constraint correction phase, only constraints with a priority at most k are considered in iteration k. Defaults to zero, so that all constraints are considered from the beginning. </p></li>
+<li><p><strong>variable_names</strong> – Not yet implemented </p></li>
+<li><p><strong>constraint_names</strong> – Not yet implemented </p></li>
+<li><p><strong>optimization_method</strong> – select 0 for steepest descent, 1 for modified spectral conjugate gradient method, 2 for spectral conjugate gradient method and 3 for conjugate gradient method. Parameter OPTMET in Fortran. </p></li>
+<li><p><strong>derivatives_computation</strong> – method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function, 2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing. Parameter VARDER in Fortran. </p></li>
+<li><p><strong>autodiff_deltas</strong> – deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001. </p></li>
+<li><p><strong>variable_types</strong> – Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable. </p></li>
+<li><p><strong>log_level</strong> – 0 has no output, 4 and higher have maximum output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws</dt>
+<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">unspecified</span></span></span> – any exception thrown by memory errors in standard containers </p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a tuple of the best value of x, the fitness of that x, and a status flag of optgra</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6optgra28compute_sensitivity_matricesERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiNSt6vectorIdEENSt6vectorIiEEi">
+<span id="_CPPv3N6optgra28compute_sensitivity_matricesERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiNSt6vectorIdEENSt6vectorIiEEi"></span><span id="_CPPv2N6optgra28compute_sensitivity_matricesERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiNSt6vectorIdEENSt6vectorIiEEi"></span><span id="optgra::compute_sensitivity_matrices__std::vector:double:CR.std::vector:i:CR.fitness_callback.gradient_callback.b.double.double.std::vector:double:.std::vector:ss:.std::vector:ss:.i.std::vector:double:.std::vector:i:.i"></span><span class="target" id="wrapper_8hpp_1a1ab19c954253db0391c48d906f928f01"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">optgra</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">compute_sensitivity_matrices</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">constraint_types</span></span>, <span class="n"><span class="pre">fitness_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fitness</span></span>, <span class="n"><span class="pre">gradient_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">gradient</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">has_gradient</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_distance_per_iteration</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">10</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">perturbation_for_snd_order_derivatives</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_scaling_factors</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_names</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">constraint_names</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">derivatives_computation</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">autodiff_deltas</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_types</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">log_level</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6optgra28compute_sensitivity_matricesERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEENSt6vectorINSt6stringEEENSt6vectorINSt6stringEEEiNSt6vectorIdEENSt6vectorIiEEi" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Compute sensitivity state and matrices in one go, without creating a sensitivity state tuple. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – the decision vector around which the sensitivity analysis is to be performed </p></li>
+<li><p><strong>constraint_types</strong> – types of constraints. Set 0 for equality constraints, -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems. </p></li>
+<li><p><strong>fitness</strong> – a callable for the fitness values. It is called with the current x, expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function </p></li>
+<li><p><strong>gradient</strong> – a callable for the gradient values, optional. It is called with the current x, expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j. </p></li>
+<li><p><strong>has_gradient</strong> – whether the problem has a gradient. If set to False, the gradient callable will not be called and numerical differentiation will be used instead. </p></li>
+<li><p><strong>max_distance_per_iteration</strong> – maximum scaled distance traveled in each iteration. Optional, defaults to 10 </p></li>
+<li><p><strong>perturbation_for_snd_order_derivatives</strong> – used as delta for numerically computing second order errors of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1 </p></li>
+<li><p><strong>variable_scaling_factors</strong> – scaling factors for the input variables. If passed, must be positive and as many as there are variables </p></li>
+<li><p><strong>variable_names</strong> – Not yet implemented </p></li>
+<li><p><strong>constraint_names</strong> – Not yet implemented </p></li>
+<li><p><strong>derivatives_computation</strong> – method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function, 2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing. Parameter VARDER in Fortran. </p></li>
+<li><p><strong>autodiff_deltas</strong> – deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001. </p></li>
+<li><p><strong>variable_types</strong> – Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable. </p></li>
+<li><p><strong>log_level</strong> – 0 has no output, 4 and higher have maximum output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of one list and four matrices: a boolean list of whether each constraint is active, the sensitivity of constraints + merit function with respect to active constraints, the sensitivity of constraints + merit function with respect to parameters, the sensitivity of variables with respect to active constraints, and the sensitivity of variables with respect to parameters. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6optgra25prepare_sensitivity_stateERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEENSt6vectorIiEEi">
+<span id="_CPPv3N6optgra25prepare_sensitivity_stateERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEENSt6vectorIiEEi"></span><span id="_CPPv2N6optgra25prepare_sensitivity_stateERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEENSt6vectorIiEEi"></span><span id="optgra::prepare_sensitivity_state__std::vector:double:CR.std::vector:i:CR.fitness_callback.gradient_callback.b.double.double.std::vector:double:.i.std::vector:double:.std::vector:i:.i"></span><span class="target" id="wrapper_8hpp_1aa89c2bda0b8552e980e3f90798a1980c"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">sensitivity_state</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">optgra</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">prepare_sensitivity_state</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">x</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">constraint_types</span></span>, <span class="n"><span class="pre">fitness_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fitness</span></span>, <span class="n"><span class="pre">gradient_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">gradient</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">has_gradient</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_distance_per_iteration</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">10</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">perturbation_for_snd_order_derivatives</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_scaling_factors</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">derivatives_computation</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">autodiff_deltas</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_types</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">log_level</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6optgra25prepare_sensitivity_stateERKNSt6vectorIdEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEENSt6vectorIiEEi" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Create a state tuple usable for sensitivity updates. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – the decision vector around which the sensitivity analysis is to be performed </p></li>
+<li><p><strong>constraint_types</strong> – types of constraints. Set 0 for equality constraints, -1 for inequality constraints that should be negative, 1 for positive inequality constraints and -2 for unenforced constraints Last element describes the merit function, with -1 for minimization problems and 1 for maximization problems. </p></li>
+<li><p><strong>fitness</strong> – a callable for the fitness values. It is called with the current x, expected output is an array of first all equality constraints, then all inequality constraints, and last the merit function </p></li>
+<li><p><strong>gradient</strong> – a callable for the gradient values, optional. It is called with the current x, expected output is a two-dimensional array g, with g_ij being the gradient of constraint i with respect to input variable j. </p></li>
+<li><p><strong>has_gradient</strong> – whether the problem has a gradient. If set to False, the gradient callable will not be called and numerical differentiation will be used instead. </p></li>
+<li><p><strong>max_distance_per_iteration</strong> – maximum scaled distance traveled in each iteration. Optional, defaults to 10 </p></li>
+<li><p><strong>perturbation_for_snd_order_derivatives</strong> – used as delta for numerically computing second order errors of the constraints in the optimization step. Parameter VARSND in Fortran. Optional, defaults to 1 </p></li>
+<li><p><strong>variable_scaling_factors</strong> – scaling factors for the input variables. If passed, must be positive and as many as there are variables </p></li>
+<li><p><strong>derivatives_computation</strong> – method to compute gradients. 0 is no gradient, 1 is the user-defined gradient function, 2 is a numerical gradient with double differencing, 3 a numerical gradient with single differencing. Parameter VARDER in Fortran. </p></li>
+<li><p><strong>autodiff_deltas</strong> – deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001. </p></li>
+<li><p><strong>variable_types</strong> – Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable. </p></li>
+<li><p><strong>log_level</strong> – 0 has no output, 4 and higher have maximum output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple of the current sensitivity state and the x for which the sensitivity analysis was performed. It may be different from the x given as argument, if optimization steps were performed in the meantime. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6optgra24get_sensitivity_matricesE17sensitivity_stateRKNSt6vectorIiEE6vectorIiEd">
+<span id="_CPPv3N6optgra24get_sensitivity_matricesE17sensitivity_stateRKNSt6vectorIiEE6vectorIiEd"></span><span id="_CPPv2N6optgra24get_sensitivity_matricesE17sensitivity_stateRKNSt6vectorIiEE6vectorIiEd"></span><span id="optgra::get_sensitivity_matrices__sensitivity_state.std::vector:i:CR.vector:i:.double"></span><span class="target" id="wrapper_8hpp_1a016c971f72cde60014c8006a0e95b13e"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">optgra</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">get_sensitivity_matrices</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">sensitivity_state</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">state_tuple</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">variable_types</span></span>, <span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">constraint_types</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_distance_per_iteration</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">10</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6optgra24get_sensitivity_matricesE17sensitivity_stateRKNSt6vectorIiEE6vectorIiEd" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Compute sensitivity matrics from a sensitivity state tuple. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6optgra31sensitivity_update_new_callableE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEEi">
+<span id="_CPPv3N6optgra31sensitivity_update_new_callableE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEEi"></span><span id="_CPPv2N6optgra31sensitivity_update_new_callableE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEEi"></span><span id="optgra::sensitivity_update_new_callable__sensitivity_state.std::vector:i:CR.std::vector:i:CR.fitness_callback.gradient_callback.b.double.double.std::vector:double:.i.std::vector:double:.i"></span><span class="target" id="wrapper_8hpp_1a1995b5a5a0cd2073d99ba64d186ecb01"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">optgra</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sensitivity_update_new_callable</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">sensitivity_state</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">state_tuple</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">variable_types</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">constraint_types</span></span>, <span class="n"><span class="pre">fitness_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fitness</span></span>, <span class="n"><span class="pre">gradient_callback</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">gradient</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">has_gradient</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_distance_per_iteration</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">10</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">perturbation_for_snd_order_derivatives</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_scaling_factors</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">derivatives_computation</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">autodiff_deltas</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">log_level</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6optgra31sensitivity_update_new_callableE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEE16fitness_callback17gradient_callbackbddNSt6vectorIdEEiNSt6vectorIdEEi" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Perform one optimization step with a new fitness callable, starting from the value of x that was set with prepare_sensitivity_state. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N6optgra35sensitivity_update_constraint_deltaE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEER6vectorIdEddNSt6vectorIdEEi">
+<span id="_CPPv3N6optgra35sensitivity_update_constraint_deltaE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEER6vectorIdEddNSt6vectorIdEEi"></span><span id="_CPPv2N6optgra35sensitivity_update_constraint_deltaE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEER6vectorIdEddNSt6vectorIdEEi"></span><span id="optgra::sensitivity_update_constraint_delta__sensitivity_state.std::vector:i:CR.std::vector:i:CR.vector:double:R.double.double.std::vector:double:.i"></span><span class="target" id="wrapper_8hpp_1aa1187a4187a7e0c2fa022fdfd3d22077"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">optgra</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sensitivity_update_constraint_delta</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">sensitivity_state</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">state_tuple</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">variable_types</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">constraint_types</span></span>, <span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">delta</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">max_distance_per_iteration</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">10</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">perturbation_for_snd_order_derivatives</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">variable_scaling_factors</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">{</span></span><span class="p"><span class="pre">}</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">log_level</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6optgra35sensitivity_update_constraint_deltaE17sensitivity_stateRKNSt6vectorIiEERKNSt6vectorIiEER6vectorIdEddNSt6vectorIdEEi" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Perform an update step based on the prepared sensitivity state, without any calls to the fitness callbacks. </p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="changes-from-fortran.html" class="btn btn-neutral float-left" title="Internal Workings of the Python to Fortran Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, European Space Agency.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

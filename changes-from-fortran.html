@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Internal Workings of the Python to Fortran Interface &mdash; Pyoptgra 0.1.dev1+g8c5da0d documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The pyoptgra module" href="api.html" />
+    <link rel="prev" title="Variable Scaling Factors" href="scaling-and-tolerances.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Pyoptgra
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html">Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sensitivity.html#functions-for-sensitivity-analysis">Functions for Sensitivity Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html">Variable Scaling Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scaling-and-tolerances.html#constraint-tolerances">Constraint Tolerances</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Internal Workings of the Python to Fortran Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pyoptgra-initialization">Pyoptgra Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#evolve">evolve</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prepare-sensitivity">prepare_sensitivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sensitivity-matrices">sensitivity_matrices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#linear-update-new-callable">linear_update_new_callable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#linear-update-delta">linear_update_delta</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">The pyoptgra module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#the-optgra-c-wrapper">The optgra C++ wrapper</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Pyoptgra</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Internal Workings of the Python to Fortran Interface</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/changes-from-fortran.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="internal-workings-of-the-python-to-fortran-interface">
+<span id="sec-internals"></span><h1>Internal Workings of the Python to Fortran Interface<a class="headerlink" href="#internal-workings-of-the-python-to-fortran-interface" title="Permalink to this headline"></a></h1>
+<p>The python class pyoptgra handles all calls to the Fortran subroutines of Optgra in the background, including allocating and deallocating memory.
+Since only one instance of Optgra can have allocated memory in each process, the allocations with oginit and deallocations with ogclos are wrapped in each function call, so that the pyoptgra class does not hold any reference to allocated memory. Thus, all calls are isolated from each other and a user does not have to worry about the internal state.</p>
+<section id="pyoptgra-initialization">
+<span id="sec-internals-init"></span><h2>Pyoptgra Initialization<a class="headerlink" href="#pyoptgra-initialization" title="Permalink to this headline"></a></h2>
+<p>The __init__ method of pyoptgra does not call any Fortran functions, but stores the construction arguments on the python side.</p>
+</section>
+<section id="evolve">
+<span id="sec-internals-evolve"></span><h2>evolve<a class="headerlink" href="#evolve" title="Permalink to this headline"></a></h2>
+<p>The evolve method calls, by way of the C++ wrapper, the following Optgra functions to initialize Optgra:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><em>oginit</em> - initialize data structures</p></li>
+<li><p><em>ogctyp</em> - pass constraint types</p></li>
+<li><p><em>ogderi</em> - set method of derivatives</p></li>
+<li><p><em>ogdist</em> - set maximum distance per iteration</p></li>
+<li><p><em>ogvtyp</em> - set variable types</p></li>
+<li><p><em>ogiter</em> - set maximum number of iterations</p></li>
+<li><p><em>ogomet</em> - set optimization method</p></li>
+<li><p><em>ogwlog</em> - set logging</p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>If scaling factors and constraint priorities are given, the following functions are called to pass them:</dt><dd><ul class="simple">
+<li><p><em>ogvsca</em> - variable scaling factors</p></li>
+<li><p><em>ogcsca</em> - constraint scaling factors</p></li>
+<li><p><em>ogcpri</em> - constraint priorities</p></li>
+</ul>
+</dd>
+</dl>
+<p>Finally, <em>ogexec</em> is called to start an optimization run and get the result, followed by <em>ogclos</em> to deallocate the Optgra memory.</p>
+</section>
+<section id="prepare-sensitivity">
+<span id="sec-internals-prepare"></span><h2>prepare_sensitivity<a class="headerlink" href="#prepare-sensitivity" title="Permalink to this headline"></a></h2>
+<p>The method prepare_sensitivity calls the same initialization functions of Optgra as the evolve method:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><em>oginit</em> - initialize data structures</p></li>
+<li><p><em>ogctyp</em> - pass constraint types</p></li>
+<li><p><em>ogderi</em> - set method of derivatives</p></li>
+<li><p><em>ogdist</em> - set maximum distance per iteration</p></li>
+<li><p><em>ogvtyp</em> - set variable types</p></li>
+<li><p><em>ogiter</em> - set maximum number of iterations</p></li>
+<li><p><em>ogomet</em> - set optimization method</p></li>
+<li><p><em>ogwlog</em> - set logging</p></li>
+</ul>
+</div></blockquote>
+<p>Following the initialization, it calls <em>ogsopt</em> (-1) and <em>ogexec</em> to initialize the sensitivity analysis in Optgra.
+The values of the common block variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED are then copied (using the new function <em>oggsst</em>) and stored in the python object, these will later be used to set a new instance of OPTGRA to the prepared state.
+Finally, <em>ogclos</em> is called to de-allocate the Optgra memory.</p>
+<p>This approach of copying the internal state to python instead of keeping a reference to the allocated Fortran memory was chosen since multiple calls involving the same allocated Fortran common block interfere with each other. Thus all other calls to evolve from the same process would be blocked, even if used in other objects. This would conflict with the object-oriented approach chosen for pygmo, where different instances of the same object can be initialized and used independently.</p>
+</section>
+<section id="sensitivity-matrices">
+<h2>sensitivity_matrices<a class="headerlink" href="#sensitivity-matrices" title="Permalink to this headline"></a></h2>
+<p>The method sensitivity_matrices calls the same initialization functions of Optgra as prepare_sensitivity, most of them with the default paramters.</p>
+<p>The variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED are set (using <em>ogssst</em>) to the values gotten in prepare_sensitivity, then <em>ogsens</em> is called and the output is returned.</p>
+<p>Finally, <em>ogclos</em> is called to deallocate the Fortran memory.</p>
+</section>
+<section id="linear-update-new-callable">
+<h2>linear_update_new_callable<a class="headerlink" href="#linear-update-new-callable" title="Permalink to this headline"></a></h2>
+<p>The method linear_update_new_callable first initializes the Optgra memory by calling the same initialization functions as prepare_sensitivity, then sets the sensitivity state captured in the variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED.</p>
+<p>It then calls <em>ogsopt</em> (1) to initialize the correct sensitivity mode, followed by <em>ogexec</em> with the new callable.</p>
+<p>Finally, <em>ogclos</em> is called to deallocate the Fortran memory.</p>
+</section>
+<section id="linear-update-delta">
+<h2>linear_update_delta<a class="headerlink" href="#linear-update-delta" title="Permalink to this headline"></a></h2>
+<p>The method linear_update_delta first initializes the Optgra memory by calling the same initialization functions as prepare_sensitivity, then sets the sensitivity state captured in the variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED.</p>
+<p>It then calls <em>ogsopt*(2) to initialize the correct sensitivity mode, followed by *ogcdel</em> to set the constraint deltas and <em>ogexec</em>.</p>
+<p>Finally, <em>ogclos</em> is called to deallocate the Fortran memory.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="scaling-and-tolerances.html" class="btn btn-neutral float-left" title="Variable Scaling Factors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="The pyoptgra module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, European Space Agency.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
