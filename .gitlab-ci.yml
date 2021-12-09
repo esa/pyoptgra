@@ -150,5 +150,6 @@ pages:
     - doc/sphinx/_build
   only:
     - tags
+    - refs: master
   when: manual
     
