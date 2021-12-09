@@ -14,6 +14,6 @@ jobs:
       working-directory: doc/sphinx
     - run: bash tools/deploy-docs-to-gh-pages.sh
       env:
-        - GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        - GITHUB_SHA: ${{github.sha}}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_SHA: ${{github.sha}}
   
