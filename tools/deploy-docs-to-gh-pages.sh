@@ -7,8 +7,9 @@ set -x
 cd pyoptgra_gh_pages
 git checkout -b gh-pages --track origin/gh-pages;
 git rm -fr *;
-mv ../doc/sphinx/_build/html/* .;
-git add *;
+mv ../doc/sphinx/_build/html/* doc;
+touch .nojekyll
+git add .;
 # We assume here that a failure in commit means that there's nothing
 # to commit.
 git commit -m "Update Sphinx documentation commit ${GITHUB_SHA} [skip ci]." || exit 0
