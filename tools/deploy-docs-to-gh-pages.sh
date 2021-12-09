@@ -2,7 +2,7 @@ git config --global push.default simple
 git config --global user.name "CircleCI"
 git config --global user.email "moritz@vlooz.de"
 set +x
-git clone "https://${GITHUB_TOKEN}@github.com/esa/pyoptgra.git" pyoptgra_gh_pages -q
+git clone "https://__token__:${GITHUB_TOKEN}@github.com/esa/pyoptgra.git" pyoptgra_gh_pages -q
 set -x
 cd pyoptgra_gh_pages
 git checkout -b gh-pages --track origin/gh-pages;
