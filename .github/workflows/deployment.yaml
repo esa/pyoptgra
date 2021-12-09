@@ -8,7 +8,6 @@ jobs:
     - run: sudo apt update && sudo apt install gfortran doxygen --yes
     - run: pip install sphinx breathe sphinx-rtd-theme
     - run: python -m pip install .
-    - run: cd doc/doxygen
     - run: doxygen Doxyfile
       working-directory: doc/doxygen
     - run: make html
