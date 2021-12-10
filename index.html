@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optgra &mdash; Pyoptgra 0.1.dev1+g8c5da0d documentation</title>
+  <title>Optgra &mdash; Pyoptgra 0.1.dev1+gc9e267a documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -76,6 +76,7 @@
 <h1>Optgra<a class="headerlink" href="#optgra" title="Permalink to this headline"></a></h1>
 <p>This repository provides <em>pyoptgra</em>, a python package wrapping (and including) OPTGRA.
 OPTGRA is an optimization algorithm developed and implemented by Johannes Schoenmaekers, it is specifically designed for near-linear constrained problems, which commonly occur in trajectory optimization.</p>
+<p>The full documentation can be found <a class="reference external" href="https://esa.github.io/pyoptgra/">here</a>.</p>
 </section>
 <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
@@ -93,7 +94,7 @@ OPTGRA is an optimization algorithm developed and implemented by Johannes Schoen
 </section>
 <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h1>
-<p>Pyoptgra is designed as a <cite>pygmo &lt;https://esa.github.io/pygmo2/&gt;</cite> user-defined algorithm: First create an instance of the <em>optgra</em> class with all relevant parameters, then pass a pygmo.population containing your problem to the instance’s <em>evolve</em> method:</p>
+<p>Pyoptgra is designed as a <a class="reference external" href="https://esa.github.io/pygmo2/">pygmo</a> user-defined algorithm: First create an instance of the <em>optgra</em> class with all relevant parameters, then pass a pygmo.population containing your problem to the instance’s <em>evolve</em> method:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pygmo</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyoptgra</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">prob</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">pygmo</span><span class="o">.</span><span class="n">schwefel</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span> <span class="c1"># using the schwefel test problem from pygmo, with 30 dimensions</span>
