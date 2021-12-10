@@ -4,6 +4,10 @@ Optgra
 This repository provides *pyoptgra*, a python package wrapping (and including) OPTGRA.
 OPTGRA is an optimization algorithm developed and implemented by Johannes Schoenmaekers, it is specifically designed for near-linear constrained problems, which commonly occur in trajectory optimization.
 
+The full documentation can be found here_.
+
+.. _here: https://esa.github.io/pyoptgra/
+
 Installation
 ============
 
@@ -22,7 +26,9 @@ First install a C++ compiler, a fortran compiler, cmake, python and python build
 Usage
 =====
 
-Pyoptgra is designed as a `pygmo <https://esa.github.io/pygmo2/>` user-defined algorithm: First create an instance of the *optgra* class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's *evolve* method:
+Pyoptgra is designed as a pygmo_ user-defined algorithm: First create an instance of the *optgra* class with all relevant parameters, then pass a pygmo.population containing your problem to the instance's *evolve* method:
+
+.. _pygmo: https://esa.github.io/pygmo2/
 
 >>> import pygmo
 >>> import pyoptgra
