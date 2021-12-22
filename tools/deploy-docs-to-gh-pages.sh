@@ -1,5 +1,5 @@
 git config --global push.default simple
-git config --global user.name "CircleCI"
+git config --global user.name "Github Workflow"
 git config --global user.email "moritz@vlooz.de"
 set +x
 git clone "https://__token__:${GITHUB_TOKEN}@github.com/esa/pyoptgra.git" pyoptgra_gh_pages -q
