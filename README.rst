@@ -1,6 +1,9 @@
 Optgra
 ======
 
+.. |build-status| image:: https://github.com/esa/pyoptgra/actions/workflows/workflow.yaml/badge.svg
+   :target: https://github.com/esa/pyoptgra/actions
+
 This repository provides *pyoptgra*, a python package wrapping (and including) OPTGRA.
 OPTGRA is an optimization algorithm developed and implemented by Johannes Schoenmaekers, it is specifically designed for near-linear constrained problems, which commonly occur in trajectory optimization.
 
