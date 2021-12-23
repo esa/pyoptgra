@@ -3,5 +3,4 @@
 GODOT Example
 =============
 
-.. raw:: html
-   :file: Earth_Mars_SEP_Pyoptgra.html
+`Example Jupyter Notebook <../_static/Earth_Mars_SEP_Pyoptgra.html>`_
