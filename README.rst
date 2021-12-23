@@ -1,6 +1,8 @@
 Optgra
 ======
 
+|build-status|
+
 .. |build-status| image:: https://github.com/esa/pyoptgra/actions/workflows/workflow.yaml/badge.svg
    :target: https://github.com/esa/pyoptgra/actions
 
