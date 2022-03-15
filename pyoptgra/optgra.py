@@ -738,5 +738,5 @@ class optgra:
             merit_function_threshold=self.merit_function_threshold,
             force_bounds=self.force_bounds,
             optimization_method=self.optimization_method,
-            verbosity=self.verbosity,
+            verbosity=self.log_level,
         )
