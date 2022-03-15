@@ -166,6 +166,8 @@ class optgra_test(unittest.TestCase):
         self.force_bounds_test()
         self.force_bounds_fitness_test()
         self.force_bounds_gradient_test()
+        self.get_name_test()
+        self.get_extra_info_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
