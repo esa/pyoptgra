@@ -663,6 +663,13 @@ class optgra_test(unittest.TestCase):
             self.assertTrue(pop.champion_x[i] >= lb[i])
             self.assertTrue(pop.champion_x[i] <= ub[i])
 
+    def get_name_test(self):
+        algo = pygmo.algorithm(pyoptgra.optgra())
+        self.assertEqual(algo.get_name(), "Optgra")
+
+    def get_extra_info_test(self):
+        algo = pygmo.algorithm(pyoptgra.optgra())
+        self.assertTrue("iterations" in algo.get_extra_info())
 
 if __name__ == "__main__":
     unittest.main()

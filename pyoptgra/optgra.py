@@ -700,3 +700,40 @@ class optgra:
             self.variable_scaling_factors,
             self.log_level,
         )
+
+    def get_name(self):
+        """
+        Returns the name of this instance
+        """
+        return "Optgra"
+
+    def get_extra_info(self):
+        return (
+            "max_iterations = {max_iterations}, "
+            + "max_correction_iterations = {max_correction_iterations}, "
+            + "max_distance_per_iteration = {max_distance_per_iteration}, "
+            + "perturbation_for_snd_order_derivatives = {perturbation_for_snd_order_derivatives}, "
+            + "variable_scaling_factors = {variable_scaling_factors}, "
+            + "variable_types = {variable_types}, "
+            + "constraint_priorities = {constraint_priorities}, "
+            + "bounds_to_constraints = {bounds_to_constraints}, "
+            + "bound_constraints_tolerance = {bound_constraints_tolerance}, "
+            + "merit_function_threshold = {merit_function_threshold}, "
+            + "force_bounds = {force_bounds}, "
+            + "optimization_method = {optimization_method}, "
+            + "verbosity = {verbosity}"
+        ).format(
+            max_iterations = self.max_iterations,
+            max_correction_iterations = self.max_correction_iterations,
+            max_distance_per_iteration = self.max_distance_per_iteration,
+            perturbation_for_snd_order_derivatives = self.perturbation_for_snd_order_derivatives,
+            variable_scaling_factors = self.variable_scaling_factors,
+            variable_types = self.variable_types,
+            constraint_priorities = self.constraint_priorities,
+            bounds_to_constraints = self.bounds_to_constraints,
+            bound_constraints_tolerance = self.bound_constraints_tolerance,
+            merit_function_threshold = self.merit_function_threshold,
+            force_bounds = self.force_bounds,
+            optimization_method = self.optimization_method,
+            verbosity = self.verbosity,
+        )
