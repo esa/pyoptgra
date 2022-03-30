@@ -38,7 +38,7 @@ TEST_CASE( "Wrapper optimizes", "[wrapper-optimize]" )
 	std::vector<double> bestx, bestf;
 	int finopt;
 	
-	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, true);
+	std::tie(bestx, bestf, finopt) = optimize(initial_x, {0,-1}, f, g, true, 150, 90, 10, 1, {1e-12, 1e-12});
 
     // check that bestx is close to 0, 1, 2, 3, 4
     REQUIRE (bestx[0] == Approx(0.0).margin(0.01));

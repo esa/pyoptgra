@@ -150,11 +150,11 @@ C ======================================================================
       IF     (SENOPT .LE. 0) THEN
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-      ELSEIF (SENOPT .EQ. +1) THEN
+      ELSEIF (SENOPT .EQ. +1 .OR. SENOPT .EQ. +3) THEN
           VARVAL = SENVAR
           CALL OGEVAL (VARVAL, CONVAL, 0, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-      ELSEIF (SENOPT .EQ. +2) THEN
+      ELSEIF (SENOPT .EQ. +2 .OR. SENOPT .EQ. +4) THEN
           VARVAL = SENVAR
           DO CON = 1, NUMCON+1
               SCA = CONSCA(CON)
@@ -210,7 +210,7 @@ C ======================================================================
       DO VAR = 1,NUMVAR
           IF (VARTYP(VAR) .NE. 1) CYCLE
 C          WRITE (STR,*) "VAR=",VAR,VARVAL(VAR)*VARSCA(VAR)
-          CALL OGWRIT (2,STR)
+C          CALL OGWRIT (2,STR)
           CONDER(1:NUMCON+1,VAR) = 0D0
       ENDDO
 C ======================================================================
@@ -305,10 +305,12 @@ C OPTIMISATION PART
 C ----------------------------------------------------------------------
  2233 CONTINUE
 C ----------------------------------------------------------------------
+      IF (SENOPT .LT. +3) THEN
       VARSAV = VARMAX
       VARMAX = VARMAX * 10D-1
       CALL OGOPTI (VARACC, NUMEQU, FINISH, DESNOR, CALVAL)
       VARMAX = VARSAV
+      ENDIF
 C ----------------------------------------------------------------------
       IF (SENOPT .NE. 0) THEN
           CALL OGWRIT (1,"")
