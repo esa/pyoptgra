@@ -52,7 +52,6 @@ When using optgra to optimize this problem, the function will be called a few ti
     f called with [19.88739233]
     f called with [19.89739233]
     f called with [19.87739233]
-    f called with [19.88739233]
     f called with [18.88739233]
     f called with [18.88739233]
     f called with [9.88739233]
@@ -60,15 +59,13 @@ When using optgra to optimize this problem, the function will be called a few ti
     f called with [9.87739233]
     f called with [10.]
     f called with [10.]
-    f called with [10.]
     f called with [10.01]
     f called with [9.99]
-    f called with [10.]
 
 .. doctest::
 
 	>>> print(pop.champion_x, pop.champion_f)
-	[10.] [2.00000000e+01 1.77635684e-15]
+	[10.] [ 2.00000000e+01 -1.77635684e-15]
 
 Functions for Sensitivity Analysis
 ==================================
@@ -79,7 +76,7 @@ The sensitivity analysis available by optgra consists of four functions:
 3) linear_update_new_callable(new_problem) - evaluates *new_problem* at *x* and performs one optimization step
 4) linear_update_delta(constraint_delta) - adds *constraint_delta* to the constraints of *problem* at *x* and performs one optimization step.
 
-The first output of the function sensitivity_matrices is whether each constraint is *active*. Constraints are considered active if they are fulfilled, but not more than* max_distance_per_iteration* away from being unfulfilled, meaning they could be violated during the next optimization step.
+The first output of the function sensitivity_matrices is whether each constraint is *active*. Constraints are marked as active and inactive during the optimization.
 
 For example, for *max_distance_per_iteration* = 1 the inequality constraint of x_0 >= 10 is *active* for x_0 in \[10, 11\] and inactive for x_0 < 10 or x_0 > 11.
 
@@ -95,7 +92,7 @@ x_0 = 10, constraint x_0 >= 10 is just fulfilled, thus marked as active:
 	>>> opt.sensitivity_matrices()[0]
 	[1]
 
-x_0 = 9, constraint x_0 >= 10 is violated, thus inactive:
+x_0 = 9, constraint x_0 >= 10 is violated, thus also active:
 
 .. doctest::
 
@@ -104,29 +101,7 @@ x_0 = 9, constraint x_0 >= 10 is violated, thus inactive:
 	>>> opt = pyoptgra.optgra(bounds_to_constraints=False)
 	>>> opt.prepare_sensitivity(prob, [9])
 	>>> opt.sensitivity_matrices()[0]
-	[0]
-
-x_0 = 11, constraint x_0 >= 10 is fulfilled and distance of one away from being violated, active when setting the maximum distance per iteration to 1:
-
-.. doctest::
-
-	>>> import pygmo
-	>>> prob = pygmo.problem(_prob(silent=True))
-	>>> opt = pyoptgra.optgra(bounds_to_constraints=False, max_distance_per_iteration=1)
-	>>> opt.prepare_sensitivity(prob, [11])
-	>>> opt.sensitivity_matrices()[0]
 	[1]
-
-x_0 = 12, constraint x_0 >= 10 is fulfilled and distance of two away from being violated, reported as inactive when setting the maximum distance per iteration to 1:
-
-.. doctest::
-
-	>>> import pygmo
-	>>> prob = pygmo.problem(_prob(silent=True))
-	>>> opt = pyoptgra.optgra(bounds_to_constraints=False, max_distance_per_iteration=1)
-	>>> opt.prepare_sensitivity(prob, [12])
-	>>> opt.sensitivity_matrices()[0]
-	[0]
 
 .. _sec:sensitivity-new-callable:
 	
@@ -194,7 +169,6 @@ Since the problem does not provide a gradient, Optgra uses numerical differentia
 	f called with [10.]
 	f called with [10.01]
 	f called with [9.99]
-	f called with [10.]
 
 Now, we can use linear_update_delta without triggering new function calls:
 

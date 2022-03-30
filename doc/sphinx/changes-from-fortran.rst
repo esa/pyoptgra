@@ -81,6 +81,6 @@ linear_update_delta
 
 The method linear_update_delta first initializes the Optgra memory by calling the same initialization functions as prepare_sensitivity, then sets the sensitivity state captured in the variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED.
 
-It then calls *ogsopt*(2) to initialize the correct sensitivity mode, followed by *ogcdel* to set the constraint deltas and *ogexec*.
+It then calls *ogsopt* (2) to initialize the correct sensitivity mode, followed by *ogcdel* to set the constraint deltas and *ogexec*.
 
 Finally, *ogclos* is called to deallocate the Fortran memory.

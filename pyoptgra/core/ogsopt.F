@@ -8,6 +8,8 @@ C     |                  |     | ->  0: NO
 C     |                  |     | -> -1: INITIALISATION
 C     |                  |     | -> +1: WITH CONSTRAINT CALCULATION
 C     |                  |     | -> +2: WITH CONSTRAINT BIAS
+C     |                  |     | -> +3: WITH CONSTRAINT CALC / NO OPTIM
+C     |                  |     | -> +4: WITH CONSTRAINT BIAS / NO OPTIM
 C ======================================================================
 C 2021/03/30 | J. SCHOENMAEKERS | NEW
 C ======================================================================

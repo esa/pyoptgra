@@ -44,7 +44,7 @@ TEST_CASE( "RAII initialization works and allows optimization", "[raii-exec]" )
 
     std::vector<int> variable_types(num_variables, 0);
     
-    optgra_raii raii_object(variable_types, {0,-1});
+    optgra_raii raii_object(variable_types, {0,-1}, 150, 150, 10, 1, {1e-12, 1e-12});
     
     std::tie(bestx, bestf, finopt) = raii_object.exec(initial_x, f, g);
 
@@ -142,7 +142,7 @@ TEST_CASE( "RAII supports sensitivity updates with new callable", "[raii-sensiti
 
 	// check that bestf is close to 0 10
     REQUIRE (bestf[0] == Approx(0.0).margin(0.001));
-    REQUIRE (bestf[1] == Approx(10.0).margin(0.005));
+    REQUIRE (bestf[1] == Approx(10.0).margin(0.05));
 
 	cout << "Best x:";
 	for (int i = 0; i < num_variables; i++) {
