@@ -462,7 +462,7 @@ class optgra:
         else:
             # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
             # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
-            population.set_x(idx, best_x)#, list(pagmo_fitness))
+            population.set_x(idx, best_x)  # , list(pagmo_fitness))
 
         return population
 
