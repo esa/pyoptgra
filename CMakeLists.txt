@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_BUILD_TYPE Debug CACHE STRING
-	"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."	FORCE)
+#set(CMAKE_BUILD_TYPE Debug CACHE STRING
+#	"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."	FORCE)
 
 project(optgra-wrapper LANGUAGES CXX)
 
@@ -65,6 +65,8 @@ set (OPTGRAFILES
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogvtyp.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwlog.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwrit.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogplog.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogpwri.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogdata.inc"
  )
 

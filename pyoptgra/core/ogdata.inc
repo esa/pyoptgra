@@ -44,8 +44,12 @@ C ----------------------------------------------------------------------
       INTEGER(4)                               VARDER
       REAL(8),      DIMENSION(:  ), POINTER :: VARPER
 C ----------------------------------------------------------------------
-      INTEGER(4)                               LOGLUN
-      INTEGER(4)                               LOGLEV
+      INTEGER(4)                               LOGLUN  ! log file unit
+      INTEGER(4)                               LOGLEV  ! log level
+C ----------------------------------------------------------------------
+      INTEGER(4)                               LOGLUP  ! pygmo log file unit
+      INTEGER(4)                               VERBOS  ! pygmo verbosity
+      INTEGER(4)                               FEVALS  ! pygmo: number of const fun evals
 C ----------------------------------------------------------------------
       INTEGER(4)                               MATLEV
 C ----------------------------------------------------------------------
@@ -70,7 +74,7 @@ C ======================================================================
      &                VARDER,
      &                LOGLUN, LOGLEV, MATLEV, TABLUN, TABLEV, SENOPT,
      &                NUMACT, CONVER, ACTCON, CONFIX,
-     &                CONACT, CONOPT
+     &                CONACT, CONOPT, LOGLUP, VERBOS, FEVALS
 C ======================================================================
       COMMON /OGDREA/ VARMAX, VARSND, VARSTP, VARVAL, VARSCA, VARREF,
      &                VARDES, VARGRD, VARDIR, FUNVAR, SENVAR, VARPER,

@@ -123,7 +123,7 @@ publish:
   image: python:3.8
   script:
     - pip install twine
-    # upload to the project pypi (whl)
+    # upload to the project pypi (whl) (change testpypi to pypi to upload to PyPi)
     - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.whl
     # upload to the project pypi (sdist)
     - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.tar.gz

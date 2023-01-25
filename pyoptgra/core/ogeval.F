@@ -32,7 +32,7 @@ C ======================================================================
       EXTERNAL     CALVAL
       EXTERNAL     CALDER
 C ======================================================================
-      INTEGER(4)   VAR, CON, COD, LEN, IND
+      INTEGER(4)   VAR, CON, COD, LEN, IND, NUMVIO
       REAL(8)      VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR
       CHARACTER    TYP*3, STA*3, NAM*80, STR*256
       REAL(8)      GGG(4,4), BBB(4), VVV(4)
@@ -163,9 +163,10 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
-      CONERR = 0D0
-      IND = 0
-      FAC = 0D0
+      CONERR = 0D0  ! total constraint error
+      IND = 0  ! index of largest constraint violation
+      FAC = 0D0  ! value of largest constraint violation
+      NUMVIO = 0  ! number of violated constraints
       DO CON = 1, NUMCON + 1
          VAL = VALCON(CON)
          SCA = CONSCA(CON)
@@ -183,11 +184,13 @@ C ----------------------------------------------------------------------
      &                      DABS(VAL) .GT. 1D0) THEN
             STA = "VIO"
             ERR = DABS (VAL)
+            NUMVIO = NUMVIO+1
          ENDIF
          IF (COD .NE.  0 .AND. CON .LE. NUMCON .AND.
      &       COD .NE. -2 .AND. -VAL  .GT. 1D0) THEN
             STA = "VIO"
             ERR = DABS (VAL)
+            NUMVIO = NUMVIO+1
          ENDIF
          CONERR = CONERR + ERR
          IF (ERR .GT. FAC) IND = CON
@@ -207,6 +210,8 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
+C write pygmo-style log output
+      CALL OGPWRI(-VALCON(NUMCON+1), NUMVIO, CONERR)
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------
