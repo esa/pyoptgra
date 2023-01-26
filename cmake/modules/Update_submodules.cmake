@@ -1,6 +1,7 @@
 # Update git submodules as needed
 
 # The Python source distribution isn't a git checkout
+message(STATUS "Update submodules")
 if (EXISTS ${PROJECT_SOURCE_DIR}/.git)
     message(STATUS "Performing submodule update")
     execute_process(COMMAND git submodule update --init --recursive
