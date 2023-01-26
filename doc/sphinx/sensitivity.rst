@@ -62,6 +62,9 @@ When using optgra to optimize this problem, the function will be called a few ti
     f called with [10.01]
     f called with [9.99]
     f called with [10.]
+	f called with [10.01]
+    f called with [9.99]
+    f called with [10.]
 
 .. doctest::
 
