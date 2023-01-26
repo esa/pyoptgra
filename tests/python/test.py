@@ -168,6 +168,7 @@ class optgra_test(unittest.TestCase):
         self.force_bounds_gradient_test()
         self.get_name_test()
         self.get_extra_info_test()
+        self.verbosity_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -672,6 +673,11 @@ class optgra_test(unittest.TestCase):
     def get_extra_info_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
         self.assertTrue("iterations" in algo.get_extra_info())
+
+    def verbosity_test(self):
+        algo = pygmo.algorithm(pyoptgra.optgra(log_level=1))
+        with self.assertRaises(ValueError):
+            algo.set_verbosity(1)
 
 if __name__ == "__main__":
     unittest.main()
