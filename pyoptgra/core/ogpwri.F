@@ -19,15 +19,15 @@ C ======================================================================
       REAL(8) OBJVAL, CONVIO, X
       INTEGER(4)VER, RET, NUMVIO, mexprintf, mexevalstring, ICONVIO
 C ======================================================================
+      IF (VERBOS .EQ. 0) THEN
+            RETURN
+      ENDIF
 C Print header
       IF (FEVALS .EQ. 0) THEN
             CALL OGPWRI_START()
       ENDIF
 C Increase counter for cost function evaluations
       FEVALS = FEVALS + 1
-      IF (VERBOS .EQ. 0) THEN
-            RETURN
-      ENDIF
 C Every 50 lines print the column names.
       IF (mod(REAL(FEVALS-1D0) / REAL(VERBOS), 50D0) .EQ. 0D0) THEN
             WRITE(LOGLUP, '(A10,A15,A15,A15,A2)')

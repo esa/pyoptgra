@@ -159,7 +159,7 @@ As an example, we take our initial problem with one dimension, the merit functio
 
 .. testcode::
 
-	opt = pyoptgra.optgra(bounds_to_constraints=False, verbosity=0)
+	opt = pyoptgra.optgra(bounds_to_constraints=False, log_level=0)
 	prob = pygmo.problem(_prob(silent=False))
 	opt.prepare_sensitivity(prob, [10])
 

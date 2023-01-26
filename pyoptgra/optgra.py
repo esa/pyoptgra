@@ -97,7 +97,9 @@ class optgra:
         return wrapped_fitness
 
     @staticmethod
-    def _wrap_gradient_func(problem, bounds_to_constraints: bool = True, force_bounds=False):
+    def _wrap_gradient_func(
+        problem, bounds_to_constraints: bool = True, force_bounds=False
+    ):
 
         sparsity_pattern = problem.gradient_sparsity()
 
@@ -217,7 +219,9 @@ class optgra:
         self.max_iterations = max_iterations
         self.max_correction_iterations = max_correction_iterations
         self.max_distance_per_iteration = max_distance_per_iteration
-        self.perturbation_for_snd_order_derivatives = perturbation_for_snd_order_derivatives
+        self.perturbation_for_snd_order_derivatives = (
+            perturbation_for_snd_order_derivatives
+        )
         self.variable_scaling_factors = variable_scaling_factors
         self.variable_types = variable_types
         self.constraint_priorities = constraint_priorities
@@ -330,7 +334,8 @@ class optgra:
 
         if problem.is_stochastic():
             raise ValueError(
-                problem.get_name() + " appears to be stochastic, optgra cannot deal with it"
+                problem.get_name()
+                + " appears to be stochastic, optgra cannot deal with it"
             )
 
         scaling_len = len(self.variable_scaling_factors)
@@ -343,7 +348,10 @@ class optgra:
                 + " parameters."
             )
 
-        if len(self.variable_types) > 0 and len(self.variable_types) != problem.get_nx():
+        if (
+            len(self.variable_types) > 0
+            and len(self.variable_types) != problem.get_nx()
+        ):
             raise ValueError(
                 str(len(self.variable_types))
                 + " variable types passed for problem"
@@ -356,7 +364,9 @@ class optgra:
         if self.bounds_to_constraints:
             bound_types = optgra._constraint_types_from_box_bounds(problem)
 
-        num_function_output = 1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        num_function_output = (
+            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        )
         prio_len = len(self.constraint_priorities)
         if prio_len > 0 and prio_len != num_function_output:
             raise ValueError(
@@ -390,8 +400,11 @@ class optgra:
             )
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
-        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        # 0 for equality constraints, -1 for inequality constraints,
+        # 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
 
         # optgra has merit function last, that threshold can be ignored
         convergence_thresholds = []
@@ -457,7 +470,8 @@ class optgra:
         if violated:
             population.set_x(idx, best_x)
         else:
-            # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
+            # merit function is last, constraints are from 0 to problem.get_nc(),
+            # we ignore bound-derived constraints
             # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
             population.set_x(idx, best_x)  # , list(pagmo_fitness))
 
@@ -495,7 +509,8 @@ class optgra:
 
         if problem.is_stochastic():
             raise ValueError(
-                problem.get_name() + " appears to be stochastic, optgra cannot deal with it"
+                problem.get_name()
+                + " appears to be stochastic, optgra cannot deal with it"
             )
 
         scaling_len = len(self.variable_scaling_factors)
@@ -512,7 +527,9 @@ class optgra:
         if self.bounds_to_constraints:
             bound_types = optgra._constraint_types_from_box_bounds(problem)
 
-        num_function_output = 1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        num_function_output = (
+            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
+        )
         prio_len = len(self.constraint_priorities)
         if prio_len > 0 and prio_len != num_function_output:
             raise ValueError(
@@ -530,8 +547,11 @@ class optgra:
             grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
-        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        # 0 for equality constraints, -1 for inequality constraints,
+        # 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
 
         # adjust constraint priorities if adding constraints from box bound
         constraint_priorities = self.constraint_priorities
@@ -629,8 +649,11 @@ class optgra:
             grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
-        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        # 0 for equality constraints, -1 for inequality constraints,
+        # 1 for box-derived constraints, -1 for fitness
+        constraint_types = (
+            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
+        )
 
         if constraint_types != self._sens_constraint_types:
             raise ValueError(
@@ -658,7 +681,9 @@ class optgra:
             self.verbosity,
         )
 
-    def linear_update_delta(self, constraint_delta: List[float]) -> Tuple[List[float], List[float]]:
+    def linear_update_delta(
+        self, constraint_delta: List[float]
+    ) -> Tuple[List[float], List[float]]:
         """
         Perform a single optimization step on the linear approximation prepared with prepare_sensitivity.
         For this, no new function calls to the problem callable are performed, making this potentially very fast.
