@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_BUILD_TYPE Release CACHE STRING
+set(CMAKE_BUILD_TYPE Debug CACHE STRING
 	"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."	FORCE)
 
 project(optgra-wrapper LANGUAGES CXX)
