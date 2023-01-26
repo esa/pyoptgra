@@ -28,6 +28,7 @@ if (NOT SKBUILD)
 endif()
 
 # build/configure use of ext libraries
+message(STATUS "Before include cmake")
 include(cmake/modules/Update_submodules.cmake)
 include(cmake/modules/Pybind11.cmake)
 set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ext/pybind11")
