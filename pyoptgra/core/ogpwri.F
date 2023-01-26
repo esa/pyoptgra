@@ -6,7 +6,7 @@ C ======================================================================
 C INP | OBJVAL           | R*8 | OBJECTIVE VALUE
 C ----------------------------------------------------------------------
 C INP | NUMVIO           | I*4 | NUMBER OF VIOLATED CONSTRAINTS
-C ======================================================================
+C ----------------------------------------------------------------------
 C INP | CONVIO           | R*8 | TOTAL CONSTRAINT VIOLATION
 C ======================================================================
 C 2023/01/25 | W. MARTENS | NEW
@@ -15,10 +15,14 @@ C ======================================================================
 C ======================================================================
 #include <ogdata.inc>
 C ======================================================================
-      CHARACTER STR*256, FEAS*2
+      CHARACTER STR*256, FEAS*2, FMT*24
       REAL(8) OBJVAL, CONVIO, X
-      INTEGER(4)VER, RET, NUMVIO, mexprintf, mexevalstring
+      INTEGER(4)VER, RET, NUMVIO, mexprintf, mexevalstring, ICONVIO
 C ======================================================================
+C Print header
+      IF (FEVALS .EQ. 0) THEN
+            CALL OGPWRI_START()
+      ENDIF
 C Increase counter for cost function evaluations
       FEVALS = FEVALS + 1
       IF (VERBOS .EQ. 0) THEN
@@ -36,13 +40,23 @@ C Every 50 lines print the column names.
                   FEAS = "  "
             ENDIF
     
-C Write the log line
-            WRITE(LOGLUP, '(I10,F15.4,I15,F15.6,A2)')
-     &            FEVALS, OBJVAL, NUMVIO, CONVIO, FEAS
-C            flush (LOGLUP)
+C Write the log line (different format depending on violation size)
+      IF (CONVIO == 0D0) THEN
+            FMT = '(I10,F15.4,I15,I15,A2)'
+            WRITE(LOGLUP, FMT) FEVALS, OBJVAL, NUMVIO, INT(CONVIO), FEAS
+      ELSE IF (CONVIO .GT. 1D-3) THEN
+            FMT = '(I10,F15.4,I15,F15.6,A2)'
+            WRITE(LOGLUP, FMT) FEVALS, OBJVAL, NUMVIO, CONVIO, FEAS
+      ELSE
+            FMT = '(I10,F15.4,I15,E15.6,A2)'
+            WRITE(LOGLUP, FMT) FEVALS, OBJVAL, NUMVIO, CONVIO, FEAS
+      ENDIF
       ENDIF
 
-
+C Write final summary
+      IF (PYGFLA .NE. 0) THEN
+            CALL OGPWRI_END (OBJVAL, NUMVIO, CONVIO)
+      ENDIF
 C ======================================================================
       RETURN
       END

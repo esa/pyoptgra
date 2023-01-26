@@ -33,9 +33,9 @@ C ======================================================================
       EXTERNAL     CALDER
 C ======================================================================
       INTEGER(4)   VAR, CON, COD, LEN, IND, NUMVIO
-      REAL(8)      VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR
+      REAL(8)      VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR, CONVIO
       CHARACTER    TYP*3, STA*3, NAM*80, STR*256
-      REAL(8)      GGG(4,4), BBB(4), VVV(4)
+      REAL(8)      GGG(4,4), BBB(4), VVV(4), OBJVAL
 C ======================================================================
       REAL(8),     DIMENSION(:), ALLOCATABLE :: VARVEC
       REAL(8),     DIMENSION(:), ALLOCATABLE :: CONVEC
@@ -163,7 +163,8 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
-      CONERR = 0D0  ! total constraint error
+      CONERR = 0D0  ! total constraint error (scaled to constr. threshod)
+      CONVIO = 0D0  ! total constaint error norm (unscaled)
       IND = 0  ! index of largest constraint violation
       FAC = 0D0  ! value of largest constraint violation
       NUMVIO = 0  ! number of violated constraints
@@ -193,6 +194,7 @@ C ----------------------------------------------------------------------
             NUMVIO = NUMVIO+1
          ENDIF
          CONERR = CONERR + ERR
+         CONVIO = CONVIO + (ERR * SCA)**2
          IF (ERR .GT. FAC) IND = CON
          IF (ERR .GT. FAC) FAC = ERR
          NAM = CONSTR(CON)
@@ -211,7 +213,9 @@ C ----------------------------------------------------------------------
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
 C write pygmo-style log output
-      CALL OGPWRI(-VALCON(NUMCON+1), NUMVIO, CONERR)
+      OBJVAL = -VALCON(NUMCON+1)
+      CONVIO = DSQRT(CONVIO)
+      CALL OGPWRI(OBJVAL, NUMVIO, CONVIO, DERVAR)
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------

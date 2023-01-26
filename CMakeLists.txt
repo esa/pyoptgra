@@ -67,6 +67,8 @@ set (OPTGRAFILES
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogwrit.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogplog.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogpwri.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogpwri_start.F"
+ "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogpwri_end.F"
  "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/ogdata.inc"
  )
 

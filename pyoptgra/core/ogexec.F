@@ -35,11 +35,11 @@ C ======================================================================
       EXTERNAL     CALVAL
       EXTERNAL     CALDER
 C ======================================================================
-      INTEGER(4)   ITE, VAR, CON, ACT, ROW, TYP, INC, LEN, NUM
-      REAL(8)      VAL, SCA, RED, DER, FAC, OLD
+      INTEGER(4)   ITE, VAR, CON, ACT, ROW, TYP, INC, LEN, NUM, NUMVIO
+      REAL(8)      VAL, SCA, RED, DER, FAC, OLD, CONVIO
       CHARACTER    STR*256, NAM*256
 C ----------------------------------------------------------------------
-      INTEGER(4)   NUMINC, NUMEQU, NUMITE, ITEDIV, ITECNV
+      INTEGER(4)   NUMINC, NUMEQU, ITEDIV, ITECNV
       REAL(8)      VARACC, VARDIS, COSNEW, COSOLD, VARSAV, MEAMER
       REAL(8)      CONERR, DESNOR, NORERR, MEAERR
 C ======================================================================
@@ -125,6 +125,13 @@ C ----------------------------------------------------------------------
           WRITE(STR,'("OPTGRA: Converged: not ITERAT=",2I4,2D11.3)')
      &    NUMITE,MAXITE,CONERR,DESNOR
           CALL OGWRIT (1,STR)
+
+C Final Pygmo output
+C TODO: can this final fitness call be avoided (just for output)?
+          PYGFLA = 3  ! pygmo flag in COMMON: no covergence
+          CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+
           GOTO 9999
       ELSEIF (NUMITE .GE. MAXITE .OR.
      &       (NUMITE-ITECOR .GE. OPTITE-1 .AND. ITECOR .NE. 0)) THEN
@@ -136,6 +143,14 @@ C ----------------------------------------------------------------------
           WRITE(STR,'("OPTGRA: Converged: mat ITERAT=",2I4,2D11.3)')
      &    NUMITE,MAXITE,CONERR,DESNOR
           CALL OGWRIT (1,STR)
+          CALL OGPWRI_END(NUMITE, -VALCON(NUMCON+1), NUMVIO, CONVIO, 1)
+
+C Final Pygmo output
+C TODO: can this final fitness call be avoided (just for output)?
+          PYGFLA = 2  ! pygmo flag in COMMON: constraints matched
+          CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+
           GOTO 9999
       ENDIF
 C ----------------------------------------------------------------------
@@ -272,6 +287,13 @@ C ----------------------------------------------------------------------
           WRITE (STR,'("OPTGRA: Converged: unf ITERAT=",2I4,2D11.3)')
      &    NUMITE,MAXITE,CONERR,DESNOR
           CALL OGWRIT (1,STR)
+
+C Final Pygmo output
+C TODO: can this final fitness call be avoided (just for output)?
+          PYGFLA = 4  ! pygmo flag in COMMON: infeasible
+          CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+
           GOTO 9999
       ENDIF
 C ----------------------------------------------------------------------
@@ -298,6 +320,13 @@ C      CALL OGWRIT (-1,STR)
           WRITE(STR,'("OPTGRA: Converged: mat ITERAT=",2I4,2D11.3)')
      &    NUMITE,MAXITE,CONERR,DESNOR
           CALL OGWRIT (1,STR)
+
+C Final Pygmo output
+C TODO: can this final fitness call be avoided (just for output)?
+          PYGFLA = 2  ! pygmo flag in COMMON: matched
+          CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+
           GOTO 9999
       ENDIF
 C ======================================================================
@@ -339,6 +368,13 @@ C ----------------------------------------------------------------------
      &NUMITE,MAXITE,CONERR,DESNOR
       CALL OGWRIT (1,STR)
       CALL OGWRIT (3,"")
+
+C Final Pygmo output
+C TODO: can this final fitness call be avoided (just for output)?
+      PYGFLA = 1  ! covergence
+      CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
+     &                 CALVAL, CALDER)
+
 C      WRITE (STR,*) "DIF=",NORM2(VARVAL-VARREF)
 C      CALL OGWRIT (1,STR)
 C ======================================================================

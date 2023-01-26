@@ -50,6 +50,8 @@ C ----------------------------------------------------------------------
       INTEGER(4)                               LOGLUP  ! pygmo log file unit
       INTEGER(4)                               VERBOS  ! pygmo verbosity
       INTEGER(4)                               FEVALS  ! pygmo: number of const fun evals
+      INTEGER(4)                               PYGFLA  ! pygmo: flag indicating status of optimisation
+      INTEGER(4)                               NUMITE  ! number of iterations
 C ----------------------------------------------------------------------
       INTEGER(4)                               MATLEV
 C ----------------------------------------------------------------------
@@ -74,7 +76,8 @@ C ======================================================================
      &                VARDER,
      &                LOGLUN, LOGLEV, MATLEV, TABLUN, TABLEV, SENOPT,
      &                NUMACT, CONVER, ACTCON, CONFIX,
-     &                CONACT, CONOPT, LOGLUP, VERBOS, FEVALS
+     &                CONACT, CONOPT, LOGLUP, VERBOS, FEVALS, PYGFLA,
+     &                NUMITE
 C ======================================================================
       COMMON /OGDREA/ VARMAX, VARSND, VARSTP, VARVAL, VARSCA, VARREF,
      &                VARDES, VARGRD, VARDIR, FUNVAR, SENVAR, VARPER,
