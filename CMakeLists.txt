@@ -30,6 +30,7 @@ endif()
 # build/configure use of ext libraries
 include(cmake/modules/Update_submodules.cmake)
 include(cmake/modules/Pybind11.cmake)
+set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ext/pybind11")
 
 # add targets for unit testing framework on C level
 add_subdirectory(ext/Catch2)
