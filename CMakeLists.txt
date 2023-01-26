@@ -28,10 +28,8 @@ if (NOT SKBUILD)
 endif()
 
 # build/configure use of ext libraries
-message(STATUS "Before include cmake")
 include(cmake/modules/Update_submodules.cmake)
 include(cmake/modules/Pybind11.cmake)
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/ext/pybind11")
 
 # add targets for unit testing framework on C level
 add_subdirectory(ext/Catch2)
@@ -89,7 +87,6 @@ add_executable(bare-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/bare-test.cpp")
 target_link_libraries(bare-test optgra)
 target_link_libraries(bare-test Catch2::Catch2WithMain)
 
-find_package(pybind11 REQUIRED)
 pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(core PRIVATE optgra)
 
