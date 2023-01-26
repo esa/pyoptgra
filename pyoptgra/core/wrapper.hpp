@@ -593,8 +593,9 @@ namespace optgra
      *    Parameter VARDER in Fortran.
      * @param autodiff_deltas deltas used for each variable when computing the gradient numerically. Optional, defaults to 0.001.
      * @param variable_types Optional array, specifiying 0 (normal, default) or 1 (fixed, only used for sensitivity) for each variable.
-     * @param log_level original OPTGRA logging output: 0 has no output, 4 and higher have maximum output
-     * @param verbosity pygmo-style logging output: 0 has no output, N means an output every Nth cost function evaluation
+     * @param log_level original OPTGRA logging output: 0 has no output, 4 and higher have maximum output. Set this to 0 if you want to use the pygmo
+          logging system based on `set_verbosity()`.
+     * @param verbosity pygmo-style logging output: 0 has no output, N means an output every Nth cost function evaluation. Set `log_level` to zero to use this.
      *
      * @return a tuple of the best value of x, the fitness of that x, and a status flag of optgra
      *
