@@ -87,6 +87,7 @@ add_executable(bare-test "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/bare-test.cpp")
 target_link_libraries(bare-test optgra)
 target_link_libraries(bare-test Catch2::Catch2WithMain)
 
+find_package(pybind11 REQUIRED)
 pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(core PRIVATE optgra)
 
