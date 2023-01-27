@@ -84,9 +84,8 @@ python-sdist:
   before_script:
     - apt update && apt install gfortran doxygen --yes
     - pip install build
-    - git submodule update --init --recursive
   script:
-    - python -m build
+    - python -m build --no-isolation
     - mv dist/pyoptgra-*.tar.gz .
   artifacts:
     name: python-package
