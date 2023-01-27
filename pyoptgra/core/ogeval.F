@@ -32,10 +32,10 @@ C ======================================================================
       EXTERNAL     CALVAL
       EXTERNAL     CALDER
 C ======================================================================
-      INTEGER(4)   VAR, CON, COD, LEN, IND
-      REAL(8)      VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR
+      INTEGER(4)   VAR, CON, COD, LEN, IND, NUMVIO
+      REAL(8)      VAL, SCA, FAC, PER, SAV, DER, ERR, CONERR, CONVIO
       CHARACTER    TYP*3, STA*3, NAM*80, STR*256
-      REAL(8)      GGG(4,4), BBB(4), VVV(4)
+      REAL(8)      GGG(4,4), BBB(4), VVV(4), OBJVAL
 C ======================================================================
       REAL(8),     DIMENSION(:), ALLOCATABLE :: VARVEC
       REAL(8),     DIMENSION(:), ALLOCATABLE :: CONVEC
@@ -163,9 +163,11 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
-      CONERR = 0D0
-      IND = 0
-      FAC = 0D0
+      CONERR = 0D0  ! total constraint error (scaled to constr. threshod)
+      CONVIO = 0D0  ! total constaint error norm (unscaled)
+      IND = 0  ! index of largest constraint violation
+      FAC = 0D0  ! value of largest constraint violation
+      NUMVIO = 0  ! number of violated constraints
       DO CON = 1, NUMCON + 1
          VAL = VALCON(CON)
          SCA = CONSCA(CON)
@@ -183,13 +185,16 @@ C ----------------------------------------------------------------------
      &                      DABS(VAL) .GT. 1D0) THEN
             STA = "VIO"
             ERR = DABS (VAL)
+            NUMVIO = NUMVIO+1
          ENDIF
          IF (COD .NE.  0 .AND. CON .LE. NUMCON .AND.
      &       COD .NE. -2 .AND. -VAL  .GT. 1D0) THEN
             STA = "VIO"
             ERR = DABS (VAL)
+            NUMVIO = NUMVIO+1
          ENDIF
          CONERR = CONERR + ERR
+         CONVIO = CONVIO + (ERR * SCA)**2
          IF (ERR .GT. FAC) IND = CON
          IF (ERR .GT. FAC) FAC = ERR
          NAM = CONSTR(CON)
@@ -207,6 +212,10 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
+C write pygmo-style log output
+      OBJVAL = -VALCON(NUMCON+1)
+      CONVIO = DSQRT(CONVIO)
+      CALL OGPWRI(OBJVAL, NUMVIO, CONVIO, DERVAR)
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------

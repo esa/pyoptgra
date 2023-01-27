@@ -62,6 +62,9 @@ When using optgra to optimize this problem, the function will be called a few ti
     f called with [10.01]
     f called with [9.99]
     f called with [10.]
+    f called with [10.01]
+    f called with [9.99]
+    f called with [10.]
 
 .. doctest::
 
@@ -159,7 +162,7 @@ As an example, we take our initial problem with one dimension, the merit functio
 
 .. testcode::
 
-	opt = pyoptgra.optgra(bounds_to_constraints=False, verbosity=0)
+	opt = pyoptgra.optgra(bounds_to_constraints=False, log_level=0)
 	prob = pygmo.problem(_prob(silent=False))
 	opt.prepare_sensitivity(prob, [10])
 

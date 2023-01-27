@@ -167,7 +167,7 @@ class optgra:
         # bound_constraints_scalar: float = 1,
         force_bounds: bool = False,
         optimization_method: int = 2,
-        verbosity: int = 0,
+        log_level: int = 0,
     ) -> None:
         """
         Initialize a wrapper instance for the OPTGRA algorithm.
@@ -205,7 +205,9 @@ class optgra:
                 if the fitness function cannot handle that.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
-            verbosity: 0 has no output, 4 and higher have maximum output
+            log_level: Control the original screen output of OPTGRA. 0 has no output,
+                4 and higher have maximum output`. Set this to 0 if you want to use the pygmo
+                logging system based on `set_verbosity()`.
 
         Raises:
 
@@ -233,7 +235,8 @@ class optgra:
         self.force_bounds = force_bounds
         # self.bound_violation_penalty = bound_violation_penalty
 
-        self.log_level = verbosity
+        self.log_level = log_level
+        self.verbosity = 0  # by default no pygmo-style output
         self._sens_state = None
         self._sens_constraint_types: Union[List[int], None] = None
 
@@ -277,14 +280,19 @@ class optgra:
                 + " is invalid for perturbation_for_snd_order_derivatives, must be non-negative."
             )
 
-    def set_verbosity(self, level: int) -> None:
+    def set_verbosity(self, verbosity: int) -> None:
         """
-        Sets verbosity of optgra.
+        Sets pygmo verbosity of optgra wrapper.
 
         Args:
             verbosity: Useful values go from 0 to 4
         """
-        self.log_level = level
+        if self.log_level and verbosity:
+            raise ValueError(
+                "Cannot set verbosity to >0 value if OPTGRA log_level is choosen "
+                "not to be zero upon construction."
+            )
+        self.verbosity = verbosity
 
     def evolve(self, population):
         """
@@ -392,7 +400,8 @@ class optgra:
             )
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        # 0 for equality constraints, -1 for inequality constraints,
+        # 1 for box-derived constraints, -1 for fitness
         constraint_types = (
             [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
         )
@@ -443,6 +452,7 @@ class optgra:
             autodiff_deltas=autodiff_deltas,
             variable_types=variable_types,
             log_level=self.log_level,
+            verbosity=self.verbosity,
         )
 
         best_x, best_f, finopt = result
@@ -460,7 +470,8 @@ class optgra:
         if violated:
             population.set_x(idx, best_x)
         else:
-            # merit function is last, constraints are from 0 to problem.get_nc(), we ignore bound-derived constraints
+            # merit function is last, constraints are from 0 to problem.get_nc(),
+            # we ignore bound-derived constraints
             # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
             population.set_x(idx, best_x)  # , list(pagmo_fitness))
 
@@ -536,7 +547,8 @@ class optgra:
             grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        # 0 for equality constraints, -1 for inequality constraints,
+        # 1 for box-derived constraints, -1 for fitness
         constraint_types = (
             [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
         )
@@ -565,6 +577,7 @@ class optgra:
             autodiff_deltas=autodiff_deltas,
             variable_types=variable_types,
             log_level=self.log_level,
+            verbosity=self.verbosity,
         )
 
         self._sens_state = state
@@ -636,7 +649,8 @@ class optgra:
             grad_func = optgra._wrap_gradient_func(problem, self.bounds_to_constraints)
             derivatives_computation = 1
 
-        # 0 for equality constraints, -1 for inequality constraints, 1 for box-derived constraints, -1 for fitness
+        # 0 for equality constraints, -1 for inequality constraints,
+        # 1 for box-derived constraints, -1 for fitness
         constraint_types = (
             [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
         )
@@ -664,6 +678,7 @@ class optgra:
             derivatives_computation,
             autodiff_deltas,
             self.log_level,
+            self.verbosity,
         )
 
     def linear_update_delta(
@@ -699,6 +714,7 @@ class optgra:
             self.perturbation_for_snd_order_derivatives,
             self.variable_scaling_factors,
             self.log_level,
+            self.verbosity,
         )
 
     def get_name(self) -> str:
@@ -724,6 +740,7 @@ class optgra:
             + "merit_function_threshold = {merit_function_threshold}, "
             + "force_bounds = {force_bounds}, "
             + "optimization_method = {optimization_method}, "
+            + "log_level = {log_level}"
             + "verbosity = {verbosity}"
         ).format(
             max_iterations=self.max_iterations,
@@ -738,5 +755,6 @@ class optgra:
             merit_function_threshold=self.merit_function_threshold,
             force_bounds=self.force_bounds,
             optimization_method=self.optimization_method,
-            verbosity=self.log_level,
+            log_level=self.log_level,
+            verbosity=self.verbosity,
         )
