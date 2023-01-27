@@ -21,6 +21,6 @@ setup(
     use_scm_version= {"write_to" : "pyoptgra/_version.py"},
     packages=["pyoptgra"],
     setup_requires=["cmake", "ninja","setuptools_scm"],
-    install_requires=["pygmo"],
+    install_requires=["pygmo==2.16"],
     cmake_install_dir="pyoptgra/core",
 )
