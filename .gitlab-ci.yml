@@ -83,7 +83,8 @@ python-sdist:
   needs: []
   before_script:
     - apt update && apt install gfortran doxygen --yes
-    - pip install build
+    - pip install --upgrade pip
+    - pip install build scikit-build
   script:
     - python -m build --no-isolation
     - mv dist/pyoptgra-*.tar.gz .
