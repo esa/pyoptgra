@@ -82,9 +82,9 @@ python-sdist:
   image: python:3.8
   needs: []
   before_script:
-    - apt update && apt install gfortran doxygen --yes
+    - apt update && apt install gfortran cmake doxygen --yes
     - pip install --upgrade pip
-    - pip install build scikit-build
+    - pip install build scikit-build setuptools-scm ninja
   script:
     - python -m build --no-isolation
     - mv dist/pyoptgra-*.tar.gz .
