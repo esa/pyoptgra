@@ -126,9 +126,9 @@ publish:
   script:
     - pip install twine
     # upload to the project pypi (whl) (change testpypi to pypi to upload to PyPi)
-    - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.whl
+    - twine upload --non-interactive --disable-progress-bar --verbose --repository pypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.whl
     # upload to the project pypi (sdist)
-    - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.tar.gz
+    - twine upload --non-interactive --disable-progress-bar --verbose --repository pypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.tar.gz
   needs:
     - python-sdist
     - test-wheels
