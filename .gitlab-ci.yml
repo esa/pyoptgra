@@ -87,7 +87,7 @@ python-sdist:
     - pip install build scikit-build setuptools-scm ninja cmake
   script:
     - git submodule update --init --recursive
-    - python -m build --no-isolation
+    - python -m build --include-patterns='ext/**/*'
     - mv dist/pyoptgra-*.tar.gz .
   artifacts:
     name: python-package
