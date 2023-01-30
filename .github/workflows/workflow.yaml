@@ -33,6 +33,10 @@ jobs:
   python-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
       - uses: actions/checkout@v2
       - run: sudo apt update && sudo apt install gfortran --yes
       - run: python -m pip install .
@@ -45,6 +49,10 @@ jobs:
   doctest:
     runs-on: ubuntu-latest
     steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
     - uses: actions/checkout@v2
     - run: sudo apt update && sudo apt install gfortran --yes
     - run: pip install sphinx breathe
@@ -55,6 +63,10 @@ jobs:
   documentation:
     runs-on: ubuntu-latest
     steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
     - uses: actions/checkout@v2
     - run: sudo apt update && sudo apt install gfortran doxygen --yes
     - run: pip install sphinx breathe sphinx-rtd-theme
