@@ -10,7 +10,7 @@ static:
   image: python:3.8
   allow_failure: false
   script:
-    - pip install black flake8 isort mypy
+    - pip install black==22.8.0 flake8==5.0.4 isort mypy
     - mypy --ignore-missing-imports pyoptgra/*.py
     - black --check pyoptgra/*.py
     - flake8 --max-line-length 125 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
