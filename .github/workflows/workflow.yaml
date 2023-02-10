@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: pip install black flake8 isort mypy
+      - run: pip install black==22.8.0 flake8==5.0.4 isort mypy
       - run: mypy --ignore-missing-imports pyoptgra/*.py
       - run: black --check pyoptgra/*.py
       - run: flake8 --max-line-length 125 --ignore='E203','W503','E123','E704','W504','E126','E226','E121','E24' pyoptgra/*.py
