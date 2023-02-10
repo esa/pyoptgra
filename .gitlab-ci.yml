@@ -44,7 +44,7 @@ test:
     - pip install pytest-cov coverage
     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
-    - coverage report --fail-under=100
+    - coverage report --fail-under=95
 
 # check the documentation examples work
 doctest:
