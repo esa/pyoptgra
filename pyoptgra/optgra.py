@@ -29,12 +29,13 @@ from .core import (
 
 class optgra:
     """
-    This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written in Fortran.
+    This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written
+    in Fortran.
 
-    It is specifically designed for near-linear optimization problems with many constraints.
-    When optimizing a problem, Optgra will first move towards satisfying the constraints,
-    then move along the feasible region boundary to optimize the merit function,
-    fixing constraint violations as they occur.
+    It is specifically designed for near-linear optimization problems with many constraints. When
+    optimizing a problem, Optgra will first move towards satisfying the constraints, then move along
+    the feasible region boundary to optimize the merit function, fixing constraint violations as
+    they occur.
 
     For this, constraints and the merit function are linearized. Optgra will perform less well on
     very non-linear merit functions or constraints.
@@ -97,9 +98,7 @@ class optgra:
         return wrapped_fitness
 
     @staticmethod
-    def _wrap_gradient_func(
-        problem, bounds_to_constraints: bool = True, force_bounds=False
-    ):
+    def _wrap_gradient_func(problem, bounds_to_constraints: bool = True, force_bounds=False):
 
         sparsity_pattern = problem.gradient_sparsity()
 
@@ -172,38 +171,46 @@ class optgra:
         """
         Initialize a wrapper instance for the OPTGRA algorithm.
 
-        Some of the construction arguments, for example the scaling factors, depend on the dimension of the problem.
-        Passing a problem with a different dimension to the instance's evolve function will result in an error.
+        Some of the construction arguments, for example the scaling factors, depend on the dimension
+        of the problem. Passing a problem with a different dimension to the instance's evolve
+        function will result in an error.
 
-        Some problem-specific options are deduced from the problem in the population given to the evolve function.
+        Some problem-specific options are deduced from the problem in the population given to the
+        evolve function.
 
         Args:
 
-            max_iterations: maximum number of total iterations
-            max_correction_iterations: number of constraint correction iterations in the beginning
+            max_iterations: maximum number of total iterations max_correction_iterations: number of
+            constraint correction iterations in the beginning
                 If no feasible solution is found within that many iterations, Optgra aborts
             max_distance_per_iteration: maximum scaled distance traveled in each iteration
-            perturbation_for_snd_order_derivatives: Used as delta for numerically computing second order errors
+            perturbation_for_snd_order_derivatives: Used as delta for numerically computing second
+            order errors
                 of the constraints in the optimization step
             variable_scaling_factors: optional - Scaling factors for the input variables.
                 If passed, must be positive and as many as there are variables
-            variable_types: optional - Flags to set variables to either free (0) or fixed (1). Fixed variables
-                are also called parameters in sensitivity analysis.
-                If passed, must be as many flags as there are variables
+            variable_types: optional - Flags to set variables to either free (0) or fixed (1). Fixed
+            variables
+                are also called parameters in sensitivity analysis. If passed, must be as many flags
+                as there are variables
             constraint_priorities: optional - lower constraint priorities are fulfilled earlier.
-                During the initial constraint correction phase, only constraints with a priority at most k
-                are considered in iteration k. Defaults to zero, so that all constraints are considered
-                from the beginning.
-            bounds_to_constraints: optional - if true (default), translate box bounds of the given problems into
-                inequality constraints for optgra. Note that when also passing constraint priorities, the original
-                constraints of the problem come first, followed by those derived from the lower box bounds, then those
-                from the upper box bounds. Infinite bounds are ignored and not counted.
-            bound_constraints_tolerance: optional - constraint tolerance for the constraints derived from bounds
-            merit_function_threshold: optional - convergence threshold for merit function
-            force_bounds: optional - whether to force the bounds given by the problem. If false (default), the
-                fitness function might also be called with values of x that are outside of the bounds. Set to true
-                if the fitness function cannot handle that.
-            optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate gradient method,
+                During the initial constraint correction phase, only constraints with a priority at
+                most k are considered in iteration k. Defaults to zero, so that all constraints are
+                considered from the beginning.
+            bounds_to_constraints: optional - if true (default), translate box bounds of the given
+            problems into
+                inequality constraints for optgra. Note that when also passing constraint
+                priorities, the original constraints of the problem come first, followed by those
+                derived from the lower box bounds, then those from the upper box bounds. Infinite
+                bounds are ignored and not counted.
+            bound_constraints_tolerance: optional - constraint tolerance for the constraints derived
+            from bounds merit_function_threshold: optional - convergence threshold for merit
+            function force_bounds: optional - whether to force the bounds given by the problem. If
+            false (default), the
+                fitness function might also be called with values of x that are outside of the
+                bounds. Set to true if the fitness function cannot handle that.
+            optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
+            gradient method,
                 2 for spectral conjugate gradient method and 3 for conjugate gradient method
             log_level: Control the original screen output of OPTGRA. 0 has no output,
                 4 and higher have maximum output`. Set this to 0 if you want to use the pygmo
@@ -211,17 +218,15 @@ class optgra:
 
         Raises:
 
-            ValueError: if optimization_method is not one of 0, 1, 2, or 3
-            ValueError: if any of max_iterations, max_correction_iterations, max_distance_per_iteration,
+            ValueError: if optimization_method is not one of 0, 1, 2, or 3 ValueError: if any of
+            max_iterations, max_correction_iterations, max_distance_per_iteration,
                 or perturbation_for_snd_order_derivatives are negative
 
         """
         self.max_iterations = max_iterations
         self.max_correction_iterations = max_correction_iterations
         self.max_distance_per_iteration = max_distance_per_iteration
-        self.perturbation_for_snd_order_derivatives = (
-            perturbation_for_snd_order_derivatives
-        )
+        self.perturbation_for_snd_order_derivatives = perturbation_for_snd_order_derivatives
         self.variable_scaling_factors = variable_scaling_factors
         self.variable_types = variable_types
         self.constraint_priorities = constraint_priorities
@@ -334,8 +339,7 @@ class optgra:
 
         if problem.is_stochastic():
             raise ValueError(
-                problem.get_name()
-                + " appears to be stochastic, optgra cannot deal with it"
+                problem.get_name() + " appears to be stochastic, optgra cannot deal with it"
             )
 
         scaling_len = len(self.variable_scaling_factors)
@@ -348,10 +352,7 @@ class optgra:
                 + " parameters."
             )
 
-        if (
-            len(self.variable_types) > 0
-            and len(self.variable_types) != problem.get_nx()
-        ):
+        if len(self.variable_types) > 0 and len(self.variable_types) != problem.get_nx():
             raise ValueError(
                 str(len(self.variable_types))
                 + " variable types passed for problem"
@@ -364,9 +365,7 @@ class optgra:
         if self.bounds_to_constraints:
             bound_types = optgra._constraint_types_from_box_bounds(problem)
 
-        num_function_output = (
-            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
-        )
+        num_function_output = 1 + problem.get_nec() + problem.get_nic() + len(bound_types)
         prio_len = len(self.constraint_priorities)
         if prio_len > 0 and prio_len != num_function_output:
             raise ValueError(
@@ -402,9 +401,7 @@ class optgra:
 
         # 0 for equality constraints, -1 for inequality constraints,
         # 1 for box-derived constraints, -1 for fitness
-        constraint_types = (
-            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
-        )
+        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
 
         # optgra has merit function last, that threshold can be ignored
         convergence_thresholds = []
@@ -479,25 +476,25 @@ class optgra:
 
     def prepare_sensitivity(self, problem, x: List[float]) -> None:
         """
-        Prepare OPTGRA for sensitivity analysis at x. This is independant from previous and later calls to evolve,
-        but enables calls to sensitivity_matrices, linear_update_new_callable and linear_update_delta on this instance.
+        Prepare OPTGRA for sensitivity analysis at x. This is independant from previous and later
+        calls to evolve, but enables calls to sensitivity_matrices, linear_update_new_callable and
+        linear_update_delta on this instance.
 
         This works by creating a linearization of the problem's fitness function around x.
 
         Args:
 
-            problem: The problem being analyzed.
-            x: The value of x around which linearization is performed
+            problem: The problem being analyzed. x: The value of x around which linearization is
+            performed
 
         Raises:
 
-            ValueError: If the problem contains multiple objectives
-            ValueError: If the problem is stochastic
-            ValueError: If the problem dimensions don't fit to constraint_priorities
+            ValueError: If the problem contains multiple objectives ValueError: If the problem is
+            stochastic ValueError: If the problem dimensions don't fit to constraint_priorities
                 or variable_scaling_factors that were passed to the wrapper constructor
             ValueError: If the problem has finite box bounds and bounds_to_constraints was
-                set to True in the wrapper constructor (default), constraint_priorities
-                were also passed but don't cover the additional bound-derived constraints
+                set to True in the wrapper constructor (default), constraint_priorities were also
+                passed but don't cover the additional bound-derived constraints
         """
 
         if problem.get_nobj() > 1:
@@ -509,8 +506,7 @@ class optgra:
 
         if problem.is_stochastic():
             raise ValueError(
-                problem.get_name()
-                + " appears to be stochastic, optgra cannot deal with it"
+                problem.get_name() + " appears to be stochastic, optgra cannot deal with it"
             )
 
         scaling_len = len(self.variable_scaling_factors)
@@ -527,9 +523,7 @@ class optgra:
         if self.bounds_to_constraints:
             bound_types = optgra._constraint_types_from_box_bounds(problem)
 
-        num_function_output = (
-            1 + problem.get_nec() + problem.get_nic() + len(bound_types)
-        )
+        num_function_output = 1 + problem.get_nec() + problem.get_nic() + len(bound_types)
         prio_len = len(self.constraint_priorities)
         if prio_len > 0 and prio_len != num_function_output:
             raise ValueError(
@@ -549,9 +543,7 @@ class optgra:
 
         # 0 for equality constraints, -1 for inequality constraints,
         # 1 for box-derived constraints, -1 for fitness
-        constraint_types = (
-            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
-        )
+        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
 
         # adjust constraint priorities if adding constraints from box bound
         constraint_priorities = self.constraint_priorities
@@ -586,18 +578,17 @@ class optgra:
 
     def sensitivity_matrices(self):
         """
-        Get stored sensitivity matrices prepared by earlier call to prepare_sensivitity.
-        Note that active constraints are constraints that are currently fulfilled,
-        but could be violated in the next iteration.
-        Parameters refer to variables whose variable type was declared as fixed.
+        Get stored sensitivity matrices prepared by earlier call to prepare_sensivitity. Note that
+        active constraints are constraints that are currently fulfilled, but could be violated in
+        the next iteration. Parameters refer to variables whose variable type was declared as fixed.
 
         Returns:
 
-            A tuple of one list and four matrices: a boolean list of whether each constraint is active,
-            the sensitivity of constraints + merit function with respect to active constraints,
-            the sensitivity of constraints + merit function with respect to parameters,
-            the sensitivity of variables with respect to active constraints,
-            and the sensitivity of variables with respect to parameters.
+            A tuple of one list and four matrices: a boolean list of whether each constraint is
+            active, the sensitivity of constraints + merit function with respect to active
+            constraints, the sensitivity of constraints + merit function with respect to parameters,
+            the sensitivity of variables with respect to active constraints, and the sensitivity of
+            variables with respect to parameters.
 
         Raises:
 
@@ -621,7 +612,8 @@ class optgra:
 
         Args:
             problem: A problem containing the new callable.
-                     Has to have same dimensions and types as the problem passed to prepare_sensitivity
+                     Has to have same dimensions and types as the problem passed to
+                     prepare_sensitivity
 
         Returns:
 
@@ -629,8 +621,8 @@ class optgra:
 
         Raises:
 
-            RuntimeError: If prepare_sensitivity has not been called on this instance
-            ValueError: If number or type of constraints of the new problem are different from
+            RuntimeError: If prepare_sensitivity has not been called on this instance ValueError: If
+            number or type of constraints of the new problem are different from
                 those of the problem passed to prepare_sensitivity
 
         """
@@ -651,9 +643,7 @@ class optgra:
 
         # 0 for equality constraints, -1 for inequality constraints,
         # 1 for box-derived constraints, -1 for fitness
-        constraint_types = (
-            [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
-        )
+        constraint_types = [0] * problem.get_nec() + [-1] * problem.get_nic() + bound_types + [-1]
 
         if constraint_types != self._sens_constraint_types:
             raise ValueError(
@@ -681,15 +671,15 @@ class optgra:
             self.verbosity,
         )
 
-    def linear_update_delta(
-        self, constraint_delta: List[float]
-    ) -> Tuple[List[float], List[float]]:
+    def linear_update_delta(self, constraint_delta: List[float]) -> Tuple[List[float], List[float]]:
         """
-        Perform a single optimization step on the linear approximation prepared with prepare_sensitivity.
-        For this, no new function calls to the problem callable are performed, making this potentially very fast.
+        Perform a single optimization step on the linear approximation prepared with
+        prepare_sensitivity. For this, no new function calls to the problem callable are performed,
+        making this potentially very fast.
 
         Args:
-            constraint_delta: A list of deltas against the constraints. They are subtracted from the stored values.
+            constraint_delta: A list of deltas against the constraints. They are subtracted from the
+            stored values.
 
         Returns:
 
@@ -697,8 +687,8 @@ class optgra:
 
         Raises:
 
-            RuntimeError: If prepare_sensitivity has not been called on this instance
-            ValueError: If number of deltas does not fit number of constraints.
+            RuntimeError: If prepare_sensitivity has not been called on this instance ValueError: If
+            number of deltas does not fit number of constraints.
 
         """
 
