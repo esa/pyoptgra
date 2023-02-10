@@ -1,6 +1,6 @@
 [project]
 name = "pyoptgra"
-version = "0.1.7"
+version = "0.1.8"
 description = "A python-wrapped version of OPTGRA, an algorithm for constrained optimization"
 authors = [
     {name="Johannes Schoenmaekers", email="johannes.schoenmaekers@esa.int"},
