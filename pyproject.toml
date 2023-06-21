@@ -1,6 +1,6 @@
 [project]
 name = "pyoptgra"
-version = "0.1.8"
+version = "0.1.9"
 description = "A python-wrapped version of OPTGRA, an algorithm for constrained optimization"
 authors = [
     {name="Johannes Schoenmaekers", email="johannes.schoenmaekers@esa.int"},
@@ -10,7 +10,7 @@ license = {text = "GPL-3.0 or ESCL-2.4"}
 readme = "README.rst"
 
 dependencies = [
-"pygmo == 2.16.0"
+"pygmo >= 2.16.0"
 ]
 
 [build-system]
