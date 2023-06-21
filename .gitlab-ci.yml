@@ -112,8 +112,7 @@ test-wheels:
   stage: test-package
   image: python:3.9
   script:
-    - ls -l
-    - pip install pyoptgra*cp39-cp39m*manylinux2010_x86_64.whl
+    - pip install pyoptgra*cp39-cp39*manylinux2010_x86_64.whl
     - mkdir test-install
     - cd test-install
     - python -c "import pyoptgra"
