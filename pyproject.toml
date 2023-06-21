@@ -10,7 +10,7 @@ license = {text = "GPL-3.0 or ESCL-2.4"}
 readme = "README.rst"
 
 dependencies = [
-"pygmo == 2.16.0"
+"pygmo >= 2.16.0"
 ]
 
 [build-system]
