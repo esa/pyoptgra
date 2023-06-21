@@ -1,95 +1,47 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <title>Sensitivity Analysis &mdash; Pyoptgra 0.1.7 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+  <title>Sensitivity Analysis &mdash; Pyoptgra 0.1.9 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Variable Scaling Factors" href="scaling-and-tolerances.html" />
     <link rel="prev" title="Optgra" href="index.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
           
-            <a href="index.html" class="icon icon-home"> Pyoptgra
           
-
-          
+          <a href="index.html" class="icon icon-home">
+            Pyoptgra
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Sensitivity Analysis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#functions-for-sensitivity-analysis">Functions for Sensitivity Analysis</a><ul>
@@ -107,73 +59,32 @@
 <li class="toctree-l1"><a class="reference internal" href="api.html#the-optgra-c-wrapper">The optgra C++ wrapper</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Pyoptgra</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
-      <li>Sensitivity Analysis</li>
-    
-    
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sensitivity Analysis</li>
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="_sources/sensitivity.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <section id="sensitivity-analysis">
-<span id="sec-sensitivity-analysis"></span><h1>Sensitivity Analysis<a class="headerlink" href="#sensitivity-analysis" title="Permalink to this heading">¶</a></h1>
+<span id="sec-sensitivity-analysis"></span><h1>Sensitivity Analysis<a class="headerlink" href="#sensitivity-analysis" title="Permalink to this heading"></a></h1>
 <p>Optgra supports sensitivity analysis with respect to the active constraints. An inequality constraint is considered active if it is fulfilled but close to being violated. Equality constraints are always active.</p>
 <p>As an example, we take a problem with one variable (x_0) one minimization objective 2*x_0 and one inequality constraint (x_0) &gt;= 10. To make the problem bounded, we add bounds of [-20, 20]</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pygmo</span>
@@ -235,7 +146,7 @@ f called with [10.]
 </div>
 </section>
 <section id="functions-for-sensitivity-analysis">
-<h1>Functions for Sensitivity Analysis<a class="headerlink" href="#functions-for-sensitivity-analysis" title="Permalink to this heading">¶</a></h1>
+<h1>Functions for Sensitivity Analysis<a class="headerlink" href="#functions-for-sensitivity-analysis" title="Permalink to this heading"></a></h1>
 <p>The sensitivity analysis available by optgra consists of four functions:
 1) prepare_sensitivity(problem, x) - prepares sensitivity analysis of <em>problem</em> at <em>x</em>.
 2) sensitivity_matrices() - returns one list and four matrices, giving the sensitivities of <em>problem</em> at <em>x</em>
@@ -262,7 +173,7 @@ f called with [10.]
 </pre></div>
 </div>
 <section id="linear-updates-with-new-callable">
-<span id="sec-sensitivity-new-callable"></span><h2>Linear Updates With New Callable<a class="headerlink" href="#linear-updates-with-new-callable" title="Permalink to this heading">¶</a></h2>
+<span id="sec-sensitivity-new-callable"></span><h2>Linear Updates With New Callable<a class="headerlink" href="#linear-updates-with-new-callable" title="Permalink to this heading"></a></h2>
 <p>The function linear_update_new_callable(new_problem) evaluates the new problem on the stored <em>x</em> and performs a single correction and optimization step.
 This is designed to test multiple variants of a problem which differ slightly in their constraints. The dimensions of the problem and types of constraints must stay the same.</p>
 <p>This example problem is identical to the one above, except the constraint is x_0 &gt;= 12 instead of x_0 &gt;= 10.</p>
@@ -298,7 +209,7 @@ This is designed to test multiple variants of a problem which differ slightly in
 </div>
 </section>
 <section id="linear-updates-with-constraint-delta">
-<span id="sec-sensitivity-constraint-delta"></span><h2>Linear Updates With Constraint Delta<a class="headerlink" href="#linear-updates-with-constraint-delta" title="Permalink to this heading">¶</a></h2>
+<span id="sec-sensitivity-constraint-delta"></span><h2>Linear Updates With Constraint Delta<a class="headerlink" href="#linear-updates-with-constraint-delta" title="Permalink to this heading"></a></h2>
 <p>The function linear_update_delta() uses a linear approximation of the cost function to avoid additional evaluations.
 It is designed especially for problems that are near-linear and expensive to evaluate.</p>
 <p>As an example, we take our initial problem with one dimension, the merit function 2*x_0 to be minimized and the constraint x_0 &gt;= 10.</p>
@@ -325,50 +236,33 @@ f called with [9.99]
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="scaling-and-tolerances.html" class="btn btn-neutral float-right" title="Variable Scaling Factors" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="Optgra" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="scaling-and-tolerances.html" class="btn btn-neutral float-right" title="Variable Scaling Factors" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021, European Space Agency.
-
-    </p>
+    <p>&#169; Copyright 2021, European Space Agency.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
