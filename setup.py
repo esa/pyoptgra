@@ -26,6 +26,6 @@ setup(
     version=version,
     packages=["pyoptgra"],
     setup_requires=["cmake", "ninja"],
-    install_requires=["pygmo==2.16"],
+    install_requires=["pygmo>=2.16"],
     cmake_install_dir="pyoptgra/core",
 )
