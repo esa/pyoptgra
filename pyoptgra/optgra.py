@@ -155,8 +155,8 @@ class optgra:
         self,
         max_iterations: int = 150,
         max_correction_iterations: int = 90,
-        max_distance_per_iteration: int = 10,
-        perturbation_for_snd_order_derivatives: int = 1,
+        max_distance_per_iteration: float = 10,
+        perturbation_for_snd_order_derivatives: float = 1,
         variable_scaling_factors: List[float] = [],  # x_dim
         variable_types: List[int] = [],  # x_dim
         constraint_priorities: List[int] = [],  # f_dim
