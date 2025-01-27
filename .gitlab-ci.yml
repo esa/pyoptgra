@@ -3,7 +3,7 @@ stages:
   - package
   - test-package
   - deploy
-  
+
 # check the code adheres to the coding standards
 static:
   stage: test
@@ -21,7 +21,7 @@ c++-test:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran g++ cmake --yes
   script:
     - mkdir build && cd build
@@ -37,7 +37,20 @@ test:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
+test-3.11:
+  stage: test
+  image: python:3.11
+  allow_failure: false
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
   script:
     - python -m pip install .
@@ -51,7 +64,7 @@ doctest:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
     - pip install sphinx breathe
   script:
@@ -64,7 +77,7 @@ documentation:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran doxygen --yes
     - pip install sphinx breathe sphinx-rtd-theme
   script:
@@ -74,8 +87,8 @@ documentation:
     - cd ../sphinx
     - make html
   artifacts:
-     paths:
-       - doc/sphinx/_build
+    paths:
+      - doc/sphinx/_build
 
 python-sdist:
   stage: package
@@ -135,7 +148,7 @@ publish:
     - python-wheels:manylinux2010
   only:
     refs:
-        - master
+      - master
   when: manual
 
 pages:
@@ -145,14 +158,13 @@ pages:
     - documentation
     - test-wheels
   script:
-  - mkdir -p ./public/html/
-  - mv ./doc/sphinx/_build/html/* ./public/
+    - mkdir -p ./public/html/
+    - mv ./doc/sphinx/_build/html/* ./public/
   artifacts:
     paths:
-    - public
-    - doc/sphinx/_build
+      - public
+      - doc/sphinx/_build
   only:
     refs:
-        - master
+      - master
   when: manual
-    
