@@ -11,7 +11,7 @@ function repair_wheel {
     fi
 }
 
-for PY in cp311-cp311 cp310-cp310 cp39-cp39; do
+for PY in cp314-cp314 cp313-cp313 cp312-cp312 cp311-cp311 cp310-cp310 cp39-cp39; do
     mkdir -p /wheelhouse/built/$PY
     /opt/python/$PY/bin/pip wheel . --no-deps -w /wheelhouse/built/$PY -v
     repair_wheel "/wheelhouse/built/$PY/"*.whl

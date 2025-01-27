@@ -47,9 +47,65 @@ test-py3.9:
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=95
 
+test-py3.10:
+  stage: test
+  image: python:3.10
+  allow_failure: false
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
 test-py3.11:
   stage: test
   image: python:3.11
+  allow_failure: false
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
+test-py3.12:
+  stage: test
+  image: python:3.12
+  allow_failure: false
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
+test-py3.13:
+  stage: test
+  image: python:3.13
+  allow_failure: false
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
+test-py3.14:
+  stage: test
+  image: python:3.14
   allow_failure: false
   before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
