@@ -108,9 +108,9 @@ python-sdist:
     paths:
       - pyoptgra-*.tar.gz
 
-python-wheels:manylinux2010:
+python-wheels:manylinux2014:
   stage: package
-  image: quay.io/pypa/manylinux2010_x86_64:latest
+  image: quay.io/pypa/manylinux2014_x86_64:latest # Updated to manylinux2014
   needs: []
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
@@ -118,7 +118,7 @@ python-wheels:manylinux2010:
     - ./tools/build-manylinux-wheels.sh
     - mv /wheelhouse/repaired/*.whl .
   artifacts:
-    name: python-wheels-manylinux2010
+    name: python-wheels-manylinux2014
     paths:
       - pyoptgra-*.whl
 
