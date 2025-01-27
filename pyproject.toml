@@ -4,7 +4,7 @@ authors = [
   {name = "Moritz von Looz", email = "moritz.von.looz@esa.int"},
 ]
 dependencies = [
-  "pygmo >=2.16.0",
+  "pygmo >=2.19.6",
   "pygmo >=2.19.6; python_version >= '3.12'",
   "numpy<2.0.0",
 ]
