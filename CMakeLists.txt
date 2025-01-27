@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING
 	"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."	FORCE)

@@ -42,7 +42,6 @@ test-py3.9:
   script:
     - python -m pip install .
     - pip install pytest-cov coverage
-    - python -c "import pyoptgra; print(pyoptgra.__file__)" # Debugging step
     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=95
