@@ -82,8 +82,6 @@ test-py3.12:
   before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
     - git submodule update --init --recursive # Ensure submodules are updated
-    - apt update && apt install -y gfortran libboost-all-dev
-    - pip install --no-binary pygmo pygmo
   script:
     - python -m pip install .
     - pip install pytest-cov coverage
