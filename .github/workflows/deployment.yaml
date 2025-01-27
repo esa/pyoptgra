@@ -4,7 +4,7 @@ jobs:
   build-and-deploy-documentation:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Python 3.9
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
@@ -19,4 +19,4 @@ jobs:
       - run: bash tools/deploy-docs-to-gh-pages.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_SHA: ${{github.sha}}
