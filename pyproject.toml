@@ -3,20 +3,27 @@ authors = [
   {name = "Johannes Schoenmaekers", email = "johannes.schoenmaekers@esa.int"},
   {name = "Moritz von Looz", email = "moritz.von.looz@esa.int"},
 ]
+dependencies = [
+  "pygmo >=2.16.0",
+  "numpy<2.0.0",
+]
 description = "A python-wrapped version of OPTGRA, an algorithm for constrained optimization"
 license = {text = "GPL-3.0 or ESCL-2.4"}
 name = "pyoptgra"
 readme = "README.rst"
+requires-python = ">=3.9"
 version = "0.1.9"
-
-dependencies = [
-  "pygmo >= 2.16.0",
-  "numpy<2.0.0",
-]
 
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = ["setuptools", "wheel", "scikit-build", "cmake", "ninja", "setuptools_scm"]
+
+[tool.setuptools]
+packages = ["pyoptgra"]
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
+version_scheme = "post-release"
 
 [tool.black]
 line-length = 100

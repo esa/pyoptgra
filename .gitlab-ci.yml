@@ -93,14 +93,13 @@ documentation:
 python-sdist:
   stage: package
   image: python:3.9
-  needs: []
   before_script:
     - apt update && apt install gfortran doxygen --yes
     - pip install --upgrade pip
-    - pip install scikit-build setuptools-scm ninja cmake
+    - pip install build scikit-build setuptools-scm ninja cmake
   script:
     - git submodule update --init --recursive
-    - python3 setup.py sdist
+    - python -m build --sdist
     - mv dist/pyoptgra-*.tar.gz .
   artifacts:
     name: python-package
