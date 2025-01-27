@@ -126,13 +126,13 @@ test-wheels:
   stage: test-package
   image: python:3.9
   script:
-    - pip install pyoptgra*cp39-cp39*manylinux2010_x86_64.whl
+    - pip install pyoptgra*cp39-cp39*manylinux2014_x86_64.whl
     - mkdir test-install
     - cd test-install
     - python -c "import pyoptgra"
     - cd ..
   needs:
-    - python-wheels:manylinux2010
+    - python-wheels:manylinux2014
 
 publish:
   stage: deploy
@@ -146,7 +146,7 @@ publish:
   needs:
     - python-sdist
     - test-wheels
-    - python-wheels:manylinux2010
+    - python-wheels:manylinux2014
   only:
     refs:
       - master
