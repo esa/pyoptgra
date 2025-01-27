@@ -33,7 +33,7 @@ c++-test:
     - ./optgra-test
 
 # check the python code compiles and the tests run
-test:
+test-py3.9:
   stage: test
   image: python:3.9
   allow_failure: false
@@ -46,7 +46,7 @@ test:
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=95
 
-test-3.11:
+test-py3.11:
   stage: test
   image: python:3.11
   allow_failure: false
