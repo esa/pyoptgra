@@ -4,8 +4,7 @@ authors = [
   {name = "Moritz von Looz", email = "moritz.von.looz@esa.int"},
 ]
 dependencies = [
-  "pygmo >=2.19.6",
-  "pygmo >=2.19.6; python_version >= '3.12'",
+  "pygmo >=2.16.0",
   "numpy<2.0.0",
 ]
 description = "A python-wrapped version of OPTGRA, an algorithm for constrained optimization"

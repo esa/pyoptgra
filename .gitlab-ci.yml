@@ -88,6 +88,7 @@ test-py3.12:
     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=95
+  when: manual # Once Pygmo is available for Python 3.12 on pip, this job should work
 
 # check the documentation examples work
 doctest:
