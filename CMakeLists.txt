@@ -90,5 +90,5 @@ target_link_libraries(bare-test Catch2::Catch2WithMain)
 pybind11_add_module(core "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/bindings.cpp")
 target_link_libraries(core PRIVATE optgra)
 
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/__init__.py" DESTINATION .)
-install(TARGETS core optgra LIBRARY DESTINATION . ARCHIVE DESTINATION lib)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/pyoptgra/core/__init__.py" DESTINATION pyoptgra/core)
+install(TARGETS core optgra LIBRARY DESTINATION pyoptgra/core ARCHIVE DESTINATION lib)
