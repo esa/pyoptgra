@@ -53,6 +53,7 @@ test-py3.11:
   before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
   script:
+    - python -c "import pybind11; print(pybind11.__version__)"
     - python -m pip install .
     - pip install pytest-cov coverage
     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source

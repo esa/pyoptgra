@@ -16,7 +16,7 @@ version = "0.1.9"
 
 [build-system]
 build-backend = "scikit_build_core.build"
-requires = ["setuptools", "wheel", "scikit-build-core", "cmake", "ninja", "setuptools_scm"]
+requires = ["setuptools", "wheel", "scikit-build-core", "ninja", "setuptools_scm"]
 
 [tool.scikit-build.wheel]
 install-dir = "pyoptgra/core"
