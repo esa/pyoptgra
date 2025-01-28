@@ -1,21 +1,21 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Variable Scaling Factors &mdash; Pyoptgra 0.1.9 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>Variable Scaling Factors &mdash; Pyoptgra 0.1.10 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=bafade30"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -80,11 +80,11 @@
            <div itemprop="articleBody">
              
   <section id="variable-scaling-factors">
-<span id="sec-variable-scaling-factors"></span><h1>Variable Scaling Factors<a class="headerlink" href="#variable-scaling-factors" title="Permalink to this heading"></a></h1>
+<span id="sec-variable-scaling-factors"></span><h1>Variable Scaling Factors<a class="headerlink" href="#variable-scaling-factors" title="Link to this heading"></a></h1>
 <p>The free variables in an optimization problem are often on different scales, and the optimization performs better if these are aligned.
 For this, pyoptgra supports <em>variable scaling factors</em>, to be passed with the keyword argument of the same name:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pygmo</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyoptgra</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pygmo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pyoptgra</span>
 <span class="gp">&gt;&gt;&gt;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">prob</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">pygmo</span><span class="o">.</span><span class="n">schwefel</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span> <span class="c1"># schwefel test problem with 4 dimensions</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pop</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">population</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -105,11 +105,11 @@ For this, pyoptgra supports <em>variable scaling factors</em>, to be passed with
 </ul>
 </section>
 <section id="constraint-tolerances">
-<span id="sec-constraint-tolerances"></span><h1>Constraint Tolerances<a class="headerlink" href="#constraint-tolerances" title="Permalink to this heading"></a></h1>
+<span id="sec-constraint-tolerances"></span><h1>Constraint Tolerances<a class="headerlink" href="#constraint-tolerances" title="Link to this heading"></a></h1>
 <p>The maximum allowed violation of each constraint can be set with the <em>c_tol</em> property of the passed problem.
 Setting constraint tolerances to zero may lead to divergence.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pygmo</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyoptgra</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pygmo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pyoptgra</span>
 <span class="gp">&gt;&gt;&gt;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">prob</span> <span class="o">=</span> <span class="n">pygmo</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">pygmo</span><span class="o">.</span><span class="n">luksan_vlcek1</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span> <span class="c1"># the luksan_vlcek1 problem has dim-2 constraints</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">prob</span><span class="o">.</span><span class="n">c_tol</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-10</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">]</span>

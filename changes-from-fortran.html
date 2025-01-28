@@ -1,21 +1,21 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Internal Workings of the Python to Fortran Interface &mdash; Pyoptgra 0.1.9 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <title>Internal Workings of the Python to Fortran Interface &mdash; Pyoptgra 0.1.10 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=bafade30"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -88,15 +88,15 @@
            <div itemprop="articleBody">
              
   <section id="internal-workings-of-the-python-to-fortran-interface">
-<span id="sec-internals"></span><h1>Internal Workings of the Python to Fortran Interface<a class="headerlink" href="#internal-workings-of-the-python-to-fortran-interface" title="Permalink to this heading"></a></h1>
+<span id="sec-internals"></span><h1>Internal Workings of the Python to Fortran Interface<a class="headerlink" href="#internal-workings-of-the-python-to-fortran-interface" title="Link to this heading"></a></h1>
 <p>The python class pyoptgra handles all calls to the Fortran subroutines of Optgra in the background, including allocating and deallocating memory.
 Since only one instance of Optgra can have allocated memory in each process, the allocations with oginit and deallocations with ogclos are wrapped in each function call, so that the pyoptgra class does not hold any reference to allocated memory. Thus, all calls are isolated from each other and a user does not have to worry about the internal state.</p>
 <section id="pyoptgra-initialization">
-<span id="sec-internals-init"></span><h2>Pyoptgra Initialization<a class="headerlink" href="#pyoptgra-initialization" title="Permalink to this heading"></a></h2>
+<span id="sec-internals-init"></span><h2>Pyoptgra Initialization<a class="headerlink" href="#pyoptgra-initialization" title="Link to this heading"></a></h2>
 <p>The __init__ method of pyoptgra does not call any Fortran functions, but stores the construction arguments on the python side.</p>
 </section>
 <section id="evolve">
-<span id="sec-internals-evolve"></span><h2>evolve<a class="headerlink" href="#evolve" title="Permalink to this heading"></a></h2>
+<span id="sec-internals-evolve"></span><h2>evolve<a class="headerlink" href="#evolve" title="Link to this heading"></a></h2>
 <p>The evolve method calls, by way of the C++ wrapper, the following Optgra functions to initialize Optgra:</p>
 <blockquote>
 <div><ul class="simple">
@@ -121,7 +121,7 @@ Since only one instance of Optgra can have allocated memory in each process, the
 <p>Finally, <em>ogexec</em> is called to start an optimization run and get the result, followed by <em>ogclos</em> to deallocate the Optgra memory.</p>
 </section>
 <section id="prepare-sensitivity">
-<span id="sec-internals-prepare"></span><h2>prepare_sensitivity<a class="headerlink" href="#prepare-sensitivity" title="Permalink to this heading"></a></h2>
+<span id="sec-internals-prepare"></span><h2>prepare_sensitivity<a class="headerlink" href="#prepare-sensitivity" title="Link to this heading"></a></h2>
 <p>The method prepare_sensitivity calls the same initialization functions of Optgra as the evolve method:</p>
 <blockquote>
 <div><ul class="simple">
@@ -141,19 +141,19 @@ Finally, <em>ogclos</em> is called to de-allocate the Optgra memory.</p>
 <p>This approach of copying the internal state to python instead of keeping a reference to the allocated Fortran memory was chosen since multiple calls involving the same allocated Fortran common block interfere with each other. Thus all other calls to evolve from the same process would be blocked, even if used in other objects. This would conflict with the object-oriented approach chosen for pygmo, where different instances of the same object can be initialized and used independently.</p>
 </section>
 <section id="sensitivity-matrices">
-<h2>sensitivity_matrices<a class="headerlink" href="#sensitivity-matrices" title="Permalink to this heading"></a></h2>
+<h2>sensitivity_matrices<a class="headerlink" href="#sensitivity-matrices" title="Link to this heading"></a></h2>
 <p>The method sensitivity_matrices calls the same initialization functions of Optgra as prepare_sensitivity, most of them with the default paramters.</p>
 <p>The variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED are set (using <em>ogssst</em>) to the values gotten in prepare_sensitivity, then <em>ogsens</em> is called and the output is returned.</p>
 <p>Finally, <em>ogclos</em> is called to deallocate the Fortran memory.</p>
 </section>
 <section id="linear-update-new-callable">
-<h2>linear_update_new_callable<a class="headerlink" href="#linear-update-new-callable" title="Permalink to this heading"></a></h2>
+<h2>linear_update_new_callable<a class="headerlink" href="#linear-update-new-callable" title="Link to this heading"></a></h2>
 <p>The method linear_update_new_callable first initializes the Optgra memory by calling the same initialization functions as prepare_sensitivity, then sets the sensitivity state captured in the variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED.</p>
 <p>It then calls <em>ogsopt</em> (1) to initialize the correct sensitivity mode, followed by <em>ogexec</em> with the new callable.</p>
 <p>Finally, <em>ogclos</em> is called to deallocate the Fortran memory.</p>
 </section>
 <section id="linear-update-delta">
-<h2>linear_update_delta<a class="headerlink" href="#linear-update-delta" title="Permalink to this heading"></a></h2>
+<h2>linear_update_delta<a class="headerlink" href="#linear-update-delta" title="Link to this heading"></a></h2>
 <p>The method linear_update_delta first initializes the Optgra memory by calling the same initialization functions as prepare_sensitivity, then sets the sensitivity state captured in the variables SENVAR, SENQUA, SENCON, SENACT, SENDER, ACTCON, CONACT and CONRED.</p>
 <p>It then calls <em>ogsopt</em> (2) to initialize the correct sensitivity mode, followed by <em>ogcdel</em> to set the constraint deltas and <em>ogexec</em>.</p>
 <p>Finally, <em>ogclos</em> is called to deallocate the Fortran memory.</p>
