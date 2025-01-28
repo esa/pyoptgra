@@ -10,6 +10,7 @@ jobs:
           python-version: 3.9
       - uses: actions/checkout@v2
       - run: sudo apt update && sudo apt install gfortran doxygen --yes
+      - run: git submodule update --init --recursive # Ensure submodules are updated
       - run: pip install sphinx breathe sphinx-rtd-theme
       - run: python -m pip install .
       - run: doxygen Doxyfile
