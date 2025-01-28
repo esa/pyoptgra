@@ -3,7 +3,7 @@ stages:
   - package
   - test-package
   - deploy
-  
+
 # check the code adheres to the coding standards
 static:
   stage: test
@@ -21,7 +21,7 @@ c++-test:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran g++ cmake --yes
   script:
     - mkdir build && cd build
@@ -33,12 +33,13 @@ c++-test:
     - ./optgra-test
 
 # check the python code compiles and the tests run
-test:
+test-py3.9:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
   script:
     - python -m pip install .
     - pip install pytest-cov coverage
@@ -46,12 +47,55 @@ test:
     - pytest --cov pyoptgra --cov-report term-missing test.py
     - coverage report --fail-under=95
 
+test-py3.10:
+  stage: test
+  image: python:3.10
+  allow_failure: false
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
+test-py3.11:
+  stage: test
+  image: python:3.11
+  allow_failure: false
+  before_script: # install this project's dependencies
+    - apt update && apt install gfortran --yes
+    - git submodule update --init --recursive # Ensure submodules are updated
+  script:
+    - python -m pip install .
+    - pip install pytest-cov coverage
+    - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+    - pytest --cov pyoptgra --cov-report term-missing test.py
+    - coverage report --fail-under=95
+
+# test-py3.12:
+#   stage: test
+#   image: python:3.12
+#   allow_failure: false
+#   before_script: # install this project's dependencies
+#     - apt update && apt install gfortran --yes
+#     - git submodule update --init --recursive # Ensure submodules are updated
+#   script:
+#     - python -m pip install .
+#     - pip install pytest-cov coverage
+#     - cd tests/python # move into test directory to ensure that the installed package is tested, not the source
+#     - pytest --cov pyoptgra --cov-report term-missing test.py
+#     - coverage report --fail-under=95
+#   when: manual # Once Pygmo is available for Python 3.12 on pip, this job should work
+
 # check the documentation examples work
 doctest:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran --yes
     - pip install sphinx breathe
   script:
@@ -64,7 +108,7 @@ documentation:
   stage: test
   image: python:3.9
   allow_failure: false
-  before_script:  # install this project's dependencies
+  before_script: # install this project's dependencies
     - apt update && apt install gfortran doxygen --yes
     - pip install sphinx breathe sphinx-rtd-theme
   script:
@@ -74,29 +118,28 @@ documentation:
     - cd ../sphinx
     - make html
   artifacts:
-     paths:
-       - doc/sphinx/_build
+    paths:
+      - doc/sphinx/_build
 
 python-sdist:
   stage: package
   image: python:3.9
-  needs: []
   before_script:
     - apt update && apt install gfortran doxygen --yes
     - pip install --upgrade pip
-    - pip install scikit-build setuptools-scm ninja cmake
+    - pip install build scikit-build setuptools-scm ninja cmake
   script:
     - git submodule update --init --recursive
-    - python3 setup.py sdist
+    - python -m build --sdist
     - mv dist/pyoptgra-*.tar.gz .
   artifacts:
     name: python-package
     paths:
       - pyoptgra-*.tar.gz
 
-python-wheels:manylinux2010:
+python-wheels:manylinux2014:
   stage: package
-  image: quay.io/pypa/manylinux2010_x86_64:latest
+  image: quay.io/pypa/manylinux2014_x86_64:latest # Updated to manylinux2014
   needs: []
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
@@ -104,7 +147,7 @@ python-wheels:manylinux2010:
     - ./tools/build-manylinux-wheels.sh
     - mv /wheelhouse/repaired/*.whl .
   artifacts:
-    name: python-wheels-manylinux2010
+    name: python-wheels-manylinux2014
     paths:
       - pyoptgra-*.whl
 
@@ -112,15 +155,15 @@ test-wheels:
   stage: test-package
   image: python:3.9
   script:
-    - pip install pyoptgra*cp39-cp39*manylinux2010_x86_64.whl
+    - pip install pyoptgra*cp39-cp39*manylinux2014_x86_64.whl
     - mkdir test-install
     - cd test-install
     - python -c "import pyoptgra"
     - cd ..
   needs:
-    - python-wheels:manylinux2010
+    - python-wheels:manylinux2014
 
-publish:
+publish-test:
   stage: deploy
   image: python:3.9
   script:
@@ -132,10 +175,29 @@ publish:
   needs:
     - python-sdist
     - test-wheels
-    - python-wheels:manylinux2010
+    - python-wheels:manylinux2014
   only:
     refs:
-        - master
+      - master
+  when: manual
+
+# Upload to PyPI after successful tests and package creation
+publish-pypi:
+  stage: deploy
+  image: python:3.9
+  script:
+    - pip install twine
+    # upload to the project pypi (whl) (change testpypi to pypi to upload to PyPi)
+    - twine upload --non-interactive --disable-progress-bar --verbose --repository pypi -u __token__ -p $PYPI_TOKEN pyoptgra-*.whl
+    # upload to the project pypi (sdist)
+    - twine upload --non-interactive --disable-progress-bar --verbose --repository pypi -u __token__ -p $PYPI_TOKEN pyoptgra-*.tar.gz
+  needs:
+    - python-sdist
+    - test-wheels
+    - python-wheels:manylinux2014
+  only:
+    refs:
+      - master
   when: manual
 
 pages:
@@ -145,14 +207,13 @@ pages:
     - documentation
     - test-wheels
   script:
-  - mkdir -p ./public/html/
-  - mv ./doc/sphinx/_build/html/* ./public/
+    - mkdir -p ./public/html/
+    - mv ./doc/sphinx/_build/html/* ./public/
   artifacts:
     paths:
-    - public
-    - doc/sphinx/_build
+      - public
+      - doc/sphinx/_build
   only:
     refs:
-        - master
+      - master
   when: manual
-    
