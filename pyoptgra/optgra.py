@@ -15,6 +15,7 @@
 from collections import deque
 from math import isfinite
 from typing import List, Tuple, Union
+import numpy as np
 
 from pygmo import s_policy, select_best
 
@@ -25,6 +26,98 @@ from .core import (
     sensitivity_update_constraint_delta,
     sensitivity_update_new_callable,
 )
+
+
+class KhanFunction:
+    """Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
+
+    .. math::
+
+        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{optgra})
+
+    Where :math:`x` is the pagmo decision vector and :math:`x_{optgra}` is the decision vector
+    passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
+    near the bounds approach zero.
+    """
+
+    def __init__(self, lb: List[float], ub: List[float]):
+        """Constructor
+
+        Parameters
+        ----------
+        lb : List[float]
+            Lower pagmo parameter bounds
+        ub : List[float]
+            Upper pagmo parameter bounds
+        """
+        self._lb = lb
+        self._ub = ub
+
+    def eval(self, x_optgra: List[float]) -> List[float]:
+        """Convert :math:`x_{optgra}` to :math:`x`.
+
+        Parameters
+        ----------
+        x_optgra : List[float]
+            Decision vector passed to OPTGRA
+
+        Returns
+        -------
+        List[float]
+            Pagmo decision vector
+        """
+        return (self._ub + self._lb) / 2 + (self._ub - self._lb) / 2 * np.sin(x_optgra)
+
+    def eval_inv(self, x: List[float]) -> List[float]:
+        """Convert :math:`x` to :math:`x_{optgra}`.
+
+        Parameters
+        ----------
+        x : List[float]
+            Pagmo decision vector
+
+        Returns
+        -------
+        List[float]
+            Decision vector passed to OPTGRA
+
+        """
+        arg = (2 * x - self._ub - self._lb) / (self._ub - self._lb)
+        # TODO: check that arg is in the interval [-1, 1]
+        return np.asin(arg)
+
+    def eval_grad(self, x_optgra: List[float]) -> List[float]:
+        """Gradient of ``eval`` function.
+
+        Parameters
+        ----------
+        x_optgra : List[float]
+            Decision vector passed to OPTGRA
+
+        Returns
+        -------
+        List[float]
+            Pagmo decision vector
+        """
+        return (self._ub - self._lb) / 2 * np.cos(x_optgra)
+
+    def eval_grad_inv(self, x_optgra: List[float]) -> List[float]:
+        """Gradient of ``eval_inv`` method.
+
+        Parameters
+        ----------
+        x_optgra : List[float]
+            Decision vector passed to OPTGRA
+
+        Returns
+        -------
+        List[float]
+            Pagmo decision vector
+        """
+        return -1 / (
+            (self._lb - self._ub)
+            * np.sqrt(((self._lb - x_optgra) * (x_optgra - self._ub)) / (self._ub - self._lb) ** 2)
+        )
 
 
 class optgra:
