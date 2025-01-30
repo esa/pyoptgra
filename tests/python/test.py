@@ -74,12 +74,7 @@ class luksan_vlcek:
             - x[1]
         )
         ci2 = -(
-            8 * x[5] * (x[5] ** 2 - x[4])
-            - 2 * (1 - x[5])
-            + x[4] ** 2
-            - x[3]
-            + x[3] ** 2
-            - x[4]
+            8 * x[5] * (x[5] ** 2 - x[4]) - 2 * (1 - x[5]) + x[4] ** 2 - x[3] + x[3] ** 2 - x[4]
         )
         return [obj, ce1, ce2, ce3, ce4, ci1, ci2]
 
@@ -189,9 +184,7 @@ class optgra_test(unittest.TestCase):
 
         # Check that negative perturbation is rejected
         with self.assertRaises(ValueError):
-            _ = pygmo.algorithm(
-                pyoptgra.optgra(perturbation_for_snd_order_derivatives=-1)
-            )
+            _ = pygmo.algorithm(pyoptgra.optgra(perturbation_for_snd_order_derivatives=-1))
 
         # Valid constructor
         pygmo.algorithm(pyoptgra.optgra())
@@ -400,9 +393,7 @@ class optgra_test(unittest.TestCase):
         a.evolve(10)
         a2 = deepcopy(a)
         a.wait_check()
-        a = archipelago(
-            5, udi=mp_island(), algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10
-        )
+        a = archipelago(5, udi=mp_island(), algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
         a.evolve(10)
         a.evolve(10)
         str(a)
@@ -436,9 +427,7 @@ class optgra_test(unittest.TestCase):
 
         a = archipelago(5, algo=pyoptgra.optgra(), prob=rosenbrock(), pop_size=10)
         self.assertEqual(repr(a), repr(loads(dumps(a))))
-        a = archipelago(
-            5, algo=pyoptgra.optgra(), prob=_prob(), pop_size=10, udi=mp_island()
-        )
+        a = archipelago(5, algo=pyoptgra.optgra(), prob=_prob(), pop_size=10, udi=mp_island())
         self.assertEqual(repr(a), repr(loads(dumps(a))))
 
     def prepare_sensitivity_input_check_test(self):
@@ -520,9 +509,7 @@ class optgra_test(unittest.TestCase):
 
         matrices = opt.sensitivity_matrices()
         self.assertEqual(len(matrices), 5)
-        self.assertEqual(
-            len(matrices[0]), 6 + 12
-        )  # luksan_vlcek has 6 constraints and 12 bounds
+        self.assertEqual(len(matrices[0]), 6 + 12)  # luksan_vlcek has 6 constraints and 12 bounds
         self.assertLessEqual(max(matrices[0]), 1)
         self.assertGreaterEqual(min(matrices[0]), 0)
 
@@ -650,9 +637,66 @@ class optgra_test(unittest.TestCase):
         self.assertFalse(extracted._bounds_violated)
 
         # check that population has valid members
-        algo = pygmo.algorithm(
-            pyoptgra.optgra(force_bounds=True, bounds_to_constraints=False)
-        )
+        algo = pygmo.algorithm(pyoptgra.optgra(force_bounds=True, bounds_to_constraints=False))
+        prob = pygmo.problem(_prob_bound_test_no_gradient())
+        pop = pygmo.population(prob, size=0)
+        pop.push_back([2.47192039, -1.45880516, -9.03600606, -9.33306356, 3.85509973])
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertFalse(extracted._bounds_violated)
+        pop = algo.evolve(pop)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertFalse(extracted._bounds_violated)
+        lb, ub = prob.get_bounds()
+        for i in range(prob.get_nx()):
+            self.assertTrue(pop.champion_x[i] >= lb[i])
+            self.assertTrue(pop.champion_x[i] <= ub[i])
+
+    def khan_bounds_test(self):
+        class _prob_bound_test_no_gradient(object):
+            def __init__(self):
+                self._bounds_violated = False
+
+            def get_bounds(self):
+                return ([-10, -10, -10, -10, -10], [10, 10, 10, 10, 10])
+
+            def fitness(self, x):
+                result = [
+                    sum(x),
+                    sum([(x[i] - 5 * i + 10) ** 2 for i in range(len(x))]),
+                ]
+                lb, ub = self.get_bounds()
+                for i in range(len(lb)):
+                    if x[i] < lb[i]:
+                        self._bounds_violated = True
+                    if x[i] > ub[i]:
+                        self._bounds_violated = True
+                return result
+
+            def get_nic(self):
+                return 1
+
+        # check bounds violation with normal optgra
+        algo = pygmo.algorithm(pyoptgra.optgra(force_bounds=False))
+        prob = pygmo.problem(_prob_bound_test_no_gradient())
+        pop = pygmo.population(prob, size=1)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertFalse(extracted._bounds_violated)
+        pop = algo.evolve(pop)
+        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+        self.assertTrue(extracted._bounds_violated)
+
+        # check bounds are forced when setting the argument
+        algo = pygmo.algorithm(pyoptgra.optgra(force_bounds=True))
+        prob = pygmo.problem(_prob_bound_test())
+        pop = pygmo.population(prob, size=1)
+        extracted = pop.problem.extract(_prob_bound_test)
+        self.assertFalse(extracted._bounds_violated)
+        pop = algo.evolve(pop)
+        extracted = pop.problem.extract(_prob_bound_test)
+        self.assertFalse(extracted._bounds_violated)
+
+        # check that population has valid members
+        algo = pygmo.algorithm(pyoptgra.optgra(force_bounds=True, bounds_to_constraints=False))
         prob = pygmo.problem(_prob_bound_test_no_gradient())
         pop = pygmo.population(prob, size=0)
         pop.push_back([2.47192039, -1.45880516, -9.03600606, -9.33306356, 3.85509973])
@@ -678,6 +722,7 @@ class optgra_test(unittest.TestCase):
         algo = pygmo.algorithm(pyoptgra.optgra(log_level=1))
         with self.assertRaises(ValueError):
             algo.set_verbosity(1)
+
 
 if __name__ == "__main__":
     unittest.main()
