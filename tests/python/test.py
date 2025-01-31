@@ -306,6 +306,7 @@ class optgra_test(unittest.TestCase):
         self.assertLess(new_best, previous_best)
 
     def gradient_with_constraints_test(self):
+        # 1. Run Luksan-Vlcek problem with optgra
         prob = pygmo.problem(luksan_vlcek())
         prob.c_tol = 1e-6
         og = pyoptgra.optgra(
@@ -332,6 +333,32 @@ class optgra_test(unittest.TestCase):
         # inequality constraints
         for i in [5, 6]:
             self.assertLess(pop.champion_f[i], 1e-6)
+
+        # 2. Run the same test with khan_bounds
+        og = pyoptgra.optgra(
+            optimization_method=1,
+            max_iterations=100,
+            max_correction_iterations=100,
+            max_distance_per_iteration=10,
+            khan_bounds=True,
+        )
+        algo = pygmo.algorithm(og)
+        pop2 = pygmo.population(prob, size=0, seed=1)  # empty population
+        pop2.push_back([0.5, 0.5, -0.5, 0.4, 0.3, 0.7])  # add initial guess
+
+        # Calling optgra
+        pop2 = algo.evolve(pop2)  # run the optimisation
+
+        # objective function
+        self.assertLess(pop2.champion_f[0], 2.26)
+
+        # equality constraints
+        for i in [1, 2, 3, 4]:
+            self.assertAlmostEqual(pop2.champion_f[i], 0.0, 6)
+
+        # inequality constraints
+        for i in [5, 6]:
+            self.assertLess(pop2.champion_f[i], 1e-6)
 
     def constraints_with_default_tolerances_test(self):
         prob = pygmo.problem(luksan_vlcek())
