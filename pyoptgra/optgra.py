@@ -13,9 +13,9 @@
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
 from math import isfinite
-from typing import List, Tuple, Union, Callable, Optional
-import numpy as np
+from typing import Callable, List, Optional, Tuple, Union
 
+import numpy as np
 from pygmo import s_policy, select_best
 
 from .core import (
