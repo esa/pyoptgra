@@ -359,7 +359,7 @@ class optgra:
         optimization_method: int = 2,
         log_level: int = 0,
     ) -> None:
-        """
+        r"""
         Initialize a wrapper instance for the OPTGRA algorithm.
 
         Some of the construction arguments, for example the scaling factors, depend on the dimension
@@ -413,7 +413,7 @@ class optgra:
                 satisfied, but the gradients near the bounds approach zero. By default False.
                 Pyoptgra uses a variant of the above method that additionally scales the
                 argument of the :math:`\sin` function such that the derivatives
-                :math:`\frac{x_{Khan}}{x}` are unity in the center of the box bounds.
+                :math:`\frac{d x_{Khan}}{d x}` are unity in the center of the box bounds.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
                 gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
                 gradient method
