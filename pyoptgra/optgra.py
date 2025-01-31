@@ -28,19 +28,19 @@ from .core import (
 )
 
 
-class KhanFunction:
+class khan_function:
     """Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
 
     .. math::
 
-        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{optgra})
+        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{khan})
 
-    Where :math:`x` is the pagmo decision vector and :math:`x_{optgra}` is the decision vector
+    Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
     passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
     near the bounds approach zero.
     """
 
-    def __init__(self, lb: List[float], ub: List[float]):
+    def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
         """Constructor
 
         Parameters
@@ -49,9 +49,15 @@ class KhanFunction:
             Lower pagmo parameter bounds
         ub : List[float]
             Upper pagmo parameter bounds
+        unity_gradient : bool, optional
+            Uses an internal scaling that ensures that the derivative of pagmo parameters w.r.t.
+            khan parameters are unity at (lb + ub)/2. By default True.
+            Otherwise, the original Khan method is used that can result in strongly modified
+            gradients
         """
         self._lb = np.asarray(lb)
         self._ub = np.asarray(ub)
+        self._nx = len(lb)
 
         # determine finite lower/upper bounds
         finite_lb = np.isfinite(self._lb)
@@ -67,13 +73,21 @@ class KhanFunction:
             )
         # store the mask of finite bounds
         self.mask = finite_ub
-        self._lb_masked = lb[self.mask]
-        self._ub_masked = ub[self.mask]
+        self._lb_masked = self._lb[self.mask]
+        self._ub_masked = self._ub[self.mask]
 
-    def _eval(self, x_optgra_masked: np.ndarray) -> np.ndarray:
+        # determine coefficients inside the sin function
+        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
+        self._b = (
+            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
+            if unity_gradient
+            else 0.0
+        )
+
+    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
         return (self._ub_masked + self._lb_masked) / 2 + (
             self._ub_masked - self._lb_masked
-        ) / 2 * np.sin(x_optgra_masked)
+        ) / 2 * np.sin(x_khan_masked * self._a + self._b)
 
     def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
         arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
@@ -81,38 +95,49 @@ class KhanFunction:
         )
         if np.any((arg < -1.0) | (arg > 1.0)):
             print(
-                "WARNING: Numerical inaccuracies encountered during KhanFunction inverse.",
+                "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
                 "Clipping parameters to valid range.",
             )
             arg = np.clip(arg, -1.0, 1.0)
-        return np.arcsin(arg)
+        return (np.arcsin(arg) - self._b) / self._a
 
-    def _eval_grad(self, x_optgra_masked: np.ndarray) -> np.ndarray:
-        return (self._ub_masked - self._lb_masked) / 2 * np.cos(x_optgra_masked)
+    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
+        return (
+            (self._ub_masked - self._lb_masked)
+            / 2
+            * np.cos(self._a * x_khan_masked + self._b)
+            * self._a
+        )
 
-    def _eval_grad_inv(self, x_optgra_masked: np.ndarray) -> np.ndarray:
-        return -1 / (
-            (self._lb_masked - self._ub_masked)
-            * np.sqrt(
-                ((self._lb_masked - x_optgra_masked) * (x_optgra_masked - self._ub_masked))
-                / (self._ub_masked - self._lb_masked) ** 2
+    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
+        return (
+            -1
+            / self._a
+            / (
+                (self._lb_masked - self._ub_masked)
+                * np.sqrt(
+                    ((self._lb_masked - x_masked) * (x_masked - self._ub_masked))
+                    / (self._ub_masked - self._lb_masked) ** 2
+                )
             )
         )
 
-    def _apply_to_subset(self, x: np.ndarray, func: Callable) -> np.ndarray:
+    def _apply_to_subset(
+        self, x: np.ndarray, func: Callable, default_result: np.ndarray = None
+    ) -> np.ndarray:
         """Apply a given function only to a subset of x defined by self.mask."""
         # Create a copy to preserve the original structure
-        result = x.copy()
+        result = default_result if default_result is not None else x.copy()
         # Apply the function only to the selected subset
-        result[self.mask] = func(result[self.mask])
+        result[self.mask] = func(x[self.mask])
         return result
 
-    def eval(self, x_optgra: np.ndarray) -> np.ndarray:
+    def eval(self, x_khan: np.ndarray) -> np.ndarray:
         """Convert :math:`x_{optgra}` to :math:`x`.
 
         Parameters
         ----------
-        x_optgra : np.ndarray
+        x_khan : np.ndarray
             Decision vector passed to OPTGRA
 
         Returns
@@ -120,7 +145,7 @@ class KhanFunction:
         np.ndarray
             Pagmo decision vector
         """
-        return self._apply_to_subset(np.asarray(x_optgra), self._eval)
+        return self._apply_to_subset(np.asarray(x_khan), self._eval)
 
     def eval_inv(self, x: np.ndarray) -> np.ndarray:
         """Convert :math:`x` to :math:`x_{optgra}`.
@@ -138,12 +163,12 @@ class KhanFunction:
         """
         return self._apply_to_subset(np.asarray(x), self._eval_inv)
 
-    def eval_grad(self, x_optgra: np.ndarray) -> np.ndarray:
+    def eval_grad(self, x_khan: np.ndarray) -> np.ndarray:
         """Gradient of ``eval`` function.
 
         Parameters
         ----------
-        x_optgra : np.ndarray
+        x_khan : np.ndarray
             Decision vector passed to OPTGRA
 
         Returns
@@ -151,22 +176,24 @@ class KhanFunction:
         np.ndarray
             Pagmo decision vector
         """
-        return np.diag(self._apply_to_subset(np.asarray(x_optgra), self._eval_grad))
+        return np.diag(
+            self._apply_to_subset(np.asarray(x_khan), self._eval_grad, np.ones(self._nx))
+        )
 
-    def eval_grad_inv(self, x_optgra: np.ndarray) -> np.ndarray:
+    def eval_inv_grad(self, x: np.ndarray) -> np.ndarray:
         """Gradient of ``eval_inv`` method.
 
         Parameters
         ----------
-        x_optgra : np.ndarray
-            Decision vector passed to OPTGRA
+        x : np.ndarray
+            Pagmo decision vector
 
         Returns
         -------
         np.ndarray
-            Pagmo decision vector
+            Decision vector passed to OPTGRA
         """
-        return np.diag(self._apply_to_subset(np.asarray(x_optgra), self._eval_grad_inv))
+        return np.diag(self._apply_to_subset(np.asarray(x), self._eval_inv_grad, np.ones(self._nx)))
 
 
 class optgra:
@@ -208,19 +235,19 @@ class optgra:
         problem,
         bounds_to_constraints: bool = True,
         force_bounds: bool = False,
-        khan_function: KhanFunction = None,
+        khanf: khan_function = None,
     ):
         # get problem parameters
         lb, ub = problem.get_bounds()
 
         def wrapped_fitness(x):
 
-            if khan_function:
+            # we are using vectorisation internally -> convert to ndarray
+            x = np.asarray(x, dtype=np.float64)
+
+            if khanf:
                 # if Khan function is used, we first need to convert to pagmo parameters
-                x = khan_function.eval(x_optgra=x)
-            else:
-                # we are using vectorisation internally -> convert to ndarray
-                x = np.asarray(x)
+                x = khanf.eval(x_khan=x)
 
             if force_bounds:
                 fixed_x = np.clip(x, lb, ub)
@@ -250,7 +277,7 @@ class optgra:
         problem,
         bounds_to_constraints: bool = True,
         force_bounds=False,
-        khan_function: KhanFunction = None,
+        khanf: khan_function = None,
     ):
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
@@ -265,16 +292,18 @@ class optgra:
 
         def wrapped_gradient(x):
 
-            if khan_function:
+            # we are using vectorisation internally -> convert to ndarray
+            x = np.asarray(x, dtype=np.float64)
+
+            if khanf:
                 # if Khan function is used, we first need to convert to pagmo parameters
-                fixed_x = khan_function.eval(x_optgra=x)
-            else:
-                # we are using vectorisation internally -> convert to ndarray
-                fixed_x = np.asarray(x)
+                x = khanf.eval(x_khan=x)
 
             # force parameters to lower and upper bounds if needed
             if force_bounds:
-                fixed_x = np.clip(fixed_x, lb, ub)
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
             # call the problem gradient function to retrieve sparse values
             # gives derivative of merit function and constraints w.r.t. pagmo parameters
@@ -305,8 +334,8 @@ class optgra:
             result = np.vstack([result[1:], result[0]])
 
             # if Khan function is used, we need to post multiply with the Khan function gradients
-            if khan_function:
-                khan_grad = khan_function.eval_grad(x)
+            if khanf:
+                khan_grad = khanf.eval_grad(x)
                 result = result @ khan_grad
 
             return result.tolist()  # return as a list, not ndarray
@@ -378,11 +407,14 @@ class optgra:
 
                 .. math::
 
-                    x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{optgra})
+                    x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{Khan})
 
-                Where :math:`x` is the pagmo decision vector and :math:`x_{optgra}` is the decision
+                Where :math:`x` is the pagmo decision vector and :math:`x_{Khan}` is the decision
                 vector passed to OPTGRA. In this way parameter bounds are guaranteed to be
                 satisfied, but the gradients near the bounds approach zero. By default False.
+                Pyoptgra uses a variant of the above method that additionally scales the
+                argument of the :math:`\sin` function such that the derivatives
+                :math:`\frac{x_{Khan}}{x}` are unity in the center of the box bounds.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
                 gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
                 gradient method
@@ -564,16 +596,16 @@ class optgra:
         idx = list(population.get_ID()).index(selected[0][0])
 
         # optional Khan function to enforce parameter bounds
-        khan_function = KhanFunction(*problem.get_bounds()) if self.khan_bounds else None
+        khanf = khan_function(*problem.get_bounds()) if self.khan_bounds else None
 
         fitness_func = optgra._wrap_fitness_func(
-            problem, self.bounds_to_constraints, self.force_bounds, khan_function
+            problem, self.bounds_to_constraints, self.force_bounds, khanf
         )
         grad_func = None
         derivatives_computation = 2
         if problem.has_gradient():
             grad_func = optgra._wrap_gradient_func(
-                problem, self.bounds_to_constraints, self.force_bounds, khan_function
+                problem, self.bounds_to_constraints, self.force_bounds, khanf
             )
             derivatives_computation = 1
 
@@ -610,7 +642,7 @@ class optgra:
         # get initial x
         x0 = population.get_x()[idx]
         result = optimize(
-            initial_x=khan_function.eval_inv(x0) if khan_function else x0,
+            initial_x=khanf.eval_inv(x0) if khanf else x0,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
             gradient_callback=grad_func,
@@ -635,8 +667,8 @@ class optgra:
         best_x, best_f, finopt = result
 
         # if a Khan function is used we first need to convert to pagmo parameters
-        if khan_function:
-            best_x = khan_function.eval(best_x)
+        if khanf:
+            best_x = khanf.eval(best_x)
 
         if self.force_bounds:
             lb, ub = problem.get_bounds()

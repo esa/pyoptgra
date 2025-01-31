@@ -14,6 +14,8 @@
 
 import unittest
 
+import numpy as np
+
 import pygmo
 
 import pyoptgra
@@ -159,7 +161,8 @@ class optgra_test(unittest.TestCase):
         # self.sensitivity_constraint_delta_test()
         # self.sensitivity_active_constraints_test()
         # self.force_bounds_test()
-        self.khan_bounds_test()
+        # self.khan_bounds_test()
+        self.khan_function_test()
         # self.force_bounds_fitness_test()
         # self.force_bounds_gradient_test()
         # self.get_name_test()
@@ -710,6 +713,38 @@ class optgra_test(unittest.TestCase):
         for i in range(prob.get_nx()):
             self.assertTrue(pop.champion_x[i] >= lb[i])
             self.assertTrue(pop.champion_x[i] <= ub[i])
+
+    def khan_function_test(self):
+
+        for unity_gradient in [True, False]:  # test both variants
+            lb = [-10, 0, -np.inf, -np.inf, -20]
+            ub = [10, 30, np.inf, -np.inf, -10]
+            kfun = pyoptgra.khan_function(lb, ub, unity_gradient)
+
+            # check function and its inversion
+            x = np.asarray([-1, 2, 4, 4, -15.0])
+            x_optgra = kfun.eval_inv(x)
+            x_check = kfun.eval(x_optgra)
+            self.assertListEqual(x.tolist(), x_check.tolist())
+
+            # check gradient and its inversion
+            dx_dxog = kfun.eval_inv_grad(x)
+            dxog_dx = kfun.eval_grad(x_optgra)
+            check_mat = dx_dxog @ dxog_dx  # expect unity matrix
+            np.testing.assert_allclose(check_mat, np.eye(5), atol=1e-10)
+
+            # compare with numerical gradient
+            dx_dxog_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval_inv(_x), x).reshape(5, 5)
+            dxog_dx_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval(_x), x_optgra).reshape(
+                5, 5
+            )
+            np.testing.assert_allclose(dx_dxog_num, dx_dxog, atol=1e-7)
+            np.testing.assert_allclose(dxog_dx_num, dxog_dx, atol=1e-7)
+
+            # one-sided bound is not supported
+            ub = [10, 30, np.inf, -np.inf, np.inf]
+            with self.assertRaises(ValueError):
+                pyoptgra.khan_function(lb, ub)
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
