@@ -169,7 +169,7 @@ publish-gitlab:
   script:
     - pip install twine
     # upload to repo (ESA Gitlab)
-    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_JOB_TOKEN --repository-url https://gitlab.esa.int/api/v4/projects/$CI_PROJECT_ID/packages/pypi dist/pyoptgra-*.whl
+    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_JOB_TOKEN --repository-url https://gitlab.esa.int/api/v4/projects/$CI_PROJECT_ID/packages/pypi pyoptgra-*.whl
     - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_JOB_TOKEN --repository-url https://gitlab.esa.int/api/v4/projects/$CI_PROJECT_ID/packages/pypi pyoptgra-*.tar.gz
 
   needs:
