@@ -12,9 +12,8 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from collections import deque
 from math import isfinite
-from typing import List, Tuple, Union, Callable
+from typing import List, Tuple, Union, Callable, Optional
 import numpy as np
 
 from pygmo import s_policy, select_best
@@ -38,7 +37,7 @@ class khan_function:
     Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
     passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
     near the bounds approach zero.
-    """
+    """  # noqa: W605
 
     def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
         """Constructor
@@ -123,7 +122,7 @@ class khan_function:
         )
 
     def _apply_to_subset(
-        self, x: np.ndarray, func: Callable, default_result: np.ndarray = None
+        self, x: np.ndarray, func: Callable, default_result: Optional[np.ndarray] = None
     ) -> np.ndarray:
         """Apply a given function only to a subset of x defined by self.mask."""
         # Create a copy to preserve the original structure
@@ -235,7 +234,7 @@ class optgra:
         problem,
         bounds_to_constraints: bool = True,
         force_bounds: bool = False,
-        khanf: khan_function = None,
+        khanf: Optional[khan_function] = None,
     ):
         # get problem parameters
         lb, ub = problem.get_bounds()
@@ -277,7 +276,7 @@ class optgra:
         problem,
         bounds_to_constraints: bool = True,
         force_bounds=False,
-        khanf: khan_function = None,
+        khanf: Optional[khan_function] = None,
     ):
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
@@ -428,7 +427,7 @@ class optgra:
             max_iterations, max_correction_iterations, max_distance_per_iteration,
                 or perturbation_for_snd_order_derivatives are negative
 
-        """
+        """  # noqa: W605
         self.max_iterations = max_iterations
         self.max_correction_iterations = max_correction_iterations
         self.max_distance_per_iteration = max_distance_per_iteration

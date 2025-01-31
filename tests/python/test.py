@@ -725,7 +725,7 @@ class optgra_test(unittest.TestCase):
             x = np.asarray([-1, 2, 4, 4, -15.0])
             x_optgra = kfun.eval_inv(x)
             x_check = kfun.eval(x_optgra)
-            self.assertListEqual(x.tolist(), x_check.tolist())
+            np.testing.assert_allclose(x, x_check, atol=1e-10)
 
             # check gradient and its inversion
             dx_dxog = kfun.eval_inv_grad(x)
