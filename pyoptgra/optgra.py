@@ -40,7 +40,6 @@ class KhanFunction:
     near the bounds approach zero.
     """
 
-    # TODO: coversion function shall only be called on parameters with finite bounds
     def __init__(self, lb: List[float], ub: List[float]):
         """Constructor
 
@@ -51,12 +50,12 @@ class KhanFunction:
         ub : List[float]
             Upper pagmo parameter bounds
         """
-        self._lb = lb
-        self._ub = ub
+        self._lb = np.asarray(lb)
+        self._ub = np.asarray(ub)
 
         # determine finite lower/upper bounds
-        finite_lb = np.isfinite(lb)
-        finite_ub = np.isfinite(ub)
+        finite_lb = np.isfinite(self._lb)
+        finite_ub = np.isfinite(self._ub)
 
         # we only support cases where both lower and upper bounds are finite if given
         check = np.where(finite_lb != finite_ub)[0]
@@ -71,22 +70,27 @@ class KhanFunction:
         self._lb_masked = lb[self.mask]
         self._ub_masked = ub[self.mask]
 
-    def _eval(self, x_optgra_masked: List[float]) -> List[float]:
+    def _eval(self, x_optgra_masked: np.ndarray) -> np.ndarray:
         return (self._ub_masked + self._lb_masked) / 2 + (
             self._ub_masked - self._lb_masked
         ) / 2 * np.sin(x_optgra_masked)
 
-    def _eval_inv(self, x_masked: List[float]) -> List[float]:
+    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
         arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
             self._ub_masked - self._lb_masked
         )
-        # TODO: check that arg is in the interval [-1, 1]
-        return np.asin(arg)
+        if np.any((arg < -1.0) | (arg > 1.0)):
+            print(
+                "WARNING: Numerical inaccuracies encountered during KhanFunction inverse.",
+                "Clipping parameters to valid range.",
+            )
+            arg = np.clip(arg, -1.0, 1.0)
+        return np.arcsin(arg)
 
-    def _eval_grad(self, x_optgra_masked: List[float]) -> List[float]:
+    def _eval_grad(self, x_optgra_masked: np.ndarray) -> np.ndarray:
         return (self._ub_masked - self._lb_masked) / 2 * np.cos(x_optgra_masked)
 
-    def _eval_grad_inv(self, x_optgra_masked: List[float]) -> List[float]:
+    def _eval_grad_inv(self, x_optgra_masked: np.ndarray) -> np.ndarray:
         return -1 / (
             (self._lb_masked - self._ub_masked)
             * np.sqrt(
@@ -95,72 +99,74 @@ class KhanFunction:
             )
         )
 
-    def _apply_to_subset(self, x: List[float], func: Callable):
+    def _apply_to_subset(self, x: np.ndarray, func: Callable) -> np.ndarray:
         """Apply a given function only to a subset of x defined by self.mask."""
-        result = x.copy()  # Create a copy to preserve the original structure
-        result[self.mask] = func(x[self.mask])  # Apply the function only to the selected subset
+        # Create a copy to preserve the original structure
+        result = x.copy()
+        # Apply the function only to the selected subset
+        result[self.mask] = func(result[self.mask])
         return result
 
-    def eval(self, x_optgra: List[float]) -> List[float]:
+    def eval(self, x_optgra: np.ndarray) -> np.ndarray:
         """Convert :math:`x_{optgra}` to :math:`x`.
 
         Parameters
         ----------
-        x_optgra : List[float]
+        x_optgra : np.ndarray
             Decision vector passed to OPTGRA
 
         Returns
         -------
-        List[float]
+        np.ndarray
             Pagmo decision vector
         """
-        return self._apply_to_subset(x_optgra, self._eval)
+        return self._apply_to_subset(np.asarray(x_optgra), self._eval)
 
-    def eval_inv(self, x: List[float]) -> List[float]:
+    def eval_inv(self, x: np.ndarray) -> np.ndarray:
         """Convert :math:`x` to :math:`x_{optgra}`.
 
         Parameters
         ----------
-        x : List[float]
+        x : np.ndarray
             Pagmo decision vector
 
         Returns
         -------
-        List[float]
+        np.ndarray
             Decision vector passed to OPTGRA
 
         """
-        return self._apply_to_subset(x, self.eval_inv)
+        return self._apply_to_subset(np.asarray(x), self._eval_inv)
 
-    def eval_grad(self, x_optgra: List[float]) -> List[float]:
+    def eval_grad(self, x_optgra: np.ndarray) -> np.ndarray:
         """Gradient of ``eval`` function.
 
         Parameters
         ----------
-        x_optgra : List[float]
+        x_optgra : np.ndarray
             Decision vector passed to OPTGRA
 
         Returns
         -------
-        List[float]
+        np.ndarray
             Pagmo decision vector
         """
-        return self._apply_to_subset(x_optgra, self._eval_grad)
+        return np.diag(self._apply_to_subset(np.asarray(x_optgra), self._eval_grad))
 
-    def eval_grad_inv(self, x_optgra: List[float]) -> List[float]:
+    def eval_grad_inv(self, x_optgra: np.ndarray) -> np.ndarray:
         """Gradient of ``eval_inv`` method.
 
         Parameters
         ----------
-        x_optgra : List[float]
+        x_optgra : np.ndarray
             Decision vector passed to OPTGRA
 
         Returns
         -------
-        List[float]
+        np.ndarray
             Pagmo decision vector
         """
-        return self._apply_to_subset(x_optgra, self._eval_grad_inv)
+        return np.diag(self._apply_to_subset(np.asarray(x_optgra), self._eval_grad_inv))
 
 
 class optgra:
@@ -204,38 +210,38 @@ class optgra:
         force_bounds: bool = False,
         khan_function: KhanFunction = None,
     ):
+        # get problem parameters
+        lb, ub = problem.get_bounds()
+
         def wrapped_fitness(x):
 
-            # if Khan function is used, we first need to convert to pagmo parameters
             if khan_function:
-                x = KhanFunction.eval(x)
-
-            fixed_x = x
-            lb, ub = problem.get_bounds()
+                # if Khan function is used, we first need to convert to pagmo parameters
+                x = khan_function.eval(x_optgra=x)
+            else:
+                # we are using vectorisation internally -> convert to ndarray
+                x = np.asarray(x)
 
             if force_bounds:
-                x = np.clip(x, lb, ub).tolist()
-                # for i in range(problem.get_nx()):
-                #     if x[i] < lb[i]:
-                #         fixed_x[i] = lb[i]
-                #     if x[i] > ub[i]:
-                #         fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
-            result = deque(problem.fitness(fixed_x))
+            # call pagmo fitness function
+            result = problem.fitness(fixed_x)
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                for i in range(len(lb)):
-                    if isfinite(lb[i]):
-                        result.append(x[i] - lb[i])
+                # Add (x[i] - lb[i]) for finite lb[i] and (ub[i] - x[i]) for finite ub[i]
+                result = np.concatenate(
+                    [result, (x - lb)[np.isfinite(lb)], (ub - x)[np.isfinite(ub)]]
+                )
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        result.append(ub[i] - x[i])
+            # reorder constraint order, optgra expects the merit function last, pagmo has it first
+            # equivalent to rotating in a dequeue
+            result = np.concatenate([result[1:], result[0:1]])
 
-            # optgra expects the fitness last, pagmo has the fitness first
-            result.rotate(-1)
-            return list(result)
+            return result.tolist()  # return a list
 
         return wrapped_fitness
 
@@ -246,61 +252,64 @@ class optgra:
         force_bounds=False,
         khan_function: KhanFunction = None,
     ):
-
+        # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
+        f_indices, x_indices = sparsity_pattern.T  # Unpack indices
 
+        # expected shape of the non-sparse gradient matrix
         shape = (problem.get_nf(), problem.get_nx())
+
+        # get problem parameters
+        lb, ub = problem.get_bounds()
+        nx = problem.get_nx()
 
         def wrapped_gradient(x):
 
-            # if Khan function is used, we first need to convert to pagmo parameters
             if khan_function:
-                x = KhanFunction.eval(x)
+                # if Khan function is used, we first need to convert to pagmo parameters
+                fixed_x = khan_function.eval(x_optgra=x)
+            else:
+                # we are using vectorisation internally -> convert to ndarray
+                fixed_x = np.asarray(x)
 
-            lb, ub = problem.get_bounds()
-            fixed_x = x
-
+            # force parameters to lower and upper bounds if needed
             if force_bounds:
-                np.clip(x, lb, ub).tolist()
-                # for i in range(problem.get_nx()):
-                #     if x[i] < lb[i]:
-                #         fixed_x[i] = lb[i]
-                #     if x[i] > ub[i]:
-                #         fixed_x[i] = ub[i]
+                fixed_x = np.clip(fixed_x, lb, ub)
 
+            # call the problem gradient function to retrieve sparse values
+            # gives derivative of merit function and constraints w.r.t. pagmo parameters
             sparse_values = problem.gradient(fixed_x)
 
-            nnz = len(sparse_values)
-
-            result = [[0 for j in range(shape[1])] for i in range(shape[0])]
+            # initialize non-sparse gradient matrix
+            result = np.zeros(shape)
 
             # expand gradient to dense representation
-            for i in range(nnz):
-                fIndex, xIndex = sparsity_pattern[i]
-
-                result[fIndex][xIndex] = sparse_values[i]
+            result[f_indices, x_indices] = sparse_values
 
             # add box-derived constraints
             if bounds_to_constraints:
-                lb, ub = problem.get_bounds()
-                for i in range(problem.get_nx()):
-                    if isfinite(lb[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = 1
-                        result.append(box_bound_grad)
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = -1
-                        result.append(box_bound_grad)
+                # lower bound gradients
+                finite_indices = np.isfinite(lb)  # Boolean mask for valid indices
+                box_lb_grads = np.eye(nx)[finite_indices]
+
+                # upper bound gradients
+                finite_indices = np.isfinite(ub)  # Boolean mask for valid indices
+                box_ub_grads = np.eye(nx)[finite_indices]
+
+                # append box bounds to gradient matrix
+                result = np.concatenate([result, box_lb_grads, box_ub_grads])
 
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
-            gradient_of_merit = result.pop(0)
-            result.append(gradient_of_merit)
+            result = np.vstack([result[1:], result[0]])
 
-            return result
+            # if Khan function is used, we need to post multiply with the Khan function gradients
+            if khan_function:
+                khan_grad = khan_function.eval_grad(x)
+                result = result @ khan_grad
+
+            return result.tolist()  # return as a list, not ndarray
 
         return wrapped_gradient
 
@@ -631,7 +640,7 @@ class optgra:
 
         if self.force_bounds:
             lb, ub = problem.get_bounds()
-            best_x = np.clip(best_x, lb, ub).tolist()
+            best_x = np.clip(best_x, lb, ub)
             # for i in range(problem.get_nx()):
             #     if best_x[i] < lb[i]:
             #         best_x[i] = lb[i]
