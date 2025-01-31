@@ -163,12 +163,30 @@ test-wheels:
   needs:
     - python-wheels:manylinux2014
 
-publish-test:
+publish-gitlab:
   stage: deploy
   image: python:3.9
   script:
     - pip install twine
-    # upload to the project pypi (whl) (change testpypi to pypi to upload to PyPi)
+    # upload to repo (ESA Gitlab)
+    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_JOB_TOKEN --repository-url https://gitlab.esa.int/api/v4/projects/$CI_PROJECT_ID/packages/pypi dist/pyoptgra-*.whl
+    - twine upload --non-interactive --disable-progress-bar --verbose -u gitlab-ci-token -p $CI_JOB_TOKEN --repository-url https://gitlab.esa.int/api/v4/projects/$CI_PROJECT_ID/packages/pypi pyoptgra-*.tar.gz
+
+  needs:
+    - python-sdist
+    - test-wheels
+    - python-wheels:manylinux2014
+  only:
+    refs:
+      - master
+  when: manual
+
+publish-testpypi:
+  stage: deploy
+  image: python:3.9
+  script:
+    - pip install twine
+    # upload to the project pypi (whl)
     - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.whl
     # upload to the project pypi (sdist)
     - twine upload --non-interactive --disable-progress-bar --verbose --repository testpypi -u __token__ -p $TEST_PYPI_TOKEN pyoptgra-*.tar.gz
