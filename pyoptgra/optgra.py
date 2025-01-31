@@ -12,10 +12,10 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from collections import deque
 from math import isfinite
-from typing import List, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
+import numpy as np
 from pygmo import s_policy, select_best
 
 from .core import (
@@ -25,6 +25,174 @@ from .core import (
     sensitivity_update_constraint_delta,
     sensitivity_update_new_callable,
 )
+
+
+class khan_function:
+    """Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
+
+    .. math::
+
+        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{khan})
+
+    Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
+    passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
+    near the bounds approach zero.
+    """  # noqa: W605
+
+    def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
+        """Constructor
+
+        Parameters
+        ----------
+        lb : List[float]
+            Lower pagmo parameter bounds
+        ub : List[float]
+            Upper pagmo parameter bounds
+        unity_gradient : bool, optional
+            Uses an internal scaling that ensures that the derivative of pagmo parameters w.r.t.
+            khan parameters are unity at (lb + ub)/2. By default True.
+            Otherwise, the original Khan method is used that can result in strongly modified
+            gradients
+        """
+        self._lb = np.asarray(lb)
+        self._ub = np.asarray(ub)
+        self._nx = len(lb)
+
+        # determine finite lower/upper bounds
+        finite_lb = np.isfinite(self._lb)
+        finite_ub = np.isfinite(self._ub)
+
+        # we only support cases where both lower and upper bounds are finite if given
+        check = np.where(finite_lb != finite_ub)[0]
+        if any(check):
+            raise ValueError(
+                "When using Khan bounds, both lower and upper bound for bounded parameters "
+                "must be finite."
+                f"Detected mismatch at decision vector indices: {check}"
+            )
+        # store the mask of finite bounds
+        self.mask = finite_ub
+        self._lb_masked = self._lb[self.mask]
+        self._ub_masked = self._ub[self.mask]
+
+        # determine coefficients inside the sin function
+        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
+        self._b = (
+            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
+            if unity_gradient
+            else 0.0
+        )
+
+    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
+        return (self._ub_masked + self._lb_masked) / 2 + (
+            self._ub_masked - self._lb_masked
+        ) / 2 * np.sin(x_khan_masked * self._a + self._b)
+
+    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
+        arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
+            self._ub_masked - self._lb_masked
+        )
+        if np.any((arg < -1.0) | (arg > 1.0)):
+            print(
+                "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
+                "Clipping parameters to valid range.",
+            )
+            arg = np.clip(arg, -1.0, 1.0)
+        return (np.arcsin(arg) - self._b) / self._a
+
+    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
+        return (
+            (self._ub_masked - self._lb_masked)
+            / 2
+            * np.cos(self._a * x_khan_masked + self._b)
+            * self._a
+        )
+
+    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
+        return (
+            -1
+            / self._a
+            / (
+                (self._lb_masked - self._ub_masked)
+                * np.sqrt(
+                    ((self._lb_masked - x_masked) * (x_masked - self._ub_masked))
+                    / (self._ub_masked - self._lb_masked) ** 2
+                )
+            )
+        )
+
+    def _apply_to_subset(
+        self, x: np.ndarray, func: Callable, default_result: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Apply a given function only to a subset of x defined by self.mask."""
+        # Create a copy to preserve the original structure
+        result = default_result if default_result is not None else x.copy()
+        # Apply the function only to the selected subset
+        result[self.mask] = func(x[self.mask])
+        return result
+
+    def eval(self, x_khan: np.ndarray) -> np.ndarray:
+        """Convert :math:`x_{optgra}` to :math:`x`.
+
+        Parameters
+        ----------
+        x_khan : np.ndarray
+            Decision vector passed to OPTGRA
+
+        Returns
+        -------
+        np.ndarray
+            Pagmo decision vector
+        """
+        return self._apply_to_subset(np.asarray(x_khan), self._eval)
+
+    def eval_inv(self, x: np.ndarray) -> np.ndarray:
+        """Convert :math:`x` to :math:`x_{optgra}`.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Pagmo decision vector
+
+        Returns
+        -------
+        np.ndarray
+            Decision vector passed to OPTGRA
+
+        """
+        return self._apply_to_subset(np.asarray(x), self._eval_inv)
+
+    def eval_grad(self, x_khan: np.ndarray) -> np.ndarray:
+        """Gradient of ``eval`` function.
+
+        Parameters
+        ----------
+        x_khan : np.ndarray
+            Decision vector passed to OPTGRA
+
+        Returns
+        -------
+        np.ndarray
+            Pagmo decision vector
+        """
+        return np.diag(
+            self._apply_to_subset(np.asarray(x_khan), self._eval_grad, np.ones(self._nx))
+        )
+
+    def eval_inv_grad(self, x: np.ndarray) -> np.ndarray:
+        """Gradient of ``eval_inv`` method.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Pagmo decision vector
+
+        Returns
+        -------
+        np.ndarray
+            Decision vector passed to OPTGRA
+        """
+        return np.diag(self._apply_to_subset(np.asarray(x), self._eval_inv_grad, np.ones(self._nx)))
 
 
 class optgra:
@@ -66,88 +234,110 @@ class optgra:
         problem,
         bounds_to_constraints: bool = True,
         force_bounds: bool = False,
+        khanf: Optional[khan_function] = None,
     ):
+        # get problem parameters
+        lb, ub = problem.get_bounds()
+
         def wrapped_fitness(x):
 
-            fixed_x = x
-            lb, ub = problem.get_bounds()
+            # we are using vectorisation internally -> convert to ndarray
+            x = np.asarray(x, dtype=np.float64)
+
+            if khanf:
+                # if Khan function is used, we first need to convert to pagmo parameters
+                x = khanf.eval(x_khan=x)
 
             if force_bounds:
-                for i in range(problem.get_nx()):
-                    if x[i] < lb[i]:
-                        fixed_x[i] = lb[i]
-                    if x[i] > ub[i]:
-                        fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
-            result = deque(problem.fitness(fixed_x))
+            # call pagmo fitness function
+            result = problem.fitness(fixed_x)
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                for i in range(len(lb)):
-                    if isfinite(lb[i]):
-                        result.append(x[i] - lb[i])
+                # Add (x[i] - lb[i]) for finite lb[i] and (ub[i] - x[i]) for finite ub[i]
+                result = np.concatenate(
+                    [result, (x - lb)[np.isfinite(lb)], (ub - x)[np.isfinite(ub)]]
+                )
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        result.append(ub[i] - x[i])
+            # reorder constraint order, optgra expects the merit function last, pagmo has it first
+            # equivalent to rotating in a dequeue
+            result = np.concatenate([result[1:], result[0:1]])
 
-            # optgra expects the fitness last, pagmo has the fitness first
-            result.rotate(-1)
-            return list(result)
+            return result.tolist()  # return a list
 
         return wrapped_fitness
 
     @staticmethod
-    def _wrap_gradient_func(problem, bounds_to_constraints: bool = True, force_bounds=False):
-
+    def _wrap_gradient_func(
+        problem,
+        bounds_to_constraints: bool = True,
+        force_bounds=False,
+        khanf: Optional[khan_function] = None,
+    ):
+        # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
+        f_indices, x_indices = sparsity_pattern.T  # Unpack indices
 
+        # expected shape of the non-sparse gradient matrix
         shape = (problem.get_nf(), problem.get_nx())
 
+        # get problem parameters
+        lb, ub = problem.get_bounds()
+        nx = problem.get_nx()
+
         def wrapped_gradient(x):
-            lb, ub = problem.get_bounds()
-            fixed_x = x
 
+            # we are using vectorisation internally -> convert to ndarray
+            x = np.asarray(x, dtype=np.float64)
+
+            if khanf:
+                # if Khan function is used, we first need to convert to pagmo parameters
+                x = khanf.eval(x_khan=x)
+
+            # force parameters to lower and upper bounds if needed
             if force_bounds:
-                for i in range(problem.get_nx()):
-                    if x[i] < lb[i]:
-                        fixed_x[i] = lb[i]
-                    if x[i] > ub[i]:
-                        fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
+            # call the problem gradient function to retrieve sparse values
+            # gives derivative of merit function and constraints w.r.t. pagmo parameters
             sparse_values = problem.gradient(fixed_x)
 
-            nnz = len(sparse_values)
-
-            result = [[0 for j in range(shape[1])] for i in range(shape[0])]
+            # initialize non-sparse gradient matrix
+            result = np.zeros(shape)
 
             # expand gradient to dense representation
-            for i in range(nnz):
-                fIndex, xIndex = sparsity_pattern[i]
-
-                result[fIndex][xIndex] = sparse_values[i]
+            result[f_indices, x_indices] = sparse_values
 
             # add box-derived constraints
             if bounds_to_constraints:
-                lb, ub = problem.get_bounds()
-                for i in range(problem.get_nx()):
-                    if isfinite(lb[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = 1
-                        result.append(box_bound_grad)
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = -1
-                        result.append(box_bound_grad)
+                # lower bound gradients
+                finite_indices = np.isfinite(lb)  # Boolean mask for valid indices
+                box_lb_grads = np.eye(nx)[finite_indices]
+
+                # upper bound gradients
+                finite_indices = np.isfinite(ub)  # Boolean mask for valid indices
+                box_ub_grads = np.eye(nx)[finite_indices]
+
+                # append box bounds to gradient matrix
+                result = np.concatenate([result, box_lb_grads, box_ub_grads])
 
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
-            gradient_of_merit = result.pop(0)
-            result.append(gradient_of_merit)
+            result = np.vstack([result[1:], result[0]])
 
-            return result
+            # if Khan function is used, we need to post multiply with the Khan function gradients
+            if khanf:
+                khan_grad = khanf.eval_grad(x)
+                result = result @ khan_grad
+
+            return result.tolist()  # return as a list, not ndarray
 
         return wrapped_gradient
 
@@ -165,10 +355,11 @@ class optgra:
         merit_function_threshold: float = 1e-6,
         # bound_constraints_scalar: float = 1,
         force_bounds: bool = False,
+        khan_bounds: bool = False,
         optimization_method: int = 2,
         log_level: int = 0,
     ) -> None:
-        """
+        r"""
         Initialize a wrapper instance for the OPTGRA algorithm.
 
         Some of the construction arguments, for example the scaling factors, depend on the dimension
@@ -180,38 +371,52 @@ class optgra:
 
         Args:
 
-            max_iterations: maximum number of total iterations max_correction_iterations: number of
-            constraint correction iterations in the beginning
+            max_iterations: maximum number of total iterations
+            max_correction_iterations: number of
+                constraint correction iterations in the beginning
                 If no feasible solution is found within that many iterations, Optgra aborts
             max_distance_per_iteration: maximum scaled distance traveled in each iteration
-            perturbation_for_snd_order_derivatives: Used as delta for numerically computing second
-            order errors
-                of the constraints in the optimization step
+            perturbation_for_snd_order_derivatives: Used as delta for numerically computing
+                second order errors of the constraints in the optimization step
             variable_scaling_factors: optional - Scaling factors for the input variables.
                 If passed, must be positive and as many as there are variables
             variable_types: optional - Flags to set variables to either free (0) or fixed (1). Fixed
-            variables
-                are also called parameters in sensitivity analysis. If passed, must be as many flags
-                as there are variables
+                variables are also called parameters in sensitivity analysis. If passed, must be as
+                many flags as there are variables
             constraint_priorities: optional - lower constraint priorities are fulfilled earlier.
                 During the initial constraint correction phase, only constraints with a priority at
                 most k are considered in iteration k. Defaults to zero, so that all constraints are
                 considered from the beginning.
             bounds_to_constraints: optional - if true (default), translate box bounds of the given
-            problems into
-                inequality constraints for optgra. Note that when also passing constraint
-                priorities, the original constraints of the problem come first, followed by those
-                derived from the lower box bounds, then those from the upper box bounds. Infinite
-                bounds are ignored and not counted.
+                problems into inequality constraints for optgra. Note that when also passing
+                constraint priorities, the original constraints of the problem come first, followed
+                by those derived from the lower box bounds, then those from the upper box bounds.
+                Infinite bounds are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived
-            from bounds merit_function_threshold: optional - convergence threshold for merit
-            function force_bounds: optional - whether to force the bounds given by the problem. If
-            false (default), the
-                fitness function might also be called with values of x that are outside of the
-                bounds. Set to true if the fitness function cannot handle that.
+                from bounds
+            merit_function_threshold: optional - convergence threshold for merit
+                function
+            force_bounds: optional - whether to force the bounds given by the problem. If
+                false (default), the fitness function might also be called with values of x that are
+                outside of the bounds. Set to true if the fitness function cannot handle that.
+                If active, the gradients evaluated near the bounds will be inacurate potentially
+                leading to convergence issues.
+            khan_bounds: optional - whether to gracefully enforce bounds on the decision vector
+                using Michael Khan's method:
+
+                .. math::
+
+                    x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{Khan})
+
+                Where :math:`x` is the pagmo decision vector and :math:`x_{Khan}` is the decision
+                vector passed to OPTGRA. In this way parameter bounds are guaranteed to be
+                satisfied, but the gradients near the bounds approach zero. By default False.
+                Pyoptgra uses a variant of the above method that additionally scales the
+                argument of the :math:`\sin` function such that the derivatives
+                :math:`\frac{d x_{Khan}}{d x}` are unity in the center of the box bounds.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
-            gradient method,
-                2 for spectral conjugate gradient method and 3 for conjugate gradient method
+                gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
+                gradient method
             log_level: Control the original screen output of OPTGRA. 0 has no output,
                 4 and higher have maximum output`. Set this to 0 if you want to use the pygmo
                 logging system based on `set_verbosity()`.
@@ -222,7 +427,7 @@ class optgra:
             max_iterations, max_correction_iterations, max_distance_per_iteration,
                 or perturbation_for_snd_order_derivatives are negative
 
-        """
+        """  # noqa: W605
         self.max_iterations = max_iterations
         self.max_correction_iterations = max_correction_iterations
         self.max_distance_per_iteration = max_distance_per_iteration
@@ -238,6 +443,7 @@ class optgra:
         self.merit_function_threshold = merit_function_threshold
 
         self.force_bounds = force_bounds
+        self.khan_bounds = khan_bounds
         # self.bound_violation_penalty = bound_violation_penalty
 
         self.log_level = log_level
@@ -388,14 +594,17 @@ class optgra:
 
         idx = list(population.get_ID()).index(selected[0][0])
 
+        # optional Khan function to enforce parameter bounds
+        khanf = khan_function(*problem.get_bounds()) if self.khan_bounds else None
+
         fitness_func = optgra._wrap_fitness_func(
-            problem, self.bounds_to_constraints, self.force_bounds
+            problem, self.bounds_to_constraints, self.force_bounds, khanf
         )
         grad_func = None
         derivatives_computation = 2
         if problem.has_gradient():
             grad_func = optgra._wrap_gradient_func(
-                problem, self.bounds_to_constraints, self.force_bounds
+                problem, self.bounds_to_constraints, self.force_bounds, khanf
             )
             derivatives_computation = 1
 
@@ -429,8 +638,10 @@ class optgra:
         if len(variable_types) == 0:
             variable_types = [0 for _ in range(problem.get_nx())]
 
+        # get initial x
+        x0 = population.get_x()[idx]
         result = optimize(
-            initial_x=population.get_x()[idx],
+            initial_x=khanf.eval_inv(x0) if khanf else x0,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
             gradient_callback=grad_func,
@@ -454,23 +665,25 @@ class optgra:
 
         best_x, best_f, finopt = result
 
-        violated = False
+        # if a Khan function is used we first need to convert to pagmo parameters
+        if khanf:
+            best_x = khanf.eval(best_x)
+
         if self.force_bounds:
             lb, ub = problem.get_bounds()
-            for i in range(problem.get_nx()):
-                if best_x[i] < lb[i]:
-                    best_x[i] = lb[i]
-                    violated = True
-                if best_x[i] > ub[i]:
-                    best_x[i] = ub[i]
-                    violated = True
-        if violated:
-            population.set_x(idx, best_x)
-        else:
-            # merit function is last, constraints are from 0 to problem.get_nc(),
-            # we ignore bound-derived constraints
-            # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
-            population.set_x(idx, best_x)  # , list(pagmo_fitness))
+            best_x = np.clip(best_x, lb, ub)
+            # for i in range(problem.get_nx()):
+            #     if best_x[i] < lb[i]:
+            #         best_x[i] = lb[i]
+            #         violated = True
+            #     if best_x[i] > ub[i]:
+            #         best_x[i] = ub[i]
+            #         violated = True
+
+        # merit function is last, constraints are from 0 to problem.get_nc(),
+        # we ignore bound-derived constraints
+        # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
+        population.set_x(idx, best_x)  # , list(pagmo_fitness))
 
         return population
 
@@ -729,6 +942,7 @@ class optgra:
             + "bound_constraints_tolerance = {bound_constraints_tolerance}, "
             + "merit_function_threshold = {merit_function_threshold}, "
             + "force_bounds = {force_bounds}, "
+            + "khan_bounds = {khan_bounds}, "
             + "optimization_method = {optimization_method}, "
             + "log_level = {log_level}"
             + "verbosity = {verbosity}"
@@ -744,6 +958,7 @@ class optgra:
             bound_constraints_tolerance=self.bound_constraints_tolerance,
             merit_function_threshold=self.merit_function_threshold,
             force_bounds=self.force_bounds,
+            khan_bounds=self.khan_bounds,
             optimization_method=self.optimization_method,
             log_level=self.log_level,
             verbosity=self.verbosity,
