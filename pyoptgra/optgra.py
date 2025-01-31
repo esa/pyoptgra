@@ -58,9 +58,14 @@ class khan_function:
         self._ub = np.asarray(ub)
         self._nx = len(lb)
 
-        # determine finite lower/upper bounds
-        finite_lb = np.isfinite(self._lb)
-        finite_ub = np.isfinite(self._ub)
+        # determine finite lower/upper bounds\
+        def isfinite(a: np.ndarray):
+            """Custom isfinite function"""
+            almost_infinity = 1e300
+            return np.logical_and(np.isfinite(a), np.abs(a) < almost_infinity)
+
+        finite_lb = isfinite(self._lb)
+        finite_ub = isfinite(self._ub)
 
         # we only support cases where both lower and upper bounds are finite if given
         check = np.where(finite_lb != finite_ub)[0]
@@ -70,8 +75,11 @@ class khan_function:
                 "must be finite."
                 f"Detected mismatch at decision vector indices: {check}"
             )
+
+        # sum and difference shall also be finite
+        finite_sum = np.logical_and(isfinite(self._ub + self._lb), isfinite(self._ub - self._lb))
         # store the mask of finite bounds
-        self.mask = finite_ub
+        self.mask = np.logical_and(finite_ub, finite_sum)
         self._lb_masked = self._lb[self.mask]
         self._ub_masked = self._ub[self.mask]
 
