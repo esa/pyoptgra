@@ -6,16 +6,17 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The pyoptgra module &mdash; Pyoptgra 0.1.10 documentation</title>
+  <title>The pyoptgra module &mdash; Pyoptgra 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=bafade30"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
       <script src="_static/doctools.js?v=9a2dae69"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -127,44 +128,57 @@ evolve function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>max_iterations</strong> – maximum number of total iterations max_correction_iterations: number of</p></li>
-<li><p><strong>beginning</strong> (<em>constraint correction iterations in the</em>) – If no feasible solution is found within that many iterations, Optgra aborts</p></li>
+<li><p><strong>max_iterations</strong> – maximum number of total iterations</p></li>
+<li><p><strong>max_correction_iterations</strong> – number of
+constraint correction iterations in the beginning
+If no feasible solution is found within that many iterations, Optgra aborts</p></li>
 <li><p><strong>max_distance_per_iteration</strong> – maximum scaled distance traveled in each iteration</p></li>
-<li><p><strong>perturbation_for_snd_order_derivatives</strong> – Used as delta for numerically computing second</p></li>
-<li><p><strong>errors</strong> (<em>order</em>) – of the constraints in the optimization step</p></li>
+<li><p><strong>perturbation_for_snd_order_derivatives</strong> – Used as delta for numerically computing
+second order errors of the constraints in the optimization step</p></li>
 <li><p><strong>variable_scaling_factors</strong> – optional - Scaling factors for the input variables.
 If passed, must be positive and as many as there are variables</p></li>
-<li><p><strong>variable_types</strong> – optional - Flags to set variables to either free (0) or fixed (1). Fixed</p></li>
-<li><p><strong>variables</strong> – are also called parameters in sensitivity analysis. If passed, must be as many flags
-as there are variables</p></li>
+<li><p><strong>variable_types</strong> – optional - Flags to set variables to either free (0) or fixed (1). Fixed
+variables are also called parameters in sensitivity analysis. If passed, must be as
+many flags as there are variables</p></li>
 <li><p><strong>constraint_priorities</strong> – optional - lower constraint priorities are fulfilled earlier.
 During the initial constraint correction phase, only constraints with a priority at
 most k are considered in iteration k. Defaults to zero, so that all constraints are
 considered from the beginning.</p></li>
-<li><p><strong>bounds_to_constraints</strong> – optional - if true (default), translate box bounds of the given</p></li>
-<li><p><strong>into</strong> (<em>problems</em>) – inequality constraints for optgra. Note that when also passing constraint
-priorities, the original constraints of the problem come first, followed by those
-derived from the lower box bounds, then those from the upper box bounds. Infinite
-bounds are ignored and not counted.</p></li>
-<li><p><strong>bound_constraints_tolerance</strong> – optional - constraint tolerance for the constraints derived</p></li>
-<li><p><strong>merit_function_threshold</strong> (<em>from bounds</em>) – optional - convergence threshold for merit</p></li>
-<li><p><strong>force_bounds</strong> (<em>function</em>) – optional - whether to force the bounds given by the problem. If</p></li>
-<li><p><strong>false</strong> (<em>default</em>) – fitness function might also be called with values of x that are outside of the
-bounds. Set to true if the fitness function cannot handle that.</p></li>
-<li><p><strong>optimization_method</strong> – select 0 for steepest descent, 1 for modified spectral conjugate</p></li>
-<li><p><strong>method</strong> (<em>gradient</em>) – 2 for spectral conjugate gradient method and 3 for conjugate gradient method</p></li>
+<li><p><strong>bounds_to_constraints</strong> – optional - if true (default), translate box bounds of the given
+problems into inequality constraints for optgra. Note that when also passing
+constraint priorities, the original constraints of the problem come first, followed
+by those derived from the lower box bounds, then those from the upper box bounds.
+Infinite bounds are ignored and not counted.</p></li>
+<li><p><strong>bound_constraints_tolerance</strong> – optional - constraint tolerance for the constraints derived
+from bounds</p></li>
+<li><p><strong>merit_function_threshold</strong> – optional - convergence threshold for merit
+function</p></li>
+<li><p><strong>force_bounds</strong> – optional - whether to force the bounds given by the problem. If
+false (default), the fitness function might also be called with values of x that are
+outside of the bounds. Set to true if the fitness function cannot handle that.
+If active, the gradients evaluated near the bounds will be inacurate potentially
+leading to convergence issues.</p></li>
+<li><p><strong>khan_bounds</strong> – <p>optional - whether to gracefully enforce bounds on the decision vector
+using Michael Khan’s method:</p>
+<div class="math notranslate nohighlight">
+\[x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{Khan})\]</div>
+<p>Where <span class="math notranslate nohighlight">\(x\)</span> is the pagmo decision vector and <span class="math notranslate nohighlight">\(x_{Khan}\)</span> is the decision
+vector passed to OPTGRA. In this way parameter bounds are guaranteed to be
+satisfied, but the gradients near the bounds approach zero. By default False.
+Pyoptgra uses a variant of the above method that additionally scales the
+argument of the <span class="math notranslate nohighlight">\(\sin\)</span> function such that the derivatives
+<span class="math notranslate nohighlight">\(\frac{d x_{Khan}}{d x}\)</span> are unity in the center of the box bounds.</p>
+</p></li>
+<li><p><strong>optimization_method</strong> – select 0 for steepest descent, 1 for modified spectral conjugate
+gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
+gradient method</p></li>
+<li><p><strong>log_level</strong> – Control the original screen output of OPTGRA. 0 has no output,
+4 and higher have maximum output`. Set this to 0 if you want to use the pygmo
+logging system based on <cite>set_verbosity()</cite>.</p></li>
 </ul>
 </dd>
-</dl>
-<p>:param : 2 for spectral conjugate gradient method and 3 for conjugate gradient method
-:param log_level: Control the original screen output of OPTGRA. 0 has no output,</p>
-<blockquote>
-<div><p>4 and higher have maximum output`. Set this to 0 if you want to use the pygmo
-logging system based on <cite>set_verbosity()</cite>.</p>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
 <li><p><strong>ValueError</strong> – if optimization_method is not one of 0, 1, 2, or 3 ValueError: if any of</p></li>
 <li><p><strong>max_iterations</strong><strong>, </strong><strong>max_correction_iterations</strong><strong>, </strong><strong>max_distance_per_iteration</strong><strong>,</strong> – or perturbation_for_snd_order_derivatives are negative</p></li>
 </ul>
