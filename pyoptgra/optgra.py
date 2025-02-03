@@ -293,8 +293,11 @@ class optgra:
         khanf: Optional[khan_function] = None,
     ):
 
+        # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
+        f_indices, x_indices = sparsity_pattern.T  # Unpack indices
 
+        # expected shape of the non-sparse gradient matrix
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
@@ -306,15 +309,15 @@ class optgra:
                 # if Khan function is used, we first need to convert to pagmo parameters
                 x = khanf.eval(x_khan=x)
 
+            # get problem parameters
             lb, ub = problem.get_bounds()
-            fixed_x = x
+            nx = problem.get_nx()
 
+            # force parameters to lower and upper bounds if needed
             if force_bounds:
-                for i in range(problem.get_nx()):
-                    if x[i] < lb[i]:
-                        fixed_x[i] = lb[i]
-                    if x[i] > ub[i]:
-                        fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
             sparse_values = problem.gradient(fixed_x)
 
