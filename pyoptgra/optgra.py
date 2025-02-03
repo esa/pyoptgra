@@ -77,8 +77,11 @@ class khan_function:
                 f"Detected mismatch at decision vector indices: {check}"
             )
 
+        # also exclude parameters where lower and upper bounds are identical
+        nonzero_diff = abs(self._lb - self._ub) > 1e-9
+
         # store the mask of finite bounds
-        self.mask = finite_ub
+        self.mask = np.logical_and(finite_ub, nonzero_diff)
         self._lb_masked = self._lb[self.mask]
         self._ub_masked = self._ub[self.mask]
 
