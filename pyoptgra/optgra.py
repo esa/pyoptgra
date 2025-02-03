@@ -13,6 +13,7 @@
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
 from math import isfinite
+from collections import deque
 from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
@@ -254,26 +255,31 @@ class optgra:
                 # if Khan function is used, we first need to convert to pagmo parameters
                 x = khanf.eval(x_khan=x)
 
-            if force_bounds:
-                fixed_x = np.clip(x, lb, ub)
-            else:
-                fixed_x = x
+            fixed_x = x
+            lb, ub = problem.get_bounds()
 
-            # call pagmo fitness function
-            result = problem.fitness(fixed_x)
+            if force_bounds:
+                for i in range(problem.get_nx()):
+                    if x[i] < lb[i]:
+                        fixed_x[i] = lb[i]
+                    if x[i] > ub[i]:
+                        fixed_x[i] = ub[i]
+
+            result = deque(problem.fitness(fixed_x))
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                # Add (x[i] - lb[i]) for finite lb[i] and (ub[i] - x[i]) for finite ub[i]
-                result = np.concatenate(
-                    [result, (x - lb)[np.isfinite(lb)], (ub - x)[np.isfinite(ub)]]
-                )
+                for i in range(len(lb)):
+                    if isfinite(lb[i]):
+                        result.append(x[i] - lb[i])
 
-            # reorder constraint order, optgra expects the merit function last, pagmo has it first
-            # equivalent to rotating in a dequeue
-            result = np.concatenate([result[1:], result[0:1]])
+                for i in range(len(ub)):
+                    if isfinite(ub[i]):
+                        result.append(ub[i] - x[i])
 
-            return result.tolist()  # return a list
+            # optgra expects the fitness last, pagmo has the fitness first
+            result.rotate(-1)
+            return list(result)
 
         return wrapped_fitness
 
