@@ -12,7 +12,6 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from collections import deque
 from math import isfinite
 from typing import Callable, List, Optional, Tuple, Union
 
