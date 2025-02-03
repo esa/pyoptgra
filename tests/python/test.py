@@ -308,7 +308,7 @@ class optgra_test(unittest.TestCase):
     def gradient_with_constraints_test(self):
         # 1. Run Luksan-Vlcek problem with optgra
         prob = pygmo.problem(luksan_vlcek())
-        prob.c_tol = 1e-6
+        prob.c_tol = 1e-7
         og = pyoptgra.optgra(
             optimization_method=1,
             max_iterations=100,
