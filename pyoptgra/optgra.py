@@ -29,7 +29,7 @@ from .core import (
 
 
 class khan_function:
-    """Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
+    r"""Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
 
     .. math::
 
@@ -78,7 +78,9 @@ class khan_function:
             )
 
         # also exclude parameters where lower and upper bounds are identical
-        nonzero_diff = abs(self._lb - self._ub) > 1e-9
+        with np.errstate(invalid="ignore"):
+            # we ignore RuntimeWarning: invalid value encountered in subtract
+            nonzero_diff = abs(self._lb - self._ub) > 1e-9
 
         # store the mask of finite bounds
         self.mask = np.logical_and(finite_ub, nonzero_diff)
@@ -248,6 +250,9 @@ class optgra:
         force_bounds: bool = False,
         khanf: Optional[khan_function] = None,
     ):
+        # get problem parameters
+        lb, ub = problem.get_bounds()
+
         def wrapped_fitness(x):
 
             # we are using vectorisation internally -> convert to ndarray
@@ -257,31 +262,26 @@ class optgra:
                 # if Khan function is used, we first need to convert to pagmo parameters
                 x = khanf.eval(x_khan=x)
 
-            fixed_x = x
-            lb, ub = problem.get_bounds()
-
             if force_bounds:
-                for i in range(problem.get_nx()):
-                    if x[i] < lb[i]:
-                        fixed_x[i] = lb[i]
-                    if x[i] > ub[i]:
-                        fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
-            result = deque(problem.fitness(fixed_x))
+            # call pagmo fitness function
+            result = problem.fitness(fixed_x)
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                for i in range(len(lb)):
-                    if isfinite(lb[i]):
-                        result.append(x[i] - lb[i])
+                # Add (x[i] - lb[i]) for finite lb[i] and (ub[i] - x[i]) for finite ub[i]
+                result = np.concatenate(
+                    [result, (x - lb)[np.isfinite(lb)], (ub - x)[np.isfinite(ub)]]
+                )
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        result.append(ub[i] - x[i])
+            # reorder constraint order, optgra expects the merit function last, pagmo has it first
+            # equivalent to rotating in a dequeue
+            result = np.concatenate([result[1:], result[0:1]])
 
-            # optgra expects the fitness last, pagmo has the fitness first
-            result.rotate(-1)
-            return list(result)
+            return result.tolist()  # return a list
 
         return wrapped_fitness
 
