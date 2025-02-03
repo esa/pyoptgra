@@ -103,7 +103,7 @@ class khan_function:
             self._ub_masked - self._lb_masked
         )
 
-        clip_value = 1.0 - 1e-8 # avoid boundaries
+        clip_value = 1.0 - 1e-8  # avoid boundaries
         if np.any((arg < -clip_value) | (arg > clip_value)):
             print(
                 "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
@@ -347,6 +347,12 @@ class optgra:
             # equivalent to rotating in a dequeue
             gradient_of_merit = result.pop(0)
             result.append(gradient_of_merit)
+
+            # if Khan function is used, we need to post multiply with the Khan function gradients
+            if khanf:
+                khan_grad = khanf.eval_grad(x)
+                result = np.asarray(result) @ khan_grad
+                result = result.tolist()
 
             return result
 
