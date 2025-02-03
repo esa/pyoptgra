@@ -76,10 +76,8 @@ class khan_function:
                 f"Detected mismatch at decision vector indices: {check}"
             )
 
-        # sum and difference shall also be finite
-        finite_sum = np.logical_and(isfinite(self._ub + self._lb), isfinite(self._ub - self._lb))
         # store the mask of finite bounds
-        self.mask = np.logical_and(finite_ub, finite_sum)
+        self.mask = finite_ub
         self._lb_masked = self._lb[self.mask]
         self._ub_masked = self._ub[self.mask]
 
