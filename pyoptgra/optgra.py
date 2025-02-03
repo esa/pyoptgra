@@ -12,7 +12,6 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from collections import deque
 from math import isfinite
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -29,7 +28,7 @@ from .core import (
 
 
 class khan_function:
-    """Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
+    r"""Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
 
     .. math::
 
@@ -78,7 +77,9 @@ class khan_function:
             )
 
         # also exclude parameters where lower and upper bounds are identical
-        nonzero_diff = abs(self._lb - self._ub) > 1e-9
+        with np.errstate(invalid="ignore"):
+            # we ignore RuntimeWarning: invalid value encountered in subtract
+            nonzero_diff = abs(self._lb - self._ub) > 1e-9
 
         # store the mask of finite bounds
         self.mask = np.logical_and(finite_ub, nonzero_diff)
@@ -102,12 +103,14 @@ class khan_function:
         arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
             self._ub_masked - self._lb_masked
         )
-        if np.any((arg < -1.0) | (arg > 1.0)):
+
+        clip_value = 1.0 - 1e-8  # avoid boundaries
+        if np.any((arg < -clip_value) | (arg > clip_value)):
             print(
                 "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
                 "Clipping parameters to valid range.",
             )
-            arg = np.clip(arg, -1.0, 1.0)
+            arg = np.clip(arg, -clip_value, clip_value)
         return (np.arcsin(arg) - self._b) / self._a
 
     def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
@@ -246,6 +249,9 @@ class optgra:
         force_bounds: bool = False,
         khanf: Optional[khan_function] = None,
     ):
+        # get problem parameters
+        lb, ub = problem.get_bounds()
+
         def wrapped_fitness(x):
 
             # we are using vectorisation internally -> convert to ndarray
@@ -255,31 +261,26 @@ class optgra:
                 # if Khan function is used, we first need to convert to pagmo parameters
                 x = khanf.eval(x_khan=x)
 
-            fixed_x = x
-            lb, ub = problem.get_bounds()
-
             if force_bounds:
-                for i in range(problem.get_nx()):
-                    if x[i] < lb[i]:
-                        fixed_x[i] = lb[i]
-                    if x[i] > ub[i]:
-                        fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
-            result = deque(problem.fitness(fixed_x))
+            # call pagmo fitness function
+            result = problem.fitness(fixed_x)
 
             # add constraints derived from box bounds
             if bounds_to_constraints:
-                for i in range(len(lb)):
-                    if isfinite(lb[i]):
-                        result.append(x[i] - lb[i])
+                # Add (x[i] - lb[i]) for finite lb[i] and (ub[i] - x[i]) for finite ub[i]
+                result = np.concatenate(
+                    [result, (x - lb)[np.isfinite(lb)], (ub - x)[np.isfinite(ub)]]
+                )
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        result.append(ub[i] - x[i])
+            # reorder constraint order, optgra expects the merit function last, pagmo has it first
+            # equivalent to rotating in a dequeue
+            result = np.concatenate([result[1:], result[0:1]])
 
-            # optgra expects the fitness last, pagmo has the fitness first
-            result.rotate(-1)
-            return list(result)
+            return result.tolist()  # return a list
 
         return wrapped_fitness
 
@@ -291,8 +292,11 @@ class optgra:
         khanf: Optional[khan_function] = None,
     ):
 
+        # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
+        f_indices, x_indices = sparsity_pattern.T  # Unpack indices
 
+        # expected shape of the non-sparse gradient matrix
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
@@ -304,49 +308,50 @@ class optgra:
                 # if Khan function is used, we first need to convert to pagmo parameters
                 x = khanf.eval(x_khan=x)
 
+            # get problem parameters
             lb, ub = problem.get_bounds()
-            fixed_x = x
+            nx = problem.get_nx()
 
+            # force parameters to lower and upper bounds if needed
             if force_bounds:
-                for i in range(problem.get_nx()):
-                    if x[i] < lb[i]:
-                        fixed_x[i] = lb[i]
-                    if x[i] > ub[i]:
-                        fixed_x[i] = ub[i]
+                fixed_x = np.clip(x, lb, ub)
+            else:
+                fixed_x = x
 
+            # call the problem gradient function to retrieve sparse values
+            # gives derivative of merit function and constraints w.r.t. pagmo parameters
             sparse_values = problem.gradient(fixed_x)
 
-            nnz = len(sparse_values)
-
-            result = [[0 for j in range(shape[1])] for i in range(shape[0])]
+            # initialize non-sparse gradient matrix
+            result = np.zeros(shape)
 
             # expand gradient to dense representation
-            for i in range(nnz):
-                fIndex, xIndex = sparsity_pattern[i]
-
-                result[fIndex][xIndex] = sparse_values[i]
+            result[f_indices, x_indices] = sparse_values
 
             # add box-derived constraints
+            result = result.tolist()
             if bounds_to_constraints:
-                lb, ub = problem.get_bounds()
-                for i in range(problem.get_nx()):
-                    if isfinite(lb[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = 1
-                        result.append(box_bound_grad)
+                # lower bound gradients
+                finite_indices = np.isfinite(lb)  # Boolean mask for valid indices
+                box_lb_grads = np.eye(nx)[finite_indices]
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = -1
-                        result.append(box_bound_grad)
+                # upper bound gradients
+                finite_indices = np.isfinite(ub)  # Boolean mask for valid indices
+                box_ub_grads = -1.0 * np.eye(nx)[finite_indices]
+
+                # append box bounds to gradient matrix
+                result = np.concatenate([result, box_lb_grads, box_ub_grads])
 
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
-            gradient_of_merit = result.pop(0)
-            result.append(gradient_of_merit)
+            result = np.vstack([result[1:], result[0]])
 
-            return result
+            # if Khan function is used, we need to post multiply with the Khan function gradients
+            if khanf:
+                khan_grad = khanf.eval_grad(x)
+                result = result @ khan_grad
+
+            return result.tolist()  # return as a list, not ndarray
 
         return wrapped_gradient
 
