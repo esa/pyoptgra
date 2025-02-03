@@ -102,12 +102,14 @@ class khan_function:
         arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
             self._ub_masked - self._lb_masked
         )
-        if np.any((arg < -1.0) | (arg > 1.0)):
+
+        clip_value = 1.0 - 1e-8 # avoid boundaries
+        if np.any((arg < -clip_value) | (arg > clip_value)):
             print(
                 "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
                 "Clipping parameters to valid range.",
             )
-            arg = np.clip(arg, -1.0, 1.0)
+            arg = np.clip(arg, -clip_value, clip_value)
         return (np.arcsin(arg) - self._b) / self._a
 
     def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
