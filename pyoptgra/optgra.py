@@ -319,45 +319,40 @@ class optgra:
             else:
                 fixed_x = x
 
+            # call the problem gradient function to retrieve sparse values
+            # gives derivative of merit function and constraints w.r.t. pagmo parameters
             sparse_values = problem.gradient(fixed_x)
 
-            nnz = len(sparse_values)
-
-            result = [[0 for j in range(shape[1])] for i in range(shape[0])]
+            # initialize non-sparse gradient matrix
+            result = np.zeros(shape)
 
             # expand gradient to dense representation
-            for i in range(nnz):
-                fIndex, xIndex = sparsity_pattern[i]
-
-                result[fIndex][xIndex] = sparse_values[i]
+            result[f_indices, x_indices] = sparse_values
 
             # add box-derived constraints
+            result = result.tolist()
             if bounds_to_constraints:
-                lb, ub = problem.get_bounds()
-                for i in range(problem.get_nx()):
-                    if isfinite(lb[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = 1
-                        result.append(box_bound_grad)
+                # lower bound gradients
+                finite_indices = np.isfinite(lb)  # Boolean mask for valid indices
+                box_lb_grads = np.eye(nx)[finite_indices]
 
-                for i in range(len(ub)):
-                    if isfinite(ub[i]):
-                        box_bound_grad = [0 for j in range(problem.get_nx())]
-                        box_bound_grad[i] = -1
-                        result.append(box_bound_grad)
+                # upper bound gradients
+                finite_indices = np.isfinite(ub)  # Boolean mask for valid indices
+                box_ub_grads = -1.0 * np.eye(nx)[finite_indices]
+
+                # append box bounds to gradient matrix
+                result = np.concatenate([result, box_lb_grads, box_ub_grads])
 
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
-            gradient_of_merit = result.pop(0)
-            result.append(gradient_of_merit)
+            result = np.vstack([result[1:], result[0]])
 
             # if Khan function is used, we need to post multiply with the Khan function gradients
             if khanf:
                 khan_grad = khanf.eval_grad(x)
-                result = np.asarray(result) @ khan_grad
-                result = result.tolist()
+                result = result @ khan_grad
 
-            return result
+            return result.tolist()  # return as a list, not ndarray
 
         return wrapped_gradient
 
