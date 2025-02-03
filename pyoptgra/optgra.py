@@ -243,7 +243,6 @@ class optgra:
         force_bounds: bool = False,
         khanf: Optional[khan_function] = None,
     ):
-
         def wrapped_fitness(x):
 
             # we are using vectorisation internally -> convert to ndarray
