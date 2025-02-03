@@ -308,7 +308,7 @@ class optgra_test(unittest.TestCase):
     def gradient_with_constraints_test(self):
         # 1. Run Luksan-Vlcek problem with optgra
         prob = pygmo.problem(luksan_vlcek())
-        prob.c_tol = 1e-6
+        prob.c_tol = 1e-7
         og = pyoptgra.optgra(
             optimization_method=1,
             max_iterations=100,
@@ -325,6 +325,8 @@ class optgra_test(unittest.TestCase):
 
         # objective function
         self.assertLess(pop.champion_f[0], 2.26)
+        # checking exact value as regression test
+        self.assertEqual(pop.champion_f[0], 0.82929210248477)
 
         # equality constraints
         for i in [1, 2, 3, 4]:
@@ -351,6 +353,8 @@ class optgra_test(unittest.TestCase):
 
         # objective function
         self.assertLess(pop2.champion_f[0], 2.26)
+        # checking exact value as regression test
+        self.assertEqual(pop2.champion_f[0], 0.8292921025820391)
 
         # equality constraints
         for i in [1, 2, 3, 4]:
