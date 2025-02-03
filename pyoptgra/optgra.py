@@ -27,19 +27,23 @@ from .core import (
 )
 
 
-class khan_function:
-    r"""Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
+class base_khan_function:
+    r"""Base class for a function to smothly enforce optimisation parameter bounds as Michal Khan
+    used to do:
 
     .. math::
 
-        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{khan})
+        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \f(x_{khan})
 
     Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
     passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
     near the bounds approach zero.
+
+    The child class needs to implement the methods `_eval`, `_eval_inv`, `_eval_grad` and
+    `_eval_inv_grad`
     """  # noqa: W605
 
-    def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
+    def __init__(self, lb: List[float], ub: List[float]):
         """Constructor
 
         Parameters
@@ -48,11 +52,6 @@ class khan_function:
             Lower pagmo parameter bounds
         ub : List[float]
             Upper pagmo parameter bounds
-        unity_gradient : bool, optional
-            Uses an internal scaling that ensures that the derivative of pagmo parameters w.r.t.
-            khan parameters are unity at (lb + ub)/2. By default True.
-            Otherwise, the original Khan method is used that can result in strongly modified
-            gradients
         """
         self._lb = np.asarray(lb)
         self._ub = np.asarray(ub)
@@ -85,54 +84,6 @@ class khan_function:
         self.mask = np.logical_and(finite_ub, nonzero_diff)
         self._lb_masked = self._lb[self.mask]
         self._ub_masked = self._ub[self.mask]
-
-        # determine coefficients inside the sin function
-        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
-        self._b = (
-            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
-            if unity_gradient
-            else 0.0
-        )
-
-    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (self._ub_masked + self._lb_masked) / 2 + (
-            self._ub_masked - self._lb_masked
-        ) / 2 * np.sin(x_khan_masked * self._a + self._b)
-
-    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
-        arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
-            self._ub_masked - self._lb_masked
-        )
-
-        clip_value = 1.0 - 1e-8  # avoid boundaries
-        if np.any((arg < -clip_value) | (arg > clip_value)):
-            print(
-                "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
-                "Clipping parameters to valid range.",
-            )
-            arg = np.clip(arg, -clip_value, clip_value)
-        return (np.arcsin(arg) - self._b) / self._a
-
-    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (
-            (self._ub_masked - self._lb_masked)
-            / 2
-            * np.cos(self._a * x_khan_masked + self._b)
-            * self._a
-        )
-
-    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
-        return (
-            -1
-            / self._a
-            / (
-                (self._lb_masked - self._ub_masked)
-                * np.sqrt(
-                    ((self._lb_masked - x_masked) * (x_masked - self._ub_masked))
-                    / (self._ub_masked - self._lb_masked) ** 2
-                )
-            )
-        )
 
     def _apply_to_subset(
         self, x: np.ndarray, func: Callable, default_result: Optional[np.ndarray] = None
@@ -206,6 +157,85 @@ class khan_function:
             Decision vector passed to OPTGRA
         """
         return np.diag(self._apply_to_subset(np.asarray(x), self._eval_inv_grad, np.ones(self._nx)))
+
+
+class khan_function(base_khan_function):
+    r"""Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
+
+    .. math::
+
+        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{khan})
+
+    Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
+    passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
+    near the bounds approach zero.
+    """  # noqa: W605
+
+    def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
+        """Constructor
+
+        Parameters
+        ----------
+        lb : List[float]
+            Lower pagmo parameter bounds
+        ub : List[float]
+            Upper pagmo parameter bounds
+        unity_gradient : bool, optional
+            Uses an internal scaling that ensures that the derivative of pagmo parameters w.r.t.
+            khan parameters are unity at (lb + ub)/2. By default True.
+            Otherwise, the original Khan method is used that can result in strongly modified
+            gradients
+        """
+        # call parent class constructor
+        super().__init__(lb, ub)
+
+        # determine coefficients inside the sin function
+        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
+        self._b = (
+            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
+            if unity_gradient
+            else 0.0
+        )
+
+    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
+        return (self._ub_masked + self._lb_masked) / 2 + (
+            self._ub_masked - self._lb_masked
+        ) / 2 * np.sin(x_khan_masked * self._a + self._b)
+
+    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
+        arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
+            self._ub_masked - self._lb_masked
+        )
+
+        clip_value = 1.0 - 1e-8  # avoid boundaries
+        if np.any((arg < -clip_value) | (arg > clip_value)):
+            print(
+                "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
+                "Clipping parameters to valid range.",
+            )
+            arg = np.clip(arg, -clip_value, clip_value)
+        return (np.arcsin(arg) - self._b) / self._a
+
+    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
+        return (
+            (self._ub_masked - self._lb_masked)
+            / 2
+            * np.cos(self._a * x_khan_masked + self._b)
+            * self._a
+        )
+
+    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
+        return (
+            -1
+            / self._a
+            / (
+                (self._lb_masked - self._ub_masked)
+                * np.sqrt(
+                    ((self._lb_masked - x_masked) * (x_masked - self._ub_masked))
+                    / (self._ub_masked - self._lb_masked) ** 2
+                )
+            )
+        )
 
 
 class optgra:
