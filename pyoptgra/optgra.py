@@ -281,7 +281,7 @@ class khan_function_tanh(base_khan_function):
         super().__init__(lb, ub)
 
         # define amplification factor to avoid bounds to be only reached at +/- infinity
-        amp = 1.0 + 1e-4
+        amp = 1.0 + 1e-3
 
         # define the clip value (we avoid the boundaries of the parameters by this much)
         self.clip_value = 1.0 - 1e-6
