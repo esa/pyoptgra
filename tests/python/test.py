@@ -721,61 +721,75 @@ class optgra_test(unittest.TestCase):
         self.assertTrue(extracted._bounds_violated)
 
         # check bounds are satisfied when setting the argument
-        algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=True))
-        prob = pygmo.problem(_prob_bound_test())
-        pop = pygmo.population(prob, size=1)
-        extracted = pop.problem.extract(_prob_bound_test)
-        self.assertFalse(extracted._bounds_violated)
-        pop = algo.evolve(pop)
-        extracted = pop.problem.extract(_prob_bound_test)
-        self.assertFalse(extracted._bounds_violated)
+        algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=True))  # equivalent to 'sin'
+        for khan_bounds in ["sin", "tanh"]:
+            algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=khan_bounds))
+            prob = pygmo.problem(_prob_bound_test())
+            pop = pygmo.population(prob, size=1)
+            extracted = pop.problem.extract(_prob_bound_test)
+            self.assertFalse(extracted._bounds_violated)
+            pop = algo.evolve(pop)
+            extracted = pop.problem.extract(_prob_bound_test)
+            self.assertFalse(extracted._bounds_violated)
 
-        # check that population has valid members
-        algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=True, bounds_to_constraints=False))
-        prob = pygmo.problem(_prob_bound_test_no_gradient())
-        pop = pygmo.population(prob, size=0)
-        pop.push_back([2.47192039, -1.45880516, -9.03600606, -9.33306356, 3.85509973])
-        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
-        self.assertFalse(extracted._bounds_violated)
-        pop = algo.evolve(pop)
-        extracted = pop.problem.extract(_prob_bound_test_no_gradient)
-        self.assertFalse(extracted._bounds_violated)
-        lb, ub = prob.get_bounds()
-        for i in range(prob.get_nx()):
-            self.assertTrue(pop.champion_x[i] >= lb[i])
-            self.assertTrue(pop.champion_x[i] <= ub[i])
+            # check that population has valid members
+            algo = pygmo.algorithm(
+                pyoptgra.optgra(khan_bounds=khan_bounds, bounds_to_constraints=False)
+            )
+            prob = pygmo.problem(_prob_bound_test_no_gradient())
+            pop = pygmo.population(prob, size=0)
+            pop.push_back([2.47192039, -1.45880516, -9.03600606, -9.33306356, 3.85509973])
+            extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+            self.assertFalse(extracted._bounds_violated)
+            pop = algo.evolve(pop)
+            extracted = pop.problem.extract(_prob_bound_test_no_gradient)
+            self.assertFalse(extracted._bounds_violated)
+            lb, ub = prob.get_bounds()
+            for i in range(prob.get_nx()):
+                self.assertTrue(pop.champion_x[i] >= lb[i])
+                self.assertTrue(pop.champion_x[i] <= ub[i])
 
     def khan_function_test(self):
+        # test both variants of Khan functions
+        for fun in [pyoptgra.khan_function_sin, pyoptgra.khan_function_tanh]:
+            for unity_gradient in [True, False]:  # test both variants
 
-        for unity_gradient in [True, False]:  # test both variants
-            lb = [-10, 0, -np.inf, -np.inf, -20]
-            ub = [10, 30, np.inf, -np.inf, -10]
-            kfun = pyoptgra.khan_function(lb, ub, unity_gradient)
+                lb = [-10, 0, -np.inf, -np.inf, -20]
+                ub = [10, 30, np.inf, -np.inf, -10]
+                kfun = fun(lb, ub, unity_gradient)
 
-            # check function and its inversion
-            x = np.asarray([-1, 2, 4, 4, -15.0])
-            x_optgra = kfun.eval_inv(x)
-            x_check = kfun.eval(x_optgra)
-            np.testing.assert_allclose(x, x_check, atol=1e-10)
+                # check function and its inversion
+                x = np.asarray([-1, 2, 4, 4, -15.0])
+                x_optgra = kfun.eval_inv(x)
+                x_check = kfun.eval(x_optgra)
+                np.testing.assert_allclose(x, x_check, atol=1e-10)
 
-            # check gradient and its inversion
-            dx_dxog = kfun.eval_inv_grad(x)
-            dxog_dx = kfun.eval_grad(x_optgra)
-            check_mat = dx_dxog @ dxog_dx  # expect unity matrix
-            np.testing.assert_allclose(check_mat, np.eye(5), atol=1e-10)
+                # check gradient and its inversion
+                dx_dxog = kfun.eval_inv_grad(x)
+                dxog_dx = kfun.eval_grad(x_optgra)
+                check_mat = dx_dxog @ dxog_dx  # expect unity matrix
+                np.testing.assert_allclose(check_mat, np.eye(5), atol=1e-10)
 
-            # compare with numerical gradient
-            dx_dxog_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval_inv(_x), x).reshape(5, 5)
-            dxog_dx_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval(_x), x_optgra).reshape(
-                5, 5
-            )
-            np.testing.assert_allclose(dx_dxog_num, dx_dxog, atol=1e-7)
-            np.testing.assert_allclose(dxog_dx_num, dxog_dx, atol=1e-7)
+                # compare with numerical gradient
+                dx_dxog_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval_inv(_x), x).reshape(
+                    5, 5
+                )
+                dxog_dx_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval(_x), x_optgra).reshape(
+                    5, 5
+                )
+                np.testing.assert_allclose(dx_dxog_num, dx_dxog, atol=1e-7)
+                np.testing.assert_allclose(dxog_dx_num, dxog_dx, atol=1e-7)
 
-            # one-sided bound is not supported
-            ub = [10, 30, np.inf, -np.inf, np.inf]
-            with self.assertRaises(ValueError):
-                pyoptgra.khan_function(lb, ub)
+                if unity_gradient:  # Check if gradient at mid-point is unity
+                    with np.errstate(invalid="ignore"):
+                        xmid = (np.asarray(ub) + np.asarray(lb)) / 2
+                    dxog_dx0 = kfun.eval_grad(xmid)
+                    np.testing.assert_allclose(dxog_dx0, np.eye(5), atol=1e-10)
+
+                # one-sided bound is not supported
+                ub = [10, 30, np.inf, -np.inf, np.inf]
+                with self.assertRaises(ValueError):
+                    fun(lb, ub)
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
