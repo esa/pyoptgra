@@ -280,44 +280,41 @@ class khan_function_tanh(base_khan_function):
         # call parent class constructor
         super().__init__(lb, ub)
 
+        # define amplification factor to avoid bounds to be only reached at +/- infinity
+        amp = 1.0 + 1e-4
+
+        # define the clip value (we avoid the boundaries of the parameters by this much)
+        self.clip_value = 1.0 - 1e-6
+
         # determine coefficients inside the tanh function
-        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
-        self._b = (
-            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
-            if unity_gradient
-            else 0.0
-        )
+        self._diff_masked = amp * (self._ub_masked - self._lb_masked)
+        self._sum_masked = self._ub_masked + self._lb_masked
+        self._a = 2 / self._diff_masked if unity_gradient else 1.0
+        self._b = -self._sum_masked / self._diff_masked if unity_gradient else 0.0
 
     def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (self._ub_masked + self._lb_masked) / 2 + (
-            self._ub_masked - self._lb_masked
-        ) / 2 * np.tanh(x_khan_masked * self._a + self._b)
-
-    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
-        arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
-            self._ub_masked - self._lb_masked
+        return self._sum_masked / 2 + self._diff_masked / 2 * np.tanh(
+            x_khan_masked * self._a + self._b
         )
 
-        clip_value = 1.0 - 1e-8  # avoid boundaries
-        if np.any((arg < -clip_value) | (arg > clip_value)):
+    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
+        arg = (2 * x_masked - self._sum_masked) / (self._diff_masked)
+
+        if np.any((arg < -self.clip_value) | (arg > self.clip_value)):
             print(
                 "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
                 "Clipping parameters to valid range.",
             )
-            arg = np.clip(arg, -clip_value, clip_value)
+            arg = np.clip(arg, -self.clip_value, self.clip_value)
         return (np.arctanh(arg) - self._b) / self._a
 
     def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (
-            (self._ub_masked - self._lb_masked)
-            / 2
-            / np.cosh(self._a * x_khan_masked + self._b) ** 2
-            * self._a
-        )
+        return self._diff_masked / 2 / np.cosh(self._a * x_khan_masked + self._b) ** 2 * self._a
 
     def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
-        return (self._lb_masked - self._ub_masked) / (
-            2 * self._a * (self._lb_masked - x_masked) * (self._ub_masked - x_masked)
+
+        return (2 * self._diff_masked) / (
+            self._a * (self._diff_masked**2 - (2 * x_masked - self._sum_masked) ** 2)
         )
 
 
@@ -541,6 +538,8 @@ class optgra:
                 Pyoptgra uses a variant of the above method that additionally scales the
                 argument of the :math:`\sin` function such that the derivatives
                 :math:`\frac{d x_{Khan}}{d x}` are unity in the center of the box bounds.
+                Alternatively, to a :math:`\sin` function, also a :math:`\tanh` can be
+                used as a Khan function.
                 Valid input values are: True (same as 'sin'),'sin', 'tanh' and False.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
                 gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
