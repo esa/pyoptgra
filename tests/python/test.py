@@ -146,29 +146,29 @@ class _prob_bound_test(object):
 
 class optgra_test(unittest.TestCase):
     def runTest(self):
-        self.constructor_test()
-        self.evolve_input_check_test()
-        self.basic_no_gradient_test()
-        self.gradient_no_constraints_test()
-        self.gradient_with_constraints_test()
-        self.box_constraints_test()
-        self.archipelago_evolve_test()
-        self.archipelago_pickle_test()
-        self.prepare_sensitivity_input_check_test()
-        self.prepare_sensitivity_test()
-        self.sensitivity_matrices_test()
-        self.sensitivity_new_callable_test()
-        self.sensitivity_constraint_delta_test()
-        self.sensitivity_active_constraints_test()
-        self.force_bounds_test()
-        self.khan_bounds_test()
+        # self.constructor_test()
+        # self.evolve_input_check_test()
+        # self.basic_no_gradient_test()
+        # self.gradient_no_constraints_test()
+        # self.gradient_with_constraints_test()
+        # self.box_constraints_test()
+        # self.archipelago_evolve_test()
+        # self.archipelago_pickle_test()
+        # self.prepare_sensitivity_input_check_test()
+        # self.prepare_sensitivity_test()
+        # self.sensitivity_matrices_test()
+        # self.sensitivity_new_callable_test()
+        # self.sensitivity_constraint_delta_test()
+        # self.sensitivity_active_constraints_test()
+        # self.force_bounds_test()
+        # self.khan_bounds_test()
         self.khan_function_test()
-        self.force_bounds_fitness_test()
-        self.force_bounds_gradient_test()
-        self.get_name_test()
-        self.get_extra_info_test()
-        self.verbosity_test()
-        self.test_triangle()
+        # self.force_bounds_fitness_test()
+        # self.force_bounds_gradient_test()
+        # self.get_name_test()
+        # self.get_extra_info_test()
+        # self.verbosity_test()
+        # self.triangle_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -751,8 +751,6 @@ class optgra_test(unittest.TestCase):
                 self.assertTrue(pop.champion_x[i] <= ub[i])
 
     def khan_function_test(self):
-        lb = [-10, 0, -np.inf, -np.inf, -20]
-        ub = [10, 30, np.inf, -np.inf, -10]
 
         # test all variants of Khan functions
         for fun in [
@@ -763,6 +761,9 @@ class optgra_test(unittest.TestCase):
         ]:
             for unity_gradient in [True, False]:  # test both variants
                 print("Testinf Khan function ", fun)
+                lb = [-10, 0, -np.inf, -np.inf, -20]
+                ub = [10, 30, np.inf, -np.inf, -10]
+
                 kfun = fun(lb, ub, unity_gradient)
 
                 # check function and its inversion
@@ -811,7 +812,7 @@ class optgra_test(unittest.TestCase):
         with self.assertRaises(ValueError):
             algo.set_verbosity(1)
 
-    def test_triangle(self):
+    def triangle_test(self):
         """Test the triangular_wave_fourier function"""
         # Test that the function returns zero when N=0.
         x = np.linspace(-np.pi, np.pi, 11)

@@ -254,9 +254,10 @@ class optgra:
                 Pyoptgra uses a variant of the above method that additionally scales the
                 argument of the :math:`\sin` function such that the derivatives
                 :math:`\frac{d x_{Khan}}{d x}` are unity in the center of the box bounds.
-                Alternatively, to a :math:`\sin` function, also a :math:`\tanh` can be
-                used as a Khan function.
-                Valid input values are: True (same as 'sin'),'sin', 'tanh' and False.
+                Alternatively, to a :math:`\sin` function, also a :math:`\tanh` or Fourier expansion
+                of a triangle wave can be used as a Khan function.
+                Valid input values are: True (same as 'sin'),'sin', 'tanh', 'triangle1',
+                'triangle2', 'triangle3'... and False.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
                 gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
                 gradient method
@@ -442,7 +443,7 @@ class optgra:
             khanf = khan_function_sin(*problem.get_bounds())
         elif self.khan_bounds == "tanh":
             khanf = khan_function_tanh(*problem.get_bounds())
-        elif self.khan_bounds.startswith("triangle"):
+        elif isinstance(self.khan_bounds, str) and self.khan_bounds.startswith("triangle"):
 
             def extract_trailing_integer(s):
                 match = re.match(r"triangle(\d+)$", s)
