@@ -15,9 +15,8 @@
 from typing import Callable, List, Optional
 
 import numpy as np
-from scipy.optimize import root_scalar
-
 from pygmo import estimate_gradient_h
+from scipy.optimize import root_scalar
 
 
 class base_khan_function:
@@ -362,7 +361,10 @@ def inverse_triangular_wave(N, y):
 
     for i, yi in enumerate(y):
         x_guess = np.arcsin(yi)
-        func = lambda x: triangular_wave_fourier(N, x) - yi
+
+        def func(x):
+            return triangular_wave_fourier(N, x) - yi
+
         root = root_scalar(func, bracket=[-np.pi / 2, np.pi / 2], x0=x_guess)
         results[i] = root.root if root.converged else np.nan
 

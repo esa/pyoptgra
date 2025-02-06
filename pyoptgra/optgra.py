@@ -12,14 +12,12 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
+import re
 from math import isfinite
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-import re
 from pygmo import s_policy, select_best
-
-from .khan import base_khan_function, khan_function_sin, khan_function_tanh, khan_function_triangle
 
 from .core import (
     get_sensitivity_matrices,
@@ -27,6 +25,12 @@ from .core import (
     prepare_sensitivity_state,
     sensitivity_update_constraint_delta,
     sensitivity_update_new_callable,
+)
+from .khan import (
+    base_khan_function,
+    khan_function_sin,
+    khan_function_tanh,
+    khan_function_triangle,
 )
 
 
