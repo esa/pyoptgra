@@ -16,6 +16,7 @@ from .optgra import optgra  # noqa
 from .khan import (
     khan_function_sin,
     khan_function_tanh,
+    khan_function_triangle,
     triangular_wave_fourier,
     inverse_triangular_wave,
 )  # noqa

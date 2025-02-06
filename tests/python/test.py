@@ -146,28 +146,28 @@ class _prob_bound_test(object):
 
 class optgra_test(unittest.TestCase):
     def runTest(self):
-        # self.constructor_test()
-        # self.evolve_input_check_test()
-        # self.basic_no_gradient_test()
-        # self.gradient_no_constraints_test()
-        # self.gradient_with_constraints_test()
-        # self.box_constraints_test()
-        # self.archipelago_evolve_test()
-        # self.archipelago_pickle_test()
-        # self.prepare_sensitivity_input_check_test()
-        # self.prepare_sensitivity_test()
-        # self.sensitivity_matrices_test()
-        # self.sensitivity_new_callable_test()
-        # self.sensitivity_constraint_delta_test()
-        # self.sensitivity_active_constraints_test()
-        # self.force_bounds_test()
-        # self.khan_bounds_test()
-        # self.khan_function_test()
-        # self.force_bounds_fitness_test()
-        # self.force_bounds_gradient_test()
-        # self.get_name_test()
-        # self.get_extra_info_test()
-        # self.verbosity_test()
+        self.constructor_test()
+        self.evolve_input_check_test()
+        self.basic_no_gradient_test()
+        self.gradient_no_constraints_test()
+        self.gradient_with_constraints_test()
+        self.box_constraints_test()
+        self.archipelago_evolve_test()
+        self.archipelago_pickle_test()
+        self.prepare_sensitivity_input_check_test()
+        self.prepare_sensitivity_test()
+        self.sensitivity_matrices_test()
+        self.sensitivity_new_callable_test()
+        self.sensitivity_constraint_delta_test()
+        self.sensitivity_active_constraints_test()
+        self.force_bounds_test()
+        self.khan_bounds_test()
+        self.khan_function_test()
+        self.force_bounds_fitness_test()
+        self.force_bounds_gradient_test()
+        self.get_name_test()
+        self.get_extra_info_test()
+        self.verbosity_test()
         self.test_triangle()
 
     def constructor_test(self):
@@ -751,12 +751,18 @@ class optgra_test(unittest.TestCase):
                 self.assertTrue(pop.champion_x[i] <= ub[i])
 
     def khan_function_test(self):
-        # test both variants of Khan functions
-        for fun in [pyoptgra.khan_function_sin, pyoptgra.khan_function_tanh]:
-            for unity_gradient in [True, False]:  # test both variants
+        lb = [-10, 0, -np.inf, -np.inf, -20]
+        ub = [10, 30, np.inf, -np.inf, -10]
 
-                lb = [-10, 0, -np.inf, -np.inf, -20]
-                ub = [10, 30, np.inf, -np.inf, -10]
+        # test all variants of Khan functions
+        for fun in [
+            pyoptgra.khan_function_sin,
+            pyoptgra.khan_function_tanh,
+            # lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 1, _ug),
+            # lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 3, _ug),
+        ]:
+            for unity_gradient in [True, False]:  # test both variants
+                print("Testinf Khan function ", fun)
                 kfun = fun(lb, ub, unity_gradient)
 
                 # check function and its inversion
