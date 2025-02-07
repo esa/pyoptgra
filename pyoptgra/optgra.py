@@ -34,6 +34,12 @@ from .khan import (
 )
 
 
+def _assert_finite(arr: np.ndarray, name: str):
+    mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
+    if np.any(mask):
+        raise ValueError(f"Encountered non-finite values in {name} at indices: {np.where(mask)[0]}")
+
+
 class optgra:
     """
     This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written
@@ -82,6 +88,7 @@ class optgra:
 
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
+            _assert_finite(x, "decision vector")  # catch nan values
 
             if khanf:
                 # if Khan function is used, we first need to convert to pagmo parameters
@@ -105,6 +112,7 @@ class optgra:
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
             result = np.concatenate([result[1:], result[0:1]])
+            _assert_finite(result, "fitness")  # catch nan values
 
             return result.tolist()  # return a list
 
@@ -129,6 +137,7 @@ class optgra:
 
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
+            _assert_finite(x, "decision vector")  # catch nan values
 
             if khanf:
                 # if Khan function is used, we first need to convert to pagmo parameters
@@ -176,6 +185,8 @@ class optgra:
             if khanf:
                 khan_grad = khanf.eval_grad(x)
                 result = result @ khan_grad
+
+            _assert_finite(result, "gradient")  # catch nan values
 
             return result.tolist()  # return as a list, not ndarray
 
