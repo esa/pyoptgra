@@ -146,29 +146,29 @@ class _prob_bound_test(object):
 
 class optgra_test(unittest.TestCase):
     def runTest(self):
-        # self.constructor_test()
-        # self.evolve_input_check_test()
-        # self.basic_no_gradient_test()
-        # self.gradient_no_constraints_test()
-        # self.gradient_with_constraints_test()
-        # self.box_constraints_test()
-        # self.archipelago_evolve_test()
-        # self.archipelago_pickle_test()
-        # self.prepare_sensitivity_input_check_test()
-        # self.prepare_sensitivity_test()
-        # self.sensitivity_matrices_test()
-        # self.sensitivity_new_callable_test()
-        # self.sensitivity_constraint_delta_test()
-        # self.sensitivity_active_constraints_test()
-        # self.force_bounds_test()
-        # self.khan_bounds_test()
+        self.constructor_test()
+        self.evolve_input_check_test()
+        self.basic_no_gradient_test()
+        self.gradient_no_constraints_test()
+        self.gradient_with_constraints_test()
+        self.box_constraints_test()
+        self.archipelago_evolve_test()
+        self.archipelago_pickle_test()
+        self.prepare_sensitivity_input_check_test()
+        self.prepare_sensitivity_test()
+        self.sensitivity_matrices_test()
+        self.sensitivity_new_callable_test()
+        self.sensitivity_constraint_delta_test()
+        self.sensitivity_active_constraints_test()
+        self.force_bounds_test()
+        self.khan_bounds_test()
         self.khan_function_test()
-        # self.force_bounds_fitness_test()
-        # self.force_bounds_gradient_test()
-        # self.get_name_test()
-        # self.get_extra_info_test()
-        # self.verbosity_test()
-        # self.triangle_test()
+        self.force_bounds_fitness_test()
+        self.force_bounds_gradient_test()
+        self.get_name_test()
+        self.get_extra_info_test()
+        self.verbosity_test()
+        self.triangle_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -758,6 +758,7 @@ class optgra_test(unittest.TestCase):
             pyoptgra.khan_function_tanh,
             lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 1, _ug),
             lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 3, _ug),
+            lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 4, _ug),
         ]:
             for unity_gradient in [True, False]:  # test both variants
                 print("Testinf Khan function ", fun)
@@ -779,12 +780,12 @@ class optgra_test(unittest.TestCase):
                 np.testing.assert_allclose(check_mat, np.eye(5), atol=1e-10)
 
                 # compare with numerical gradient
-                dx_dxog_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval_inv(_x), x).reshape(
-                    5, 5
-                )
-                dxog_dx_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval(_x), x_optgra).reshape(
-                    5, 5
-                )
+                dx_dxog_num = pygmo.estimate_gradient_h(
+                    lambda _x: kfun.eval_inv(_x), x, dx=1e-7
+                ).reshape(5, 5)
+                dxog_dx_num = pygmo.estimate_gradient_h(
+                    lambda _x: kfun.eval(_x), x_optgra, dx=1e-7
+                ).reshape(5, 5)
                 np.testing.assert_allclose(dx_dxog_num, dx_dxog, atol=1e-7)
                 np.testing.assert_allclose(dxog_dx_num, dxog_dx, atol=1e-7)
 
@@ -797,7 +798,7 @@ class optgra_test(unittest.TestCase):
                 # one-sided bound is not supported
                 ub = [10, 30, np.inf, -np.inf, np.inf]
                 with self.assertRaises(ValueError):
-                    fun(lb, ub)
+                    fun(lb, ub, unity_gradient)
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())

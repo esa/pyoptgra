@@ -445,22 +445,19 @@ class khan_function_triangle(base_khan_function):
         self.order = int(order)
 
         # determine coefficients inside the Fourier function
-        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
-        self._b = (
-            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
-            if unity_gradient
-            else 0.0
-        )
+        self._sum_masked = self._ub_masked + self._lb_masked
+        self._diff_masked = self._ub_masked - self._lb_masked
+        t_grad0 = triangular_wave_fourier_grad(self.order, 0.0)
+        self._a = 2 / (self._diff_masked) / t_grad0 if unity_gradient else 1.0
+        self._b = -self._a / 2 * (self._sum_masked) if unity_gradient else 0.0
 
     def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (self._ub_masked + self._lb_masked) / 2 + (
-            self._ub_masked - self._lb_masked
-        ) / 2 * triangular_wave_fourier(self.order, x_khan_masked * self._a + self._b)
+        return (self._sum_masked) / 2 + (self._diff_masked) / 2 * triangular_wave_fourier(
+            self.order, x_khan_masked * self._a + self._b
+        )
 
     def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
-        arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
-            self._ub_masked - self._lb_masked
-        )
+        arg = (2 * x_masked - self._sum_masked) / (self._diff_masked)
 
         clip_value = 1.0 - 1e-8  # avoid boundaries
         if np.any((arg < -clip_value) | (arg > clip_value)):
@@ -473,11 +470,14 @@ class khan_function_triangle(base_khan_function):
 
     def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
         return (
-            (self._ub_masked - self._lb_masked)
+            (self._diff_masked)
             / 2
             * triangular_wave_fourier_grad(self.order, self._a * x_khan_masked + self._b)
             * self._a
         )
 
-    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
-        return estimate_gradient_h(lambda x: self._eval_inv(x), x_masked)
+    def _eval_inv_grad(self, x_masked: np.ndarray, dx: float = 1e-7) -> np.ndarray:
+        n = len(x_masked)
+        return np.diag(
+            estimate_gradient_h(lambda x: self._eval_inv(x), x_masked, dx=dx).reshape(n, n)
+        )
