@@ -723,7 +723,7 @@ class optgra_test(unittest.TestCase):
 
         # check bounds are satisfied when setting the argument
         algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=True))  # equivalent to 'sin'
-        for khan_bounds in ["sin", "tanh"]:
+        for khan_bounds in ["sin", "tanh", "triangle4"]:
             algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=khan_bounds))
             prob = pygmo.problem(_prob_bound_test())
             pop = pygmo.population(prob, size=1)
@@ -751,6 +751,19 @@ class optgra_test(unittest.TestCase):
                 self.assertTrue(pop.champion_x[i] <= ub[i])
 
     def khan_function_test(self):
+        # test base_khan_function
+        lb = [-10, 0, -np.inf, -np.inf, -20]
+        ub = [10, 30, np.inf, -np.inf, -10]
+        x = np.asarray([-1, 2, 4, 4, -15.0])
+        kfun = pyoptgra.base_khan_function(lb, ub)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval(x)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval_inv(x)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval_grad(x)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval_inv_grad(x)
 
         # test all variants of Khan functions
         for fun in [
@@ -841,6 +854,19 @@ class optgra_test(unittest.TestCase):
         tri = pyoptgra.triangular_wave_fourier(5, x)
         x_check = pyoptgra.inverse_triangular_wave(5, tri)
         np.testing.assert_array_almost_equal(x, x_check)
+
+        # test gradient
+        tri_grad = pyoptgra.triangular_wave_fourier_grad(5, x)
+        n = len(x)
+        tri_grad_num = np.diag(
+            pygmo.estimate_gradient_h(
+                lambda _x: pyoptgra.triangular_wave_fourier(5, _x), x
+            ).reshape(n, n)
+        )
+        np.testing.assert_array_almost_equal(tri_grad, tri_grad_num)
+
+        tri_grad = pyoptgra.triangular_wave_fourier_grad(0, x)
+        np.testing.assert_array_equal(tri_grad, np.zeros_like(x, dtype=np.float64))
 
 
 if __name__ == "__main__":

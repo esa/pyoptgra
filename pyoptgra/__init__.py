@@ -12,10 +12,15 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from .khan import triangular_wave_fourier, triangular_wave_fourier_grad  # noqa
 from .khan import inverse_triangular_wave  # noqa
 from .khan import khan_function_triangle  # noqa
-from .khan import base_khan_function, khan_function_sin, khan_function_tanh  # noqa
+from .khan import (  # noqa
+    base_khan_function,
+    khan_function_sin,
+    khan_function_tanh,
+    triangular_wave_fourier,
+    triangular_wave_fourier_grad,
+)
 from .optgra import optgra  # noqa
 
 try:
