@@ -23,8 +23,4 @@ from .khan import (  # noqa
 )
 from .optgra import optgra  # noqa
 
-try:
-    from ._version import version as __version__  # noqa
-    from ._version import version_tuple as __version_tuple__  # noqa
-except ImportError:  # pragma: no cover
-    pass
+from ._about import __version__  # noqa
