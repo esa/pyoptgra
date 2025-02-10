@@ -84,7 +84,6 @@ def _assert_finite(arr: np.ndarray, name: str):
         raise ValueError(f"Encountered non-finite values in {name} at indices: {np.where(mask)[0]}")
 
 
-
 class optgra:
     """
     This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written
