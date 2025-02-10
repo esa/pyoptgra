@@ -14,7 +14,7 @@
 
 import re
 from math import isfinite
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Any
 
 import numpy as np
 from pygmo import s_policy, select_best
@@ -35,7 +35,7 @@ from .khan import (
 
 
 def _get_constraint_violation(
-    f: Union[list, np.array], nec: int, con_tol: float = 1e-6
+    f: Union[list, np.ndarray], nec: int, con_tol: float = 1e-6
 ) -> Tuple[float, int]:
     """Get the constraints violation norm from the fitness vector.
 
@@ -51,7 +51,7 @@ def _get_constraint_violation(
 
     Returns
     -------
-    float, int
+    Tuple[float, int]
         Constraint violation norm in ``f``
         Number of violated constraints
     """
@@ -72,7 +72,7 @@ def _get_constraint_violation(
             np.abs(np.heaviside(ineq_cons - ineq_con_tol, 0) * np.array(ineq_cons)),
         ]
     )
-    violation_norm = np.linalg.norm(violations) if violations.size else 0.0
+    violation_norm = float(np.linalg.norm(violations)) if violations.size else 0.0
     num_violations = int(sum(np.heaviside(violations, 0)))
 
     return violation_norm, num_violations
@@ -380,7 +380,7 @@ class optgra:
             )
 
         # dictionary to store last optimisation result for get_extra_info()
-        self.__last_result = {}
+        self.__last_result: dict[str, Any] = {}
 
     def set_verbosity(self, verbosity: int) -> None:
         """
