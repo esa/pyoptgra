@@ -14,7 +14,7 @@
 
 import re
 from math import isfinite
-from typing import List, Optional, Tuple, Union, Any
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 from pygmo import s_policy, select_best
