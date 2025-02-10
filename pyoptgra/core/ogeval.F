@@ -215,7 +215,7 @@ C ----------------------------------------------------------------------
 C write pygmo-style log output
       OBJVAL = -VALCON(NUMCON+1)
       CONVIO = DSQRT(CONVIO)
-      CALL OGPWRI(OBJVAL, NUMVIO, CONVIO, DERVAR)
+      CALL OGPWRI(OBJVAL, NUMVIO, CONVIO)
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------

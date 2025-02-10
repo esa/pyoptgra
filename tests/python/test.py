@@ -781,7 +781,6 @@ class optgra_test(unittest.TestCase):
             lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 4, _ug),
         ]:
             for unity_gradient in [True, False]:  # test both variants
-                print("Testinf Khan function ", fun)
                 lb = [-10, 0, -np.inf, -np.inf, -20]
                 ub = [10, 30, np.inf, -np.inf, -10]
 

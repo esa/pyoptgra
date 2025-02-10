@@ -143,7 +143,7 @@ C TODO: can this final fitness call be avoided (just for output)?
           WRITE(STR,'("OPTGRA: Converged: mat ITERAT=",2I4,2D11.3)')
      &    NUMITE,MAXITE,CONERR,DESNOR
           CALL OGWRIT (1,STR)
-          CALL OGPWRI_END(NUMITE, -VALCON(NUMCON+1), NUMVIO, CONVIO, 1)
+          CALL OGPWRI_END(-VALCON(NUMCON+1), NUMVIO, CONVIO)
 
 C Final Pygmo output
 C TODO: can this final fitness call be avoided (just for output)?
