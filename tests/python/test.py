@@ -272,6 +272,13 @@ class optgra_test(unittest.TestCase):
         algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 61))
         algo.evolve(pop)
 
+        # check than nan in the decision vector is caught
+        x = pop.get_x()[0]
+        x[3] = np.nan
+        pop.set_x(0, x)
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
+
     def basic_no_gradient_test(self):
         # Basic test that the call works and the result changes. No constraints, not gradients.
 
