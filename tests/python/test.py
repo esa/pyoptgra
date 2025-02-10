@@ -168,6 +168,7 @@ class optgra_test(unittest.TestCase):
         self.get_name_test()
         self.get_extra_info_test()
         self.verbosity_test()
+        self.triangle_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -270,6 +271,13 @@ class optgra_test(unittest.TestCase):
         # Correct size
         algo = pygmo.algorithm(pyoptgra.optgra(constraint_priorities=[1] * 61))
         algo.evolve(pop)
+
+        # check than nan in the decision vector is caught
+        x = pop.get_x()[0]
+        x[3] = np.nan
+        pop.set_x(0, x)
+        with self.assertRaises(ValueError):
+            algo.evolve(pop)
 
     def basic_no_gradient_test(self):
         # Basic test that the call works and the result changes. No constraints, not gradients.
@@ -722,7 +730,7 @@ class optgra_test(unittest.TestCase):
 
         # check bounds are satisfied when setting the argument
         algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=True))  # equivalent to 'sin'
-        for khan_bounds in ["sin", "tanh"]:
+        for khan_bounds in ["sin", "tanh", "triangle4"]:
             algo = pygmo.algorithm(pyoptgra.optgra(khan_bounds=khan_bounds))
             prob = pygmo.problem(_prob_bound_test())
             pop = pygmo.population(prob, size=1)
@@ -750,12 +758,33 @@ class optgra_test(unittest.TestCase):
                 self.assertTrue(pop.champion_x[i] <= ub[i])
 
     def khan_function_test(self):
-        # test both variants of Khan functions
-        for fun in [pyoptgra.khan_function_sin, pyoptgra.khan_function_tanh]:
-            for unity_gradient in [True, False]:  # test both variants
+        # test base_khan_function
+        lb = [-10, 0, -np.inf, -np.inf, -20]
+        ub = [10, 30, np.inf, -np.inf, -10]
+        x = np.asarray([-1, 2, 4, 4, -15.0])
+        kfun = pyoptgra.base_khan_function(lb, ub)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval(x)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval_inv(x)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval_grad(x)
+        with self.assertRaises(NotImplementedError):
+            kfun.eval_inv_grad(x)
 
+        # test all variants of Khan functions
+        for fun in [
+            pyoptgra.khan_function_sin,
+            pyoptgra.khan_function_tanh,
+            lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 1, _ug),
+            lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 3, _ug),
+            lambda _lb, _ub, _ug: pyoptgra.khan_function_triangle(_lb, _ub, 4, _ug),
+        ]:
+            for unity_gradient in [True, False]:  # test both variants
+                print("Testinf Khan function ", fun)
                 lb = [-10, 0, -np.inf, -np.inf, -20]
                 ub = [10, 30, np.inf, -np.inf, -10]
+
                 kfun = fun(lb, ub, unity_gradient)
 
                 # check function and its inversion
@@ -771,12 +800,12 @@ class optgra_test(unittest.TestCase):
                 np.testing.assert_allclose(check_mat, np.eye(5), atol=1e-10)
 
                 # compare with numerical gradient
-                dx_dxog_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval_inv(_x), x).reshape(
-                    5, 5
-                )
-                dxog_dx_num = pygmo.estimate_gradient_h(lambda _x: kfun.eval(_x), x_optgra).reshape(
-                    5, 5
-                )
+                dx_dxog_num = pygmo.estimate_gradient_h(
+                    lambda _x: kfun.eval_inv(_x), x, dx=1e-7
+                ).reshape(5, 5)
+                dxog_dx_num = pygmo.estimate_gradient_h(
+                    lambda _x: kfun.eval(_x), x_optgra, dx=1e-7
+                ).reshape(5, 5)
                 np.testing.assert_allclose(dx_dxog_num, dx_dxog, atol=1e-7)
                 np.testing.assert_allclose(dxog_dx_num, dxog_dx, atol=1e-7)
 
@@ -789,7 +818,7 @@ class optgra_test(unittest.TestCase):
                 # one-sided bound is not supported
                 ub = [10, 30, np.inf, -np.inf, np.inf]
                 with self.assertRaises(ValueError):
-                    fun(lb, ub)
+                    fun(lb, ub, unity_gradient)
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
@@ -803,6 +832,48 @@ class optgra_test(unittest.TestCase):
         algo = pygmo.algorithm(pyoptgra.optgra(log_level=1))
         with self.assertRaises(ValueError):
             algo.set_verbosity(1)
+
+    def triangle_test(self):
+        """Test the triangular_wave_fourier function"""
+        # Test that the function returns zero when N=0.
+        x = np.linspace(-np.pi, np.pi, 11)
+
+        # Test zero terms
+        tri = pyoptgra.triangular_wave_fourier(0, x)
+        np.testing.assert_array_almost_equal(tri, np.zeros_like(x))
+
+        # Test single term (first harmonic only)
+        tri = pyoptgra.triangular_wave_fourier(1, x)
+        expected = np.sin(x)
+        np.testing.assert_array_almost_equal(tri, expected)
+
+        # Test normalization when using more than one term
+        tri = pyoptgra.triangular_wave_fourier(4, np.pi / 2)
+        self.assertAlmostEqual(tri, 1.0)
+
+        # Test symmetry T(-x) = -T(x)
+        tri1 = pyoptgra.triangular_wave_fourier(5, x)
+        tri2 = -pyoptgra.triangular_wave_fourier(5, -x)
+        np.testing.assert_array_almost_equal(tri1, tri2)
+
+        # test inverse
+        x = np.linspace(-np.pi / 2, np.pi / 2, 11)
+        tri = pyoptgra.triangular_wave_fourier(5, x)
+        x_check = pyoptgra.inverse_triangular_wave(5, tri)
+        np.testing.assert_array_almost_equal(x, x_check)
+
+        # test gradient
+        tri_grad = pyoptgra.triangular_wave_fourier_grad(5, x)
+        n = len(x)
+        tri_grad_num = np.diag(
+            pygmo.estimate_gradient_h(
+                lambda _x: pyoptgra.triangular_wave_fourier(5, _x), x
+            ).reshape(n, n)
+        )
+        np.testing.assert_array_almost_equal(tri_grad, tri_grad_num)
+
+        tri_grad = pyoptgra.triangular_wave_fourier_grad(0, x)
+        np.testing.assert_array_equal(tri_grad, np.zeros_like(x, dtype=np.float64))
 
 
 if __name__ == "__main__":

@@ -12,8 +12,9 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
+import re
 from math import isfinite
-from typing import Callable, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from pygmo import s_policy, select_best
@@ -25,297 +26,18 @@ from .core import (
     sensitivity_update_constraint_delta,
     sensitivity_update_new_callable,
 )
+from .khan import (
+    base_khan_function,
+    khan_function_sin,
+    khan_function_tanh,
+    khan_function_triangle,
+)
 
 
-class base_khan_function:
-    r"""Base class for a function to smothly enforce optimisation parameter bounds as Michal Khan
-    used to do:
-
-    .. math::
-
-        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \f(x_{khan})
-
-    Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
-    passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
-    near the bounds approach zero.
-
-    The child class needs to implement the methods `_eval`, `_eval_inv`, `_eval_grad` and
-    `_eval_inv_grad`
-    """  # noqa: W605
-
-    def __init__(self, lb: List[float], ub: List[float]):
-        """Constructor
-
-        Parameters
-        ----------
-        lb : List[float]
-            Lower pagmo parameter bounds
-        ub : List[float]
-            Upper pagmo parameter bounds
-        """
-        self._lb = np.asarray(lb)
-        self._ub = np.asarray(ub)
-        self._nx = len(lb)
-
-        # determine finite lower/upper bounds\
-        def _isfinite(a: np.ndarray):
-            """Custom _ function"""
-            almost_infinity = 1e300
-            return np.logical_and(np.isfinite(a), np.abs(a) < almost_infinity)
-
-        finite_lb = _isfinite(self._lb)
-        finite_ub = _isfinite(self._ub)
-
-        # we only support cases where both lower and upper bounds are finite if given
-        check = np.where(finite_lb != finite_ub)[0]
-        if any(check):
-            raise ValueError(
-                "When using Khan bounds, both lower and upper bound for bounded parameters "
-                "must be finite."
-                f"Detected mismatch at decision vector indices: {check}"
-            )
-
-        # also exclude parameters where lower and upper bounds are identical
-        with np.errstate(invalid="ignore"):
-            # we ignore RuntimeWarning: invalid value encountered in subtract
-            nonzero_diff = abs(self._lb - self._ub) > 1e-9
-
-        # store the mask of finite bounds
-        self.mask = np.logical_and(finite_ub, nonzero_diff)
-        self._lb_masked = self._lb[self.mask]
-        self._ub_masked = self._ub[self.mask]
-
-    def _apply_to_subset(
-        self, x: np.ndarray, func: Callable, default_result: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """Apply a given function only to a subset of x defined by self.mask."""
-        # Create a copy to preserve the original structure
-        result = default_result if default_result is not None else x.copy()
-        # Apply the function only to the selected subset
-        result[self.mask] = func(x[self.mask])
-        return result
-
-    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-    def eval(self, x_khan: np.ndarray) -> np.ndarray:
-        """Convert :math:`x_{optgra}` to :math:`x`.
-
-        Parameters
-        ----------
-        x_khan : np.ndarray
-            Decision vector passed to OPTGRA
-
-        Returns
-        -------
-        np.ndarray
-            Pagmo decision vector
-        """
-        return self._apply_to_subset(np.asarray(x_khan), self._eval)
-
-    def eval_inv(self, x: np.ndarray) -> np.ndarray:
-        """Convert :math:`x` to :math:`x_{optgra}`.
-
-        Parameters
-        ----------
-        x : np.ndarray
-            Pagmo decision vector
-
-        Returns
-        -------
-        np.ndarray
-            Decision vector passed to OPTGRA
-
-        """
-        return self._apply_to_subset(np.asarray(x), self._eval_inv)
-
-    def eval_grad(self, x_khan: np.ndarray) -> np.ndarray:
-        """Gradient of ``eval`` function.
-
-        Parameters
-        ----------
-        x_khan : np.ndarray
-            Decision vector passed to OPTGRA
-
-        Returns
-        -------
-        np.ndarray
-            Pagmo decision vector
-        """
-        return np.diag(
-            self._apply_to_subset(np.asarray(x_khan), self._eval_grad, np.ones(self._nx))
-        )
-
-    def eval_inv_grad(self, x: np.ndarray) -> np.ndarray:
-        """Gradient of ``eval_inv`` method.
-
-        Parameters
-        ----------
-        x : np.ndarray
-            Pagmo decision vector
-
-        Returns
-        -------
-        np.ndarray
-            Decision vector passed to OPTGRA
-        """
-        return np.diag(self._apply_to_subset(np.asarray(x), self._eval_inv_grad, np.ones(self._nx)))
-
-
-class khan_function_sin(base_khan_function):
-    r"""Function to smothly enforce optimisation parameter bounds as Michal Khan used to do:
-
-    .. math::
-
-        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \sin(x_{khan})
-
-    Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
-    passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
-    near the bounds approach zero.
-    """  # noqa: W605
-
-    def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
-        """Constructor
-
-        Parameters
-        ----------
-        lb : List[float]
-            Lower pagmo parameter bounds
-        ub : List[float]
-            Upper pagmo parameter bounds
-        unity_gradient : bool, optional
-            Uses an internal scaling that ensures that the derivative of pagmo parameters w.r.t.
-            Khan parameters are unity at (lb + ub)/2. By default True.
-            Otherwise, the original Khan method is used that can result in strongly modified
-            gradients
-        """
-        # call parent class constructor
-        super().__init__(lb, ub)
-
-        # determine coefficients inside the sin function
-        self._a = 2 / (self._ub_masked - self._lb_masked) if unity_gradient else 1.0
-        self._b = (
-            -(self._ub_masked + self._lb_masked) / (self._ub_masked - self._lb_masked)
-            if unity_gradient
-            else 0.0
-        )
-
-    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (self._ub_masked + self._lb_masked) / 2 + (
-            self._ub_masked - self._lb_masked
-        ) / 2 * np.sin(x_khan_masked * self._a + self._b)
-
-    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
-        arg = (2 * x_masked - self._ub_masked - self._lb_masked) / (
-            self._ub_masked - self._lb_masked
-        )
-
-        clip_value = 1.0 - 1e-8  # avoid boundaries
-        if np.any((arg < -clip_value) | (arg > clip_value)):
-            print(
-                "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
-                "Clipping parameters to valid range.",
-            )
-            arg = np.clip(arg, -clip_value, clip_value)
-        return (np.arcsin(arg) - self._b) / self._a
-
-    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return (
-            (self._ub_masked - self._lb_masked)
-            / 2
-            * np.cos(self._a * x_khan_masked + self._b)
-            * self._a
-        )
-
-    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
-        return (
-            -1
-            / self._a
-            / (
-                (self._lb_masked - self._ub_masked)
-                * np.sqrt(
-                    ((self._lb_masked - x_masked) * (x_masked - self._ub_masked))
-                    / (self._ub_masked - self._lb_masked) ** 2
-                )
-            )
-        )
-
-
-class khan_function_tanh(base_khan_function):
-    r"""Function to smothly enforce optimisation parameter bounds using the hyperbolic tangent:
-
-    .. math::
-
-        x = \frac{x_{max} + x_{min}}{2} + \frac{x_{max} - x_{min}}{2} \cdot \tanh(x_{khan})
-
-    Where :math:`x` is the pagmo decision vector and :math:`x_{khan}` is the decision vector
-    passed to OPTGRA. In this way parameter bounds are guaranteed to be satisfied, but the gradients
-    near the bounds approach zero.
-    """  # noqa: W605
-
-    def __init__(self, lb: List[float], ub: List[float], unity_gradient: bool = True):
-        """Constructor
-
-        Parameters
-        ----------
-        lb : List[float]
-            Lower pagmo parameter bounds
-        ub : List[float]
-            Upper pagmo parameter bounds
-        unity_gradient : bool, optional
-            Uses an internal scaling that ensures that the derivative of pagmo parameters w.r.t.
-            khan parameters are unity at (lb + ub)/2. By default True.
-            Otherwise, the original Khan method is used that can result in strongly modified
-            gradients
-        """
-        # call parent class constructor
-        super().__init__(lb, ub)
-
-        # define amplification factor to avoid bounds to be only reached at +/- infinity
-        amp = 1.0 + 1e-3
-
-        # define the clip value (we avoid the boundaries of the parameters by this much)
-        self.clip_value = 1.0 - 1e-6
-
-        # determine coefficients inside the tanh function
-        self._diff_masked = amp * (self._ub_masked - self._lb_masked)
-        self._sum_masked = self._ub_masked + self._lb_masked
-        self._a = 2 / self._diff_masked if unity_gradient else 1.0
-        self._b = -self._sum_masked / self._diff_masked if unity_gradient else 0.0
-
-    def _eval(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return self._sum_masked / 2 + self._diff_masked / 2 * np.tanh(
-            x_khan_masked * self._a + self._b
-        )
-
-    def _eval_inv(self, x_masked: np.ndarray) -> np.ndarray:
-        arg = (2 * x_masked - self._sum_masked) / (self._diff_masked)
-
-        if np.any((arg < -self.clip_value) | (arg > self.clip_value)):
-            print(
-                "WARNING: Numerical inaccuracies encountered during khan_function inverse.",
-                "Clipping parameters to valid range.",
-            )
-            arg = np.clip(arg, -self.clip_value, self.clip_value)
-        return (np.arctanh(arg) - self._b) / self._a
-
-    def _eval_grad(self, x_khan_masked: np.ndarray) -> np.ndarray:
-        return self._diff_masked / 2 / np.cosh(self._a * x_khan_masked + self._b) ** 2 * self._a
-
-    def _eval_inv_grad(self, x_masked: np.ndarray) -> np.ndarray:
-
-        return (2 * self._diff_masked) / (
-            self._a * (self._diff_masked**2 - (2 * x_masked - self._sum_masked) ** 2)
-        )
+def _assert_finite(arr: np.ndarray, name: str):
+    mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
+    if np.any(mask):
+        raise ValueError(f"Encountered non-finite values in {name} at indices: {np.where(mask)[0]}")
 
 
 class optgra:
@@ -366,6 +88,7 @@ class optgra:
 
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
+            _assert_finite(x, "decision vector")  # catch nan values
 
             if khanf:
                 # if Khan function is used, we first need to convert to pagmo parameters
@@ -389,6 +112,7 @@ class optgra:
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
             result = np.concatenate([result[1:], result[0:1]])
+            _assert_finite(result, "fitness")  # catch nan values
 
             return result.tolist()  # return a list
 
@@ -413,6 +137,7 @@ class optgra:
 
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
+            _assert_finite(x, "decision vector")  # catch nan values
 
             if khanf:
                 # if Khan function is used, we first need to convert to pagmo parameters
@@ -460,6 +185,8 @@ class optgra:
             if khanf:
                 khan_grad = khanf.eval_grad(x)
                 result = result @ khan_grad
+
+            _assert_finite(result, "gradient")  # catch nan values
 
             return result.tolist()  # return as a list, not ndarray
 
@@ -538,9 +265,10 @@ class optgra:
                 Pyoptgra uses a variant of the above method that additionally scales the
                 argument of the :math:`\sin` function such that the derivatives
                 :math:`\frac{d x_{Khan}}{d x}` are unity in the center of the box bounds.
-                Alternatively, to a :math:`\sin` function, also a :math:`\tanh` can be
-                used as a Khan function.
-                Valid input values are: True (same as 'sin'),'sin', 'tanh' and False.
+                Alternatively, to a :math:`\sin` function, also a :math:`\tanh` or Fourier expansion
+                of a triangle wave can be used as a Khan function.
+                Valid input values are: True (same as 'sin'),'sin', 'tanh', 'triangle1',
+                'triangle2', 'triangle3'... and False.
             optimization_method: select 0 for steepest descent, 1 for modified spectral conjugate
                 gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
                 gradient method
@@ -726,6 +454,17 @@ class optgra:
             khanf = khan_function_sin(*problem.get_bounds())
         elif self.khan_bounds == "tanh":
             khanf = khan_function_tanh(*problem.get_bounds())
+        elif isinstance(self.khan_bounds, str) and self.khan_bounds.startswith("triangle"):
+
+            def extract_trailing_integer(s):
+                match = re.match(r"triangle(\d+)$", s)
+                if match:
+                    return int(match.group(1))
+                else:
+                    raise ValueError(f"Invalid option for Khan bounds: {s}")
+
+            order = extract_trailing_integer(self.khan_bounds)
+            khanf = khan_function_triangle(*problem.get_bounds(), order)
         elif self.khan_bounds:
             raise ValueError(
                 f"Unrecognised option, {self.khan_bounds}, passed for 'khan_bounds'. "
