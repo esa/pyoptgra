@@ -12,10 +12,14 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from .optgra import khan_function_sin, khan_function_tanh, optgra  # noqa
-
-try:
-    from ._version import version as __version__  # noqa
-    from ._version import version_tuple as __version_tuple__  # noqa
-except ImportError:  # pragma: no cover
-    pass
+from ._about import __version__  # noqa
+from .khan import (  # noqa
+    base_khan_function,
+    inverse_triangular_wave,
+    khan_function_sin,
+    khan_function_tanh,
+    khan_function_triangle,
+    triangular_wave_fourier,
+    triangular_wave_fourier_grad,
+)
+from .optgra import optgra  # noqa

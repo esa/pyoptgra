@@ -1,3 +1,5 @@
 # Copyright (C) 2021 ESA, Flight Dynamics OPS-GF
 """Version number of pyoptgra package"""
-__version__ = "1.0.0"
+from importlib.metadata import version
+
+__version__ = version("pyoptgra")  # import version from pyproject.toml
