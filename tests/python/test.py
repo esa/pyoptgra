@@ -337,6 +337,10 @@ class optgra_test(unittest.TestCase):
         for i in [5, 6]:
             self.assertLess(pop.champion_f[i], 1e-6)
 
+        # get_extra_info
+        info = algo.get_extra_info()
+        self.assertTrue("Optimal Solution Found" in info)
+
         # 2. Run the same test with khan_bounds
         og = pyoptgra.optgra(
             optimization_method=1,

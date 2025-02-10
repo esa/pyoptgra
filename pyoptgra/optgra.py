@@ -34,6 +34,50 @@ from .khan import (
 )
 
 
+def _get_constraint_violation(
+    f: Union[list, np.array], nec: int, con_tol: float = 1e-6
+) -> Tuple[float, int]:
+    """Get the constraints violation norm from the fitness vector.
+
+    Parameters
+    ----------
+    f : Union[list, np.array]
+        Fitness vector to check feasibility of. ``f[0]`` is assumed to be the fitness value
+        followed by ``neq`` equality constraints.
+    nec : int
+        Number of inequality constraints in ``f``.
+    con_tol : float, optional
+        Constraint tolerance to be used for checking feasibility, by default 1e-6
+
+    Returns
+    -------
+    float, int
+        Constraint violation norm in ``f``
+        Number of violated constraints
+    """
+    # make sure that con_tol is an array
+    ncon = len(f) - 1  # total number of constraints
+    con_tol_array = np.ones(ncon) * con_tol if isinstance(con_tol, float) else con_tol
+    # extract equality and inequality constraints from fitness vector
+    eq_cons = np.array(f[1 : (nec + 1)])
+    ineq_cons = np.array(f[(nec + 1) :])
+    # extract corresponding tolerances
+    eq_con_tol = con_tol_array[1 : (nec + 1)]
+    ineq_con_tol = con_tol_array[(nec + 1) :]
+
+    # determine maximum constraint violation
+    violations = np.concatenate(
+        [
+            np.heaviside(np.abs(eq_cons) - eq_con_tol, 0),
+            np.abs(np.heaviside(ineq_cons - ineq_con_tol, 0) * np.array(ineq_cons)),
+        ]
+    )
+    violation_norm = np.linalg.norm(violations) if violations.size else 0.0
+    num_violations = int(sum(np.heaviside(violations, 0)))
+
+    return violation_norm, num_violations
+
+
 class optgra:
     """
     This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written
@@ -335,6 +379,9 @@ class optgra:
                 + " is invalid for perturbation_for_snd_order_derivatives, must be non-negative."
             )
 
+        # dictionary to store last optimisation result for get_extra_info()
+        self.__last_result = {}
+
     def set_verbosity(self, verbosity: int) -> None:
         """
         Sets pygmo verbosity of optgra wrapper.
@@ -537,18 +584,20 @@ class optgra:
         if self.force_bounds:
             lb, ub = problem.get_bounds()
             best_x = np.clip(best_x, lb, ub)
-            # for i in range(problem.get_nx()):
-            #     if best_x[i] < lb[i]:
-            #         best_x[i] = lb[i]
-            #         violated = True
-            #     if best_x[i] > ub[i]:
-            #         best_x[i] = ub[i]
-            #         violated = True
 
         # merit function is last, constraints are from 0 to problem.get_nc(),
         # we ignore bound-derived constraints
         # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
         population.set_x(idx, best_x)  # , list(pagmo_fitness))
+
+        # store last result for output
+        self.__last_result = {
+            "f": population.champion_f,
+            "x": best_x,
+            "con_tol": problem.c_tol,
+            "nec": problem.get_nec(),
+            "has_gradient": problem.has_gradient(),
+        }
 
         return population
 
@@ -795,22 +844,49 @@ class optgra:
         """
         Returns the parameters used for construction
         """
+        if self.__last_result:
+            con_vio, num_vio = _get_constraint_violation(
+                self.__last_result["f"], self.__last_result["nec"], self.__last_result["con_tol"]
+            )
+            grad_str = (
+                "\tUser-defined gradients\n"
+                if self.__last_result and self.__last_result["has_gradient"]
+                else "\tNumerical gradients by double differencing\n"
+            )
+            result_str = (
+                "Last optimisation result:\n\n"
+                + "Final objective value .............  {obj}\n"
+                + "Final constraint violation ........  {con_vio}\n"
+                + "Final num. of violated constraints   {num_vio}\n"
+                + "Successful termination: Optimal Solution Found.\n"
+            ).format(obj=self.__last_result["f"][0], con_vio=con_vio, num_vio=num_vio)
+        else:
+            grad_str = ""
+            result_str = (
+                "Last optimisation result:\n\n"
+                + "\tThere still is no last optimisation result as OPTGRA evolve "
+                + "was never successfully called yet.\n"
+            )
+
         return (
-            "max_iterations = {max_iterations}, "
-            + "max_correction_iterations = {max_correction_iterations}, "
-            + "max_distance_per_iteration = {max_distance_per_iteration}, "
-            + "perturbation_for_snd_order_derivatives = {perturbation_for_snd_order_derivatives}, "
-            + "variable_scaling_factors = {variable_scaling_factors}, "
-            + "variable_types = {variable_types}, "
-            + "constraint_priorities = {constraint_priorities}, "
-            + "bounds_to_constraints = {bounds_to_constraints}, "
-            + "bound_constraints_tolerance = {bound_constraints_tolerance}, "
-            + "merit_function_threshold = {merit_function_threshold}, "
-            + "force_bounds = {force_bounds}, "
-            + "khan_bounds = {khan_bounds}, "
-            + "optimization_method = {optimization_method}, "
-            + "log_level = {log_level}"
-            + "verbosity = {verbosity}"
+            "OPTGRA plugin for pagmo/pygmo:\n"
+            + grad_str
+            + "\tmax_iterations = {max_iterations},\n"
+            + "\tmax_correction_iterations = {max_correction_iterations},\n"
+            + "\tmax_distance_per_iteration = {max_distance_per_iteration},\n"
+            + "\tperturbation_for_snd_order_derivatives = {perturbation_for_snd_order_derivatives},\n"
+            + "\tvariable_scaling_factors = {variable_scaling_factors},\n"
+            + "\tvariable_types = {variable_types},\n"
+            + "\tconstraint_priorities = {constraint_priorities},\n"
+            + "\tbounds_to_constraints = {bounds_to_constraints},\n"
+            + "\tbound_constraints_tolerance = {bound_constraints_tolerance},\n"
+            + "\tmerit_function_threshold = {merit_function_threshold},\n"
+            + "\tforce_bounds = {force_bounds},\n"
+            + "\tkhan_bounds = {khan_bounds},\n"
+            + "\toptimization_method = {optimization_method},\n"
+            + "\tlog_level = {log_level}\n"
+            + "\tverbosity = {verbosity}\n"
+            + result_str
         ).format(
             max_iterations=self.max_iterations,
             max_correction_iterations=self.max_correction_iterations,
