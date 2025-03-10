@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The pyoptgra module &mdash; Pyoptgra 1.1.0 documentation</title>
+  <title>The pyoptgra module &mdash; Pyoptgra 1.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
       <script src="_static/doctools.js?v=9a2dae69"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -168,9 +168,10 @@ satisfied, but the gradients near the bounds approach zero.
 Pyoptgra uses a variant of the above method that additionally scales the
 argument of the <span class="math notranslate nohighlight">\(\sin\)</span> function such that the derivatives
 <span class="math notranslate nohighlight">\(\frac{d x_{Khan}}{d x}\)</span> are unity in the center of the box bounds.
-Alternatively, to a <span class="math notranslate nohighlight">\(\sin\)</span> function, also a <span class="math notranslate nohighlight">\(\tanh\)</span> can be
-used as a Khan function.
-Valid input values are: True (same as ‘sin’),’sin’, ‘tanh’ and False.</p>
+Alternatively, to a <span class="math notranslate nohighlight">\(\sin\)</span> function, also a <span class="math notranslate nohighlight">\(\tanh\)</span> or Fourier expansion
+of a triangle wave can be used as a Khan function.
+Valid input values are: True (same as ‘sin’),’sin’, ‘tanh’, ‘triangle1’,
+‘triangle2’, ‘triangle3’… and False.</p>
 </p></li>
 <li><p><strong>optimization_method</strong> – select 0 for steepest descent, 1 for modified spectral conjugate
 gradient method, 2 for spectral conjugate gradient method and 3 for conjugate
