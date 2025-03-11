@@ -62,8 +62,8 @@ def _get_constraint_violation(
     eq_cons = np.array(f[1 : (nec + 1)])
     ineq_cons = np.array(f[(nec + 1) :])
     # extract corresponding tolerances
-    eq_con_tol = con_tol_array[1 : (nec + 1)]
-    ineq_con_tol = con_tol_array[(nec + 1) :]
+    eq_con_tol = con_tol_array[0:nec]
+    ineq_con_tol = con_tol_array[nec:]
 
     # determine maximum constraint violation
     violations = np.concatenate(
@@ -110,7 +110,6 @@ class optgra:
 
     @staticmethod
     def _constraint_types_from_box_bounds(problem):
-
         lb, ub = problem.get_bounds()
         # all box-derived constraints are positive
         finite_lb = sum(isfinite(elem) for elem in lb)
@@ -129,7 +128,6 @@ class optgra:
         lb, ub = problem.get_bounds()
 
         def wrapped_fitness(x):
-
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
             _assert_finite(x, "decision vector")  # catch nan values
@@ -169,7 +167,6 @@ class optgra:
         force_bounds=False,
         khanf: Optional[base_khan_function] = None,
     ):
-
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
         f_indices, x_indices = sparsity_pattern.T  # Unpack indices
@@ -178,7 +175,6 @@ class optgra:
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
-
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
             _assert_finite(x, "decision vector")  # catch nan values
