@@ -583,6 +583,11 @@ class optgra:
         )
 
         best_x, best_f, finopt = result
+        # FINOPT
+        # -> 1=    MATCHED &     OPTIMAL
+        # -> 2=    MATCHED & NOT OPTIMAL
+        # -> 3=NOT MATCHED & NOT OPTIMAL
+        # -> 4=NOT FEASIBL & NOT OPTIMAL
 
         # if a Khan function is used we first need to convert to pagmo parameters
         if khanf:
@@ -597,13 +602,14 @@ class optgra:
         # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
         population.set_x(idx, best_x)  # , list(pagmo_fitness))
 
-        # store last result for output
+        # store last result for get_extra_info() method
         self.__last_result = {
             "f": population.champion_f,
             "x": best_x,
             "con_tol": problem.c_tol,
             "nec": problem.get_nec(),
             "has_gradient": problem.has_gradient(),
+            "finopt": finopt,
         }
 
         return population
@@ -865,8 +871,15 @@ class optgra:
                 + "Final objective value .............  {obj}\n"
                 + "Final constraint violation ........  {con_vio}\n"
                 + "Final num. of violated constraints   {num_vio}\n"
-                + "Successful termination: Optimal Solution Found.\n"
             ).format(obj=self.__last_result["f"][0], con_vio=con_vio, num_vio=num_vio)
+            if self.__last_result["finopt"] == 1:
+                result_str += "Successful termination: Optimal Solution Found.\n"
+            elif self.__last_result["finopt"] == 2:
+                result_str += "Successful termination: Constraints matched.\n"
+            elif self.__last_result["finopt"] == 3:
+                result_str += "Not converged.\n"
+            elif self.__last_result["finopt"] == 4:
+                result_str += "Problem appears infeasible.\n"
         else:
             grad_str = ""
             result_str = (
