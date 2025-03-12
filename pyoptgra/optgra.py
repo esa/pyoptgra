@@ -602,7 +602,7 @@ class optgra:
         # pagmo_fitness = [best_f[-1]] + best_f[0 : problem.get_nc()]
         population.set_x(idx, best_x)  # , list(pagmo_fitness))
 
-        # store last result for output
+        # store last result for get_extra_info() method
         self.__last_result = {
             "f": population.champion_f,
             "x": best_x,
