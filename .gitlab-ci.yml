@@ -155,10 +155,13 @@ test-wheels:
   stage: test-package
   image: python:3.9
   script:
-    - pip install pyoptgra*cp39-cp39*manylinux2014_x86_64.whl
+    - ls -lh  # Show available files
+    - WHL=$(ls pyoptgra-*cp39-cp39*manylinux*.whl | head -n1)
+    - echo 'Installing wheel:' $WHL
+    - pip install "$WHL"
     - mkdir test-install
     - cd test-install
-    - python -c "import pyoptgra"
+    - python -c "import pyoptgra; print('Import successful')"
     - cd ..
   needs:
     - python-wheels:manylinux2014
