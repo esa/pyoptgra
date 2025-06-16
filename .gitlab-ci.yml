@@ -157,7 +157,7 @@ test-wheels:
   script:
     - ls -lh  # Show available files
     - WHL=$(ls pyoptgra-*cp39-cp39*manylinux*.whl | head -n1)
-    - echo "Installing wheel: $WHL"
+    - echo 'Installing wheel:' $WHL
     - pip install "$WHL"
     - mkdir test-install
     - cd test-install
