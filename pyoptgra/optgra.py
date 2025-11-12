@@ -569,7 +569,7 @@ class optgra:
         # use timeout function (using multiprocessing module) if required
         if self.timeout_seconds is not None:
             optimize_func = get_optimize_with_timeout_function(
-                optimize, self.timeout_seconds, problem.get_nx(), problem.get_nf()
+                optimize, self.timeout_seconds, x0, fitness_func
             )
         else:
             optimize_func = optimize

@@ -36,8 +36,8 @@ def _run_optimize(
 def get_optimize_with_timeout_function(
     optimize_func: Callable[..., Tuple[List[float], List[float], int]],
     timeout_seconds: float,
-    nx: int,
-    nf: int,
+    x_timeout: List[float],
+    fitness_func: callable,
 ) -> Callable[..., Tuple[List[float], List[float], int]]:
     """
     Wrap the Pybind11-based `optimize` function with a timeout safeguard.
@@ -49,10 +49,10 @@ def get_optimize_with_timeout_function(
         Must return a tuple `(x_opt, f_opt, status)`.
     timeout_seconds : float
         Maximum runtime in seconds before the optimizer process is terminated.
-    nx : int
-        Decision vector dimension to return on timeout
-    nf : int
-        Fitness vector dimension to return on timeout
+    x_timeout : List[float]
+        Decision vector to return on timeout
+    fitness_func : callable
+        Fitness function to return on timeout
 
     Returns
     -------
@@ -72,8 +72,6 @@ def get_optimize_with_timeout_function(
     """
 
     def wrapped_optimize(*args, **kwargs) -> Tuple[List[float], List[float], int]:
-        x_timeout = [math.nan] * nx
-        f_timeout = [math.nan] * nf
         manager = mp.Manager()
         return_dict = manager.dict()
 
@@ -88,12 +86,12 @@ def get_optimize_with_timeout_function(
             process.terminate()
             process.join()
             # Return timeout status code instead of raising
-            return (x_timeout, f_timeout, 5)
+            return (x_timeout, fitness_func(x_timeout), 5)
 
         if "error" in return_dict:
             print(f"⚠️  Optimizer process failed: {return_dict['error']}")
-            return (x_timeout, f_timeout, 5)
+            return (x_timeout, fitness_func(x_timeout), 5)
 
-        return return_dict.get("result", (x_timeout, f_timeout, 5))
+        return return_dict.get("result", (x_timeout, fitness_func(x_timeout), 5))
 
     return wrapped_optimize
