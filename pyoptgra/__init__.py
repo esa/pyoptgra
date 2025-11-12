@@ -22,5 +22,5 @@ from .khan import (  # noqa
     triangular_wave_fourier,
     triangular_wave_fourier_grad,
 )
-from .timeout import get_optimize_with_timeout_function  # noqa
 from .optgra import optgra  # noqa
+from .timeout import get_optimize_with_timeout_function  # noqa

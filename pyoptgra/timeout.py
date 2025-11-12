@@ -12,9 +12,9 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-import multiprocessing as mp
-from typing import Callable, List, Tuple, Any
 import math
+import multiprocessing as mp
+from typing import Any, Callable, List, Tuple
 
 __all__ = ["get_optimize_with_timeout_function"]
 
