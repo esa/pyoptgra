@@ -203,18 +203,23 @@ namespace optgra
 
             // Ensure that at most one optgra_raii object is active at the same time
             optgra_mutex.lock();
-
+            
+            // Set number of variables and constraints. Will allocate arrays accordingly
             oginit_(&num_variables, &num_constraints);
+            // Set constraint types: 1: GTE, -1: LTE, 0: EQU, -2=DERIVED DATA
             ogctyp_(constraint_types.data());
+            // Set derivatives computation mode. 1: user-defined, 2: double diff., 3: single diff.
             ogderi_(&derivatives_computation, autodiff_deltas.data());
+            // Set maximum distance per iteration and eps for 2nd order derivatives
             ogdist_(&max_distance_per_iteration, &perturbation_for_snd_order_derivatives);
-
+            // Set variable types. 0: free variable, 1: parameter for sensitivity
             ogvtyp_(variable_types.data());
 
             // Haven't figured out what the others do, but maxiter is an upper bound anyway
             int otheriters = max_iterations; // TODO: figure out what it does.
             ogiter_(&max_iterations, &max_correction_iterations, &otheriters, &otheriters, &otheriters);
 
+            // Set optimization method flag
             ogomet_(&optimization_method);
 
             // original OPTGRA screen output configuration
@@ -278,6 +283,7 @@ namespace optgra
             static_callable_store::set_x_dim(num_variables);
             static_callable_store::set_c_dim(num_constraints + 1);
 
+            // Disable sensitivity mode
             int sensitivity_mode = 0;
             ogsopt_(&sensitivity_mode);
 

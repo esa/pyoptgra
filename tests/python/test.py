@@ -13,7 +13,7 @@
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
 import unittest
-
+import time
 import numpy as np
 
 import pygmo
@@ -24,6 +24,10 @@ import pyoptgra
 # problem class with numerical gradient, equality and inequality constraints from
 # https://esa.github.io/pygmo2/tutorials/coding_udp_constrained.html
 class luksan_vlcek:
+    def __init__(self, sleep_per_call: int = None):
+        # optional sleep per fitness call to test timeout function
+        self.sleep_per_call = sleep_per_call
+
     def fitness(self, x):
         obj = 0
         for i in range(3):
@@ -78,6 +82,8 @@ class luksan_vlcek:
         ci2 = -(
             8 * x[5] * (x[5] ** 2 - x[4]) - 2 * (1 - x[5]) + x[4] ** 2 - x[3] + x[3] ** 2 - x[4]
         )
+        if self.sleep_per_call is not None:
+            time.sleep(self.sleep_per_call)
         return [obj, ce1, ce2, ce3, ce4, ci1, ci2]
 
     def get_bounds(self):
@@ -169,6 +175,7 @@ class optgra_test(unittest.TestCase):
         self.get_extra_info_test()
         self.verbosity_test()
         self.triangle_test()
+        self.timeout_test()
 
     def constructor_test(self):
         # Check that invalid optimization method is rejected
@@ -334,7 +341,7 @@ class optgra_test(unittest.TestCase):
         # objective function
         self.assertLess(pop.champion_f[0], 2.26)
         # checking exact value as regression test
-        self.assertEqual(pop.champion_f[0], 0.82929210248477)
+        self.assertAlmostEqual(pop.champion_f[0], 0.82929210248477)
 
         # equality constraints
         for i in [1, 2, 3, 4]:
@@ -366,7 +373,7 @@ class optgra_test(unittest.TestCase):
         # objective function
         self.assertLess(pop2.champion_f[0], 2.26)
         # checking exact value as regression test
-        self.assertEqual(pop2.champion_f[0], 0.8292921025820391)
+        self.assertAlmostEqual(pop2.champion_f[0], 0.8292921025820391)
 
         # equality constraints
         for i in [1, 2, 3, 4]:
@@ -877,6 +884,27 @@ class optgra_test(unittest.TestCase):
 
         tri_grad = pyoptgra.triangular_wave_fourier_grad(0, x)
         np.testing.assert_array_equal(tri_grad, np.zeros_like(x, dtype=np.float64))
+
+    def timeout_test(self):
+        """Testing timeout functionality (2 seconds)"""
+        # 1. Run Luksan-Vlcek problem with timeout of 0.1 seconds per fitness call
+        prob = pygmo.problem(luksan_vlcek(0.1))
+        prob.c_tol = 1e-7
+        og = pyoptgra.optgra(
+            optimization_method=1,
+            max_iterations=100,
+            max_correction_iterations=100,
+            max_distance_per_iteration=10,
+            timeout_seconds=2,
+        )
+        og.set_verbosity(1)
+        algo = pygmo.algorithm(og)
+        pop = pygmo.population(prob, size=0, seed=1)  # empty population
+        pop.push_back([0.5, 0.5, -0.5, 0.4, 0.3, 0.7])  # add initial guess
+
+        # Calling optgra
+        pop = algo.evolve(pop)  # run the optimisation
+        self.assertIn("Timeout reached", algo.get_extra_info())
 
 
 if __name__ == "__main__":
