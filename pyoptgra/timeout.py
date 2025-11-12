@@ -14,7 +14,7 @@
 
 import multiprocessing as mp
 from typing import Callable, List, Tuple, Any
-
+import math
 
 __all__ = ["get_optimize_with_timeout_function"]
 
@@ -72,8 +72,8 @@ def get_optimize_with_timeout_function(
     """
 
     def wrapped_optimize(*args, **kwargs) -> Tuple[List[float], List[float], int]:
-        x_timeout = [None] * nx
-        f_timeout = [None] * nf
+        x_timeout = [math.nan] * nx
+        f_timeout = [math.nan] * nf
         manager = mp.Manager()
         return_dict = manager.dict()
 
@@ -91,7 +91,7 @@ def get_optimize_with_timeout_function(
             return (x_timeout, f_timeout, 5)
 
         if "error" in return_dict:
-            print(f"⚠️ Optimizer process failed: {return_dict['error']}")
+            print(f"⚠️  Optimizer process failed: {return_dict['error']}")
             return (x_timeout, f_timeout, 5)
 
         return return_dict.get("result", (x_timeout, f_timeout, 5))

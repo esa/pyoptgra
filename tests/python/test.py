@@ -903,8 +903,19 @@ class optgra_test(unittest.TestCase):
         pop.push_back([0.5, 0.5, -0.5, 0.4, 0.3, 0.7])  # add initial guess
 
         # Calling optgra
-        pop = algo.evolve(pop)  # run the optimisation
+        # 2. Measure execution time of evolve()
+        start_time = time.time()
+        pop = algo.evolve(pop)
+        elapsed = time.time() - start_time
+
+        # 3. Check that timeout message is recorded
         self.assertIn("Timeout reached", algo.get_extra_info())
+
+        # 4. Check that runtime is within expected bounds
+        # Allow small overhead (±0.5 s)
+        self.assertTrue(
+            1.5 <= elapsed <= 3.0, msg=f"Evolve took {elapsed:.2f} s, expected about 2 s"
+        )
 
 
 if __name__ == "__main__":

@@ -923,6 +923,7 @@ class optgra:
             + "\toptimization_method = {optimization_method},\n"
             + "\tlog_level = {log_level}\n"
             + "\tverbosity = {verbosity}\n"
+            + "\ttimeout_seconds = {timeout_seconds}\n"
             + result_str
         ).format(
             max_iterations=self.max_iterations,
@@ -940,4 +941,5 @@ class optgra:
             optimization_method=self.optimization_method,
             log_level=self.log_level,
             verbosity=self.verbosity,
+            timeout_seconds=self.timeout_seconds,
         )
