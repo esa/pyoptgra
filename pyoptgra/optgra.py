@@ -250,7 +250,7 @@ class optgra:
         khan_bounds: Union[str, bool] = False,
         optimization_method: int = 2,
         log_level: int = 0,
-        timeout_seconds: float = None,
+        timeout_seconds: Optional[float] = None,
     ) -> None:
         r"""
         Initialize a wrapper instance for the OPTGRA algorithm.
