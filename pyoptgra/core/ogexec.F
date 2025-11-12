@@ -131,7 +131,6 @@ C TODO: can this final fitness call be avoided (just for output)?
           PYGFLA = 3  ! pygmo flag in COMMON: no covergence
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-
           GOTO 9999
       ELSEIF (NUMITE .GE. MAXITE .OR.
      &       (NUMITE-ITECOR .GE. OPTITE-1 .AND. ITECOR .NE. 0)) THEN
@@ -150,7 +149,6 @@ C TODO: can this final fitness call be avoided (just for output)?
           PYGFLA = 2  ! pygmo flag in COMMON: constraints matched
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-
           GOTO 9999
       ENDIF
 C ----------------------------------------------------------------------
@@ -293,7 +291,6 @@ C TODO: can this final fitness call be avoided (just for output)?
           PYGFLA = 4  ! pygmo flag in COMMON: infeasible
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-
           GOTO 9999
       ENDIF
 C ----------------------------------------------------------------------
@@ -326,7 +323,6 @@ C TODO: can this final fitness call be avoided (just for output)?
           PYGFLA = 2  ! pygmo flag in COMMON: matched
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-
           GOTO 9999
       ENDIF
 C ======================================================================
@@ -374,7 +370,6 @@ C TODO: can this final fitness call be avoided (just for output)?
       PYGFLA = 1  ! covergence
       CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-
 C      WRITE (STR,*) "DIF=",NORM2(VARVAL-VARREF)
 C      CALL OGWRIT (1,STR)
 C ======================================================================

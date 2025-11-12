@@ -37,7 +37,7 @@ def get_optimize_with_timeout_function(
     optimize_func: Callable[..., Tuple[List[float], List[float], int]],
     timeout_seconds: float,
     x_timeout: List[float],
-    fitness_func: callable,
+    fitness_func: Callable,
 ) -> Callable[..., Tuple[List[float], List[float], int]]:
     """
     Wrap the Pybind11-based `optimize` function with a timeout safeguard.
