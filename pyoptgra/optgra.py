@@ -32,6 +32,7 @@ from .khan import (
     khan_function_tanh,
     khan_function_triangle,
 )
+from .timeout import get_optimize_with_timeout_function
 
 
 def _get_constraint_violation(
@@ -249,6 +250,7 @@ class optgra:
         khan_bounds: Union[str, bool] = False,
         optimization_method: int = 2,
         log_level: int = 0,
+        timeout_seconds: Optional[float] = None,
     ) -> None:
         r"""
         Initialize a wrapper instance for the OPTGRA algorithm.
@@ -315,6 +317,9 @@ class optgra:
             log_level: Control the original screen output of OPTGRA. 0 has no output,
                 4 and higher have maximum output`. Set this to 0 if you want to use the pygmo
                 logging system based on `set_verbosity()`.
+            timeout_seconds: Activate timeout of the optimization process. If given, the
+                optimization will be launched in a separate process and killed if timeout is
+                exceeded. By default None
 
         Raises:
 
@@ -343,6 +348,7 @@ class optgra:
 
         self.log_level = log_level
         self.verbosity = 0  # by default no pygmo-style output
+        self.timeout_seconds = timeout_seconds
         self._sens_state = None
         self._sens_constraint_types: Union[List[int], None] = None
 
@@ -559,7 +565,16 @@ class optgra:
 
         # get initial x
         x0 = population.get_x()[idx]
-        result = optimize(
+
+        # use timeout function (using multiprocessing module) if required
+        if self.timeout_seconds is not None:
+            optimize_func = get_optimize_with_timeout_function(
+                optimize, self.timeout_seconds, x0, fitness_func
+            )
+        else:
+            optimize_func = optimize
+
+        result = optimize_func(
             initial_x=khanf.eval_inv(x0) if khanf else x0,
             constraint_types=constraint_types,
             fitness_callback=fitness_func,
@@ -880,6 +895,8 @@ class optgra:
                 result_str += "Not converged.\n"
             elif self.__last_result["finopt"] == 4:
                 result_str += "Problem appears infeasible.\n"
+            elif self.__last_result["finopt"] == 5:
+                result_str += "Timeout reached.\n"
         else:
             grad_str = ""
             result_str = (
@@ -906,6 +923,7 @@ class optgra:
             + "\toptimization_method = {optimization_method},\n"
             + "\tlog_level = {log_level}\n"
             + "\tverbosity = {verbosity}\n"
+            + "\ttimeout_seconds = {timeout_seconds}\n"
             + result_str
         ).format(
             max_iterations=self.max_iterations,
@@ -923,4 +941,5 @@ class optgra:
             optimization_method=self.optimization_method,
             log_level=self.log_level,
             verbosity=self.verbosity,
+            timeout_seconds=self.timeout_seconds,
         )
