@@ -2,4 +2,4 @@
 """Version number of pyoptgra package"""
 from importlib.metadata import version
 
-__version__ = "1.3.0"  # version("pyoptgra")  # import version from pyproject.toml
+__version__ = version("pyoptgra")  # import version from pyproject.toml
