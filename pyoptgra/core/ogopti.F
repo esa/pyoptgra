@@ -284,20 +284,10 @@ C ----------------------------------------------------------------------
          VAL = DOT_PRODUCT (CONRED(CON,NUMACT+1:NUMVAR),
      &                      CONRED(COS,NUMACT+1:NUMVAR))
          IF (VAL .EQ. 0D0) CYCLE
-         VAL = - CONVAL(CON) / VAL * DESNOR
-        !TMP
-        IF (VAL .NE. VAL) THEN
-            WRITE(LOGLUP, '( "DBG-DIS2: VAL=",D20.12,1X,"CON=",I4 )')
-     &            VAL, CON
-            WRITE(LOGLUP, '( ".: CONVAL=",D20.12,1X,"DESNOR=",D20.12 )')
-     &            CONVAL(CON), DESNOR
-        ENDIF ! END TMP      IF (VAL .LE. 0D0) CYCLE
+         VAL = - CONVAL(CON) / VAL * DESNOR    
+         IF (VAL .LE. 0D0) CYCLE
          IF (VAL .GE. DIS) CYCLE
          DIS = VAL
-         !TMP
-         IF (DIS .NE. DIS) THEN
-             WRITE(LOGLUP, '( "DBG-DIS3: DIS=",D20.12, I4 )') DIS, CON 
-         ENDIF ! END TMP
          IND = CON
       ENDDO
 C ----------------------------------------------------------------------
@@ -331,23 +321,10 @@ C ----------------------------------------------------------------------
      &                          CONRED(COS,NUMACT+1:NUMVAR))
              CONVAL(CON) = CONVAL(CON) + VAL * DIS / DESNOR
           ENDDO
-          ! TMP : find the place where NaNs occur
-          DO CON = 1, NUMCON + 1
-              IF (CONVAL(CON) .NE. CONVAL(CON)) THEN
-                  WRITE(LOGLUP,
-     &            '( "DBG-NAAN1: After linear CONVAL update: CON=",I4,
-     &            " DIS=",D20.12," DESNOR=",D20.12 )')
-     &            CON, DIS, DESNOR
-                  WRITE(LOGLUP,
-     &            '( "DBG-NAAN1:   VARACC=",D20.12 )') VARACC
-              ENDIF 
-          ENDDO! END TMP
-
           GOTO 1100
       ENDIF
 C ======================================================================
  7766 CONTINUE
-      WRITE(LOGLUP, '("OGOPTI 7766")') ! TMP
 C ----------------------------------------------------------------------
       CALL OGRIGT (-CONRED(COS,1:NUMACT), COSACT)
       DO VAR = 1, NUMVAR
@@ -493,22 +470,12 @@ C ======================================================================
 C SECOND ORDER DERIVATIVES BY NUMERICAL DIFFERENCING
 C ----------------------------------------------------------------------
  4112 CONTINUE
-      WRITE(LOGLUP, '("OGOPTI 4112")') ! TMP
 C ----------------------------------------------------------------------
       CALL OGWRIT (3,"")
       WRITE (STR,'("SECOND ORDER CORRECTION")')
       CALL OGWRIT (3,STR)
       VARDES = THT * DESPRV + BET * VARDIR
       DESNOR = DSQRT(SUM(VARDES**2))
-      ! TMP: Is the step-length computation itself already generating NaN?
-      IF (DESNOR .EQ. 0D0) THEN
-         WRITE(LOGLUP,
-     &        '( "DBG-DESNOR:  DESNOR=",D20.12 )') DESNOR
-         WRITE(LOGLUP,
-     &        '( "DBG-DESNOR:  THT=",D20.12 )') THT
-         WRITE(LOGLUP,
-     &        '( "DBG-DESNOR:  BET=",D20.12 )') BET
-      ENDIF ! END TMP
 
 C ----------------------------------------------------------------------
 C SAFEGUARD: ZERO STEEPEST-ASCENT NORM => TREAT AS CONVERGENCE
@@ -540,19 +507,6 @@ C ----------------------------------------------------------------------
       ENDIF
       DIS = DIS * DESNOR
       MAXDIS = DIS
-      ! TMP: Is the step-length computation itself already generating NaN?
-      IF (DIS .NE. DIS) THEN
-             WRITE(LOGLUP,
-     &        '( "DBG-NAAN-DIS: DIS is NaN. DESNOR=",D20.12 )') DESNOR
-             WRITE(LOGLUP,
-     &        '( "DBG-NAAN-DIS: CO0=",D20.12," DET=",D20.12 )') CO0, DET
-             WRITE(LOGLUP,
-     &        '( "DBG-NAAN-DIS: CO1=",D20.12," CO2=",D20.12 )') CO1, CO2
-          ENDIF
-      IF (DESNOR .NE. DESNOR) THEN
-         WRITE(LOGLUP,
-     &   '( "DBG-NAAN-DESNOR: DESNOR is NaN" )')
-      ENDIF ! END TMP
 C ======================================================================
 C COMPUTE SECOND ORDER EFFECTS
 C ----------------------------------------------------------------------
