@@ -13,7 +13,6 @@
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
 import re
-from math import isfinite
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
