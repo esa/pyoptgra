@@ -288,7 +288,7 @@ namespace optgra
             ogsopt_(&sensitivity_mode);
 
             int finopt = 0;
-            int finite = 0;
+            int finite = 0; // number of iterations at which termination occured
             ogexec_(valvar.data(), valcon.data(), &finopt, &finite,
                     static_callable_store::fitness, static_callable_store::gradient);
 

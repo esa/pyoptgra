@@ -3,18 +3,37 @@ C ======================================================================
 C COMPUTES SCALED CONTRAINTS+MERIT AND DERIVATIVES
 C FROM     SCALED VARIABLES
 C ======================================================================
+C INP | VALVAR(NUMVAR)   | R*8 | VARIABLES VALUE (SCALED, INTERNAL)
+C     |                  |     | -> VALVAR(VAR) = x_var / VARSCA(VAR)
+C ----------------------------------------------------------------------
+C I/O | VALCON(NUMCON+1) | R*8 | CONSTRAINTS VALUE (1:NUMCON)
+C     |                  |     | MERIT       VALUE (NUMCON+1)
+C     |                  |     | -> UNSCALED INSIDE CALVAL/CALDER
+C     |                  |     |    (physical units)
+C     |                  |     | -> SCALED ON EXIT FROM OGEVAL:
+C     |                  |     |    VALCON(CON) = raw_value / CONSCA(CON)
+C ----------------------------------------------------------------------
 C INP | DERVAR           | I*4 | DERIVATIVES COMPUTATION MODE
-C     |                  |     | -> 0: VALUES ONLY
-C     |                  |     | -> 1: USER DEFINED
+C     |                  |     | -> 0: VALUES ONLY (DERCON UNCHANGED)
+C     |                  |     | -> 1: USER DEFINED      (CALL CALDER)
+C     |                  |     | ->-1: USER DEFINED, SPECIAL MODE
 C     |                  |     | -> 2: NUMERIC WITH DOUBLE DIFFERENCING
 C     |                  |     | -> 3: NUMERIC WITH SINGLE DIFFERENCING
 C ----------------------------------------------------------------------
+C OUT | DERCON(NUMCON+1, | R*8 | DERIVATIVES OF SCALED VALCON W.R.T.
+C     |        NUMVAR)   |     | SCALED VALVAR:
+C     |                  |     |    DERCON(CON,VAR) =
+C     |                  |     |    d(VALCON(CON))/d(VALVAR(VAR))
+C     |                  |     | -> SET BY CALDER IF DERVAR=1 OR -1
+C     |                  |     | -> SET BY FINITE DIFF. IF DERVAR=2 OR 3
+C     |                  |     | -> NOT MODIFIED IF DERVAR=0
+C ----------------------------------------------------------------------
 C INP | CALVAL           | EXT | FUNCTION FOR VALUES
-C     |                  |     | -> CALVAL (VALVAR, VALCON)
+C     |                  |     | -> CALVAL (VARVEC, VALCON, IFLAG)
 C     |                  |     | -> INPUT AND OUTPUT NOT SCALED
 C ----------------------------------------------------------------------
 C INP | CALDER           | EXT | FUNCTION FOR VALUES AND DERIVATIVES
-C     |                  |     | -> CALDER (VALVAR, VALCON, DERCON)
+C     |                  |     | -> CALDER (VARVEC, VALCON, DERCON)
 C     |                  |     | -> INPUT AND OUTPUT NOT SCALED
 C ======================================================================
 C SUBROUTINES CALLED: CALVAL, CALDER
@@ -45,6 +64,8 @@ C ----------------------------------------------------------------------
 C ======================================================================
 C GENERAL
 C ----------------------------------------------------------------------
+      WRITE(LOGLUP,'("DBG-OGEVAL: DERVAR=",I3)') DERVAR ! TMP
+
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
       IF     (DERVAR .EQ. 0) THEN
@@ -92,6 +113,23 @@ C ----------------------------------------------------------------------
       DO VAR = 1, NUMVAR
          VARVEC(VAR) = VALVAR(VAR) * VARSCA(VAR)
       ENDDO
+C ----------------------------------------------------------------------
+C Ensure VALCON (and, if needed, DERCON) start from a clean state.
+C This reproduces the "zero-initialised" behaviour old compilers gave
+C implicitly and avoids using garbage if CALVAL/CALDER leave entries 
+C untouched.
+C ----------------------------------------------------------------------
+      DO CON = 1, NUMCON+1
+         VALCON(CON) = 0D0
+      ENDDO
+
+      IF (DERVAR .NE. 0) THEN
+         DO VAR = 1, NUMVAR
+            DO CON = 1, NUMCON+1
+               DERCON(CON,VAR) = 0D0
+            ENDDO
+         ENDDO
+      ENDIF
 C ======================================================================
 C GET RESULTS
 C GET DERIVATIVES IF USER DEFINED
@@ -105,6 +143,7 @@ C ----------------------------------------------------------------------
       ELSEIF (DERVAR .EQ. 3) THEN
          CALL CALVAL (VARVEC, VALCON, 1)
       ENDIF
+      WRITE(LOGLUP,'("DBG-OGEVAL: VALCON(1)=",D22.14)') VALCON(1) ! TMP
 C ======================================================================
       IF (1 .EQ. 2) THEN
       GGG(1,1) = +1D+01
@@ -219,7 +258,8 @@ C write pygmo-style log output
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------
-      IF     (DERVAR .EQ. 0) THEN
+      IF (DERVAR .EQ. 0) THEN
+         WRITE(LOGLUP, '("DBG-OGEVAL RETURN ")')  ! TMP
          RETURN
       ELSEIF (DERVAR .EQ. 1 .OR. DERVAR .EQ. -1) THEN
          CALL CALDER (VARVEC, CONVEC, DERCON)

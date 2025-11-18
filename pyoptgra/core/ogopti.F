@@ -1,6 +1,8 @@
       SUBROUTINE OGOPTI (VARACC, NUMEQU, FINISH, DESNOR, CALVAL)
 C ======================================================================
 C OPTIMISATION PART
+C THIS VERSION OF THE FILE HAS WRITE AND SLEEP COMMANDS TO DEMONSTRATE
+C THE CASE IN LISA THAT CREATES AN INFINITE LOOP.
 C ======================================================================
 C I/O | VARACC           | R*8 | ITERATION SCALED DISTANCE ACCUMULATED
 C ----------------------------------------------------------------------
@@ -67,6 +69,18 @@ C ----------------------------------------------------------------------
       PRV = NUMCON + 3
       FACCNT = 0
       CONRED(1:COS,:) = CONDER(1:COS,:)
+      ! TMP: check for NaNs in CONRED after copying from CONDER
+      DO CON = 1, COS
+          DO VAR = 1, NUMVAR
+              IF (CONRED(CON,VAR) .NE. CONRED(CON,VAR)) THEN
+                  WRITE(LOGLUP,
+     &            '( "DBG-NAAN-DER: CONRED(",I4,",",I4,") is NaN" )')
+     &            CON, VAR
+              ENDIF
+          ENDDO
+      ENDDO
+
+
       CONRED(  DES,:) = VARDES
       DESDER          = VARDES
       CONRED(  PRV,:) = FUNVAR
@@ -77,8 +91,8 @@ C ----------------------------------------------------------------------
 C      WRITE (STR,'("NUMACT = ",I4)') NUMACT
 C      CALL OGWRIT (3,STR)
       NUMCOR = NUMACT
-      CONCOR = ACTCON
-      NUMACT = 0
+      CONCOR = ACTCON ! ACTCON = list of indices of active constraints
+      NUMACT = 0 ! number of active constraints
       CONACT(1:DES) = 0
 C      DO COR = 1, NUMCOR
 C          CON = CONCOR(COR)
@@ -89,7 +103,17 @@ C          CALL OGWRIT (3,STR)
 C          CALL OGINCL (CON)
 C      ENDDO
 C ======================================================================
- 1100 CONTINUE
+ 1100 CONTINUE ! Begin optimisation iteration
+      WRITE(LOGLUP, '("OGOPTI 1100")')  ! TMP
+      ! TMP: See initial active set before 1110 starts.
+      WRITE(LOGLUP, '( "DBG1100: NUMACT=", I4 )') NUMACT
+      DO CON = 1, NUMCON
+         WRITE(LOGLUP,
+     &      '( "DBG1100: CON=", I4, " CONVAL=", D20.12,
+     &         " CONACT=", I3 )')
+     &      CON, CONVAL(CON), CONACT(CON)
+      ENDDO ! END TMP
+
 C ======================================================================
 C VECTOR OF STEEPEST ASCENT
 C ----------------------------------------------------------------------
@@ -103,14 +127,14 @@ C ----------------------------------------------------------------------
 C REMOVE PASSIVE INEQUALITY CONSTRAINTS
 C ----------------------------------------------------------------------
       DO ACT = NUMACT, 1, -1
-          CON = ACTCON(ACT)
-          IF (CONVAL(CON) .LE. 1D0) CYCLE
+          CON = ACTCON(ACT) ! CON=index of active constraint in CONVAL
+          IF (CONVAL(CON) .LE. 1D0) CYCLE  
           NAM = CONSTR(CON)
           LEN = CONLEN(CON)
           WRITE (STR,'(I4,5X,1X,A)') CON, NAM(1:LEN)
           CALL OGWRIT (2,STR)
-          CALL OGEXCL (ACT)
-          CONACT(CON) = -1
+          CALL OGEXCL (ACT) ! Exclude constraint ACT from active set
+          CONACT(CON) = -1 ! Mark CON as blocked from inclusion in active set
       ENDDO
 C ----------------------------------------------------------------------
 C INCLUDE VIOLATED INEQUALITY CONSTRAINTS AND SELECT PASSIVE ONES
@@ -118,8 +142,8 @@ C SELECT PASSIVE INEQUALITY CONSTRAINTS
 C ----------------------------------------------------------------------
       DO CON = 1, NUMCON
           IF (CONTYP(CON) .EQ. -2) CYCLE
-          IF     (CONACT(CON) .GT.  0  ) THEN
-          ELSEIF (CONTYP(CON) .EQ.  0  ) THEN
+          IF     (CONACT(CON) .GT.  0  ) THEN ! CON is active, CONACT(CON) is the position of CON in active set
+          ELSEIF (CONTYP(CON) .EQ.  0  ) THEN ! CON in inactive
               CONACT(CON) =  0
           ELSEIF (CONVAL(CON) .LT. -1D0) THEN
               CONACT(CON) =  0
@@ -129,11 +153,26 @@ C ----------------------------------------------------------------------
               CONACT(CON) = -1
           ENDIF
       ENDDO
+      WRITE(LOGLUP, '("OGOPTI 13")')  ! TMP
 C ======================================================================
       NNN = 1
- 1110 CONTINUE
+      ! TMP: Shows what active set looks like just before inner loop.
+      WRITE(LOGLUP,'("DBG13: PRE-1110 NUMACT=",I4)') NUMACT  ! TMP
+ 1110 CONTINUE ! Active set refinement loop
+      ! TMP: See which constraint keeps bouncing.
+      WRITE(LOGLUP, '("OGOPTI 1110")') ! TMP
+      WRITE(LOGLUP, '( "DBG1110: NNN=", I4, " NUMACT=", I4 )')
+     &      NNN, NUMACT
+      DO ACT = 1, NUMACT
+         CON = ACTCON(ACT)
+         WRITE(LOGLUP,
+     &      '( "DBG1110: ACT=", I3, " CON=", I4, " CONVAL=", D20.12,
+     &         " CONACT=", I3 )')
+     &      ACT, CON, CONVAL(CON), CONACT(CON)
+      ENDDO ! END TMP
+
       NNN = NNN + 1
-      IF (NNN .GT. 999) THEN
+      IF (NNN .GT. 999) THEN ! saveguard active set refinement loop to continue forever
           FINISH = 0
           WRITE (STR,*) "NNN=",NNN
           CALL OGWRIT (2,STR) 
@@ -142,8 +181,8 @@ C ======================================================================
 C ======================================================================
 C DERIVATIVES OF MERIT W.R.T. ACTIVE CONSTRAINTS
 C ----------------------------------------------------------------------
-      CALL OGRIGT (-CONRED(COS,1:NUMACT), COSACT)
-      DESNOR = DSQRT(SUM(CONRED(COS,NUMACT+1:NUMVAR)**2))
+      CALL OGRIGT (-CONRED(COS,1:NUMACT), COSACT) ! COSACT=Lagrange multipliers???
+      DESNOR = DSQRT(SUM(CONRED(COS,NUMACT+1:NUMVAR)**2)) ! norm of cost function gradient
 C ----------------------------------------------------------------------
 C CONSTRAINT REMOVAL
 C ----------------------------------------------------------------------
@@ -151,7 +190,7 @@ C ----------------------------------------------------------------------
       EXC = -1D-12
       MAX = EXC
       DO ACT = 1, NUMACT
-          CON = ACTCON(ACT)
+          CON = ACTCON(ACT) ! ACT=index in active set, CON=index of constraint
           IF (CONTYP(CON) .EQ. 0) CYCLE
           VAL = COSACT(ACT)
           FAC = DOT_PRODUCT (CONRED(CON,1:NUMVAR),
@@ -163,6 +202,12 @@ C ----------------------------------------------------------------------
           MAX = VAL
           IND = ACT
       ENDDO
+      ! TMP: Show which constraint is repeatedly removed.
+      WRITE(LOGLUP,
+     &'( "DBG-RMV: Removing CON=", I4, " ACT=", I4, " VAL=", D20.12 )')
+     &ACTCON(IND), IND, MAX ! END TMP
+
+
 C ----------------------------------------------------------------------
       IF (IND .NE. 0) THEN
           CON = ACTCON(IND)
@@ -171,9 +216,15 @@ C ----------------------------------------------------------------------
           WRITE (STR,'(I4,5X,3(1X,D10.3),1X,A)')
      &           CON,DESNOR,MAX,VARMAX,NAM(1:LEN)
           CALL OGWRIT (3,STR)      
-          CALL OGEXCL (IND)
+          CALL OGEXCL (IND)  ! Exclude constraint IND from active set
+          ! TMP: 
+          WRITE(LOGLUP,
+     &    '( "DBG-HIT1: Jump to 1100 CON=", I4, " CONVAL=", D20.12 )')
+     &    IND, CONVAL(IND) ! END TMP
+
           GOTO 1110
       ENDIF
+      !CALL SLEEP(1) ! TMP
 C ----------------------------------------------------------------------
 C CONSTRAINT INCLUSION
 C ----------------------------------------------------------------------
@@ -206,6 +257,15 @@ C ----------------------------------------------------------------------
               INC = CON
           ENDIF
       ENDDO
+      ! TMP Show why that constraint is chosen for inclusion.
+      WRITE(LOGLUP,
+     &   '( "DBG-INC: Including CON=", I4, " MAX=", D20.12,
+     &      " DESNOR=", D20.12, " VARMAX=", D20.12 )')
+     &   INC, MAX, DESNOR, VARMAX
+
+      WRITE(LOGLUP,
+     &   '( "DBG-INC:   CONVAL=", D20.12, " CONACT=", I4 )')
+     &   CONVAL(INC), CONACT(INC) ! END TMP
 C ----------------------------------------------------------------------
       IF (INC .NE. 0) THEN
           CON = INC
@@ -217,8 +277,20 @@ C ----------------------------------------------------------------------
           CALL OGINCL (INC)
           GOTO 1110
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 20")')  ! TMP
 C ----------------------------------------------------------------------
  3999 CONTINUE
+      WRITE(LOGLUP, '("OGOPTI 3999")') ! TMP
+      ! TMP: Displays which active set was “stable” before jumping back later.
+      WRITE(LOGLUP, '( "DBG3999: NUMACT=", I4 )') NUMACT
+      DO ACT = 1, NUMACT
+         CON = ACTCON(ACT)
+         WRITE(LOGLUP,
+     &      '( "DBG3999: ACT=", I3, " CON=", I4,
+     &         " CONVAL=", D20.12, " CONACT=", I3 )')
+     &      ACT, CON, CONVAL(CON), CONACT(CON)
+      ENDDO ! END TMP
+
 C ----------------------------------------------------------------------
 C MATCHED INEQUALITY CONSTRAINTS + STEEPEST ASCENT VECTOR NORM
 C ----------------------------------------------------------------------
@@ -280,9 +352,19 @@ C ----------------------------------------------------------------------
      &                      CONRED(COS,NUMACT+1:NUMVAR))
          IF (VAL .EQ. 0D0) CYCLE
          VAL = - CONVAL(CON) / VAL * DESNOR
-         IF (VAL .LE. 0D0) CYCLE
+        !TMP
+        IF (VAL .NE. VAL) THEN
+            WRITE(LOGLUP, '( "DBG-DIS2: VAL=",D20.12,1X,"CON=",I4 )')
+     &            VAL, CON
+            WRITE(LOGLUP, '( ".: CONVAL=",D20.12,1X,"DESNOR=",D20.12 )')
+     &            CONVAL(CON), DESNOR
+        ENDIF ! END TMP      IF (VAL .LE. 0D0) CYCLE
          IF (VAL .GE. DIS) CYCLE
          DIS = VAL
+         !TMP
+         IF (DIS .NE. DIS) THEN
+             WRITE(LOGLUP, '( "DBG-DIS3: DIS=",D20.12, I4 )') DIS, CON 
+         ENDIF ! END TMP
          IND = CON
       ENDDO
 C ----------------------------------------------------------------------
@@ -316,10 +398,23 @@ C ----------------------------------------------------------------------
      &                          CONRED(COS,NUMACT+1:NUMVAR))
              CONVAL(CON) = CONVAL(CON) + VAL * DIS / DESNOR
           ENDDO
+          ! TMP : find the place where NaNs occur
+          DO CON = 1, NUMCON + 1
+              IF (CONVAL(CON) .NE. CONVAL(CON)) THEN
+                  WRITE(LOGLUP,
+     &            '( "DBG-NAAN1: After linear CONVAL update: CON=",I4,
+     &            " DIS=",D20.12," DESNOR=",D20.12 )')
+     &            CON, DIS, DESNOR
+                  WRITE(LOGLUP,
+     &            '( "DBG-NAAN1:   VARACC=",D20.12 )') VARACC
+              ENDIF 
+          ENDDO! END TMP
+
           GOTO 1100
       ENDIF
 C ======================================================================
  7766 CONTINUE
+      WRITE(LOGLUP, '("OGOPTI 7766")') ! TMP
 C ----------------------------------------------------------------------
       CALL OGRIGT (-CONRED(COS,1:NUMACT), COSACT)
       DO VAR = 1, NUMVAR
@@ -465,6 +560,7 @@ C ======================================================================
 C SECOND ORDER DERIVATIVES BY NUMERICAL DIFFERENCING
 C ----------------------------------------------------------------------
  4112 CONTINUE
+      WRITE(LOGLUP, '("OGOPTI 4112")') ! TMP
 C ----------------------------------------------------------------------
       CALL OGWRIT (3,"")
       WRITE (STR,'("SECOND ORDER CORRECTION")')
@@ -487,6 +583,15 @@ C ----------------------------------------------------------------------
       ENDIF
       DIS = DIS * DESNOR
       MAXDIS = DIS
+      ! TMP: Is the step-length computation itself already generating NaN?
+      IF (DIS .NE. DIS) THEN
+         WRITE(LOGLUP,
+     &   '( "DBG-NAAN-DIS: DIS is NaN. DESNOR=",D20.12 )') DESNOR
+      ENDIF
+      IF (DESNOR .NE. DESNOR) THEN
+         WRITE(LOGLUP,
+     &   '( "DBG-NAAN-DESNOR: DESNOR is NaN" )')
+      ENDIF ! END TMP
 C ======================================================================
 C COMPUTE SECOND ORDER EFFECTS
 C ----------------------------------------------------------------------
@@ -509,7 +614,45 @@ C ----------------------------------------------------------------------
       IF     (SENOPT .LE.  0 .OR. NNN .EQ. 1) THEN
           FAC = VARSTP / DESNOR
           VARVEC = VARREF + VARDES * VARSTP / DESNOR
+          ! TMP DEBUG BEFORE OGEVAL (SECOND-ORDER CALL)
+          DO CON = 1, NUMCON+1
+              CONVEC(CON) = 0D0
+          ENDDO
+          DO VAR = 1, NUMVAR
+              DO CON = 1, NUMCON+1
+                  CONDER(CON,VAR) = 0D0
+              ENDDO
+          ENDDO
+          DO CON = 1, NUMCON+1
+              WRITE(LOGLUP,
+     &        '( "DBG-BEF: CONVEC(I)=",D22.14," I=",I4 )')
+     &         CONVEC(CON), CON
+     &    
+               WRITE(LOGLUP,
+     &         '( "DBG-BEF: CONDER(1,I)=",D22.14," I=",I4 )')
+     &         CONDER(CON,1), CON
+          ENDDO 
+          DO VAR = 1, NUMVAR
+              WRITE(LOGLUP, '( "DBG-VAR: VAR=", I4, " VAL=", D22.14 )')
+     &        VAR, VARVEC(VAR)
+          ENDDO
+          ! END TMP
+
           CALL OGEVAL (VARVEC, CONVEC, 0, CONDER, CALVAL, CALVAL)
+
+          ! TMP --- DEBUG AFTER OGEVAL (SECOND-ORDER CALL)
+          DO CON = 1, NUMCON+1
+              WRITE(LOGLUP,
+     &        '( "DBG-AFT: CONVEC(I)=",D22.14," I=",I4 )')
+     &         CONVEC(CON), CON
+     &    
+               WRITE(LOGLUP,
+     &         '( "DBG-AFT: CONDER(1,I)=",D22.14," I=",I4 )')
+     &         CONDER(CON,1), CON
+          ENDDO ! END TMP
+
+          CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
+     &                 VARDES(             1:NUMVAR))
           CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
      &                     VARDES(             1:NUMVAR))
           CONQUA = 2D0 * (CONVEC - CONREF - CONQUA * FAC) / FAC**2
@@ -534,6 +677,7 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       WRITE (STR,'("ACCUMULATED  DISTANCE: ",D13.6)') VARACC
       CALL OGWRIT (3,STR)
+      WRITE(LOGLUP, '("OGOPTI 1")')  ! TMP
 C ======================================================================
 C GET EXTREMUM
 C ----------------------------------------------------------------------
@@ -590,6 +734,7 @@ C ======================================================================
           CALL OGWRIT (3,STR)
           STAFLG = 2
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 2")')  ! TMP
 C ======================================================================
 C IF MAXIMUM DISTANCE IS HIT
 C ----------------------------------------------------------------------
@@ -603,6 +748,7 @@ C ----------------------------------------------------------------------
           CALL OGWRIT (3,STR)
           STAFLG = 2
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 3")')  ! TMP
 C ======================================================================
 C IF CONVERGENCE
 C ----------------------------------------------------------------------
@@ -620,6 +766,7 @@ C ----------------------------------------------------------------------
           FINISH = 1
           GOTO 9999
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 4")')  ! TMP
 C ======================================================================
 C IF REMAINING DISTANCE IS HIT
 C ----------------------------------------------------------------------
@@ -678,11 +825,13 @@ C ----------------------------------------------------------------------
           CALL OGWRIT (3,STR)
           STAFLG = 3
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 5")')  ! TMP
 C ======================================================================
 C UPDATE
 C ----------------------------------------------------------------------
       REFDIS = FOLDIS
  8211 CONTINUE
+      WRITE(LOGLUP, '("OGOPTI 8211")') ! TMP
       WRITE (STR,'("FINAL...............:",1X,D13.6,'//
      &'2(1X,D10.3),1X,D16.9)')
      &FOLDIS, QUACOR, COSIMP, CONVAL(COS) + COSIMP
@@ -705,6 +854,7 @@ C ----------------------------------------------------------------------
       ENDDO
       DIS = DSQRT (DIS)
 C ----------------------------------------------------------------------
+      WRITE(LOGLUP, '("OGOPTI 6")')  ! TMP
       WRITE (STR,*) "REFDIS=",REFDIS
       CALL OGWRIT (3,STR)
       WRITE (STR,*) "FOLDIS=",FOLDIS
@@ -733,6 +883,7 @@ C ----------------------------------------------------------------------
           CALL OGWRIT (3,STR)
           STAFLG = 2
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 7")')  ! TMP
 C ======================================================================
 C MAXIMUM REACHED: NEXT ITERATION
 C ----------------------------------------------------------------------
@@ -744,6 +895,7 @@ C ----------------------------------------------------------------------
           IF (SENOPT .GT. 0) FINISH = 1
           GOTO 9999
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 8")')  ! TMP
 C ======================================================================
 C MAXIMUM TRAVEL DISTANCE REACHED: NEXT ITERATION
 C ----------------------------------------------------------------------
@@ -754,6 +906,7 @@ C ----------------------------------------------------------------------
           CALL OGWRIT (2,STR)
           GOTO 9999
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 10", I0)')  STAFLG ! TMP
 C ======================================================================
 C CONSTRAINT HIT: UPDATE CONSTRAINT + CORRECT
 C ----------------------------------------------------------------------
@@ -771,10 +924,26 @@ C ----------------------------------------------------------------------
           CONVEC = CONVEC + MATMUL (CONDER(1:COS,1:NUMVAR),
      &                              VARDES(      1:NUMVAR))
           CONVAL = CONVAL + CONVEC * FAC
+          ! TMP: Find spot where NaNs occur
+          DO CON = 1, NUMCON + 1
+              IF (CONVAL(CON) .NE. CONVAL(CON)) THEN
+                  WRITE(LOGLUP,
+     &            '( "DBG-NAAN2: After quadratic CONVAL update: CON=",I4,
+     &            " FAC=",D20.12 )')
+     &            CON, FAC
+                  WRITE(LOGLUP,
+     &            '( "DBG-NAAN2:   DIS=",D20.12," DESNOR=",D20.12 )')
+     &            DIS, DESNOR
+          ENDIF
+          ENDDO! END TMP
+
+
           GOTO 1100
       ENDIF
+      WRITE(LOGLUP, '("OGOPTI 11")')  ! TMP
 C ======================================================================
  9999 CONTINUE
+      WRITE(LOGLUP, '("OGOPTI 9999")') ! TMP
 C ----------------------------------------------------------------------
       FUNVAR = DESPRV
       CONFIX = CONACT(1:NUMCON)

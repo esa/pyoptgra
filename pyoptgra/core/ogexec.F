@@ -57,7 +57,7 @@ C     LOGLEV = 2
       CALL OGWRIT (2,"")
       CALL OGWRIT (2,"OPTGRA START")
       CALL OGWRIT (2,"")
-      FINOPT = 3
+      FINOPT = 3 ! initialize with NOT MATCHED & NOT OPTIMAL
       ITECOR = 0
       ITEOPT = 0
       MEAERR = 0D0
@@ -112,15 +112,15 @@ C ----------------------------------------------------------------------
      &    (CON,CON=1,NUMCON)
       ENDIF
 C ======================================================================
- 1000 CONTINUE
+ 1000 CONTINUE ! main iteration loop
 C      IF (NUMITE .GE. 52) MATLEV = 3
 C      IF (NUMITE .GE. 55) MATLEV = 2
 C ======================================================================
 C NEW ITERATION
 C ----------------------------------------------------------------------
-      IF     (NUMITE .GE. CORITE .AND. ITECOR .EQ. 0) THEN
-          FINOPT = 3
-          FINITE = NUMITE
+      IF     (NUMITE .GE. CORITE .AND. ITECOR .EQ. 0) THEN ! correction limit reached
+          FINOPT = 3 ! not matched and not optimal
+          FINITE = NUMITE ! FINITE=Number of iterations at which termination occurred
           CALL OGWRIT (1,"")
           WRITE(STR,'("OPTGRA: Converged: not ITERAT=",2I4,2D11.3)')
      &    NUMITE,MAXITE,CONERR,DESNOR
@@ -132,9 +132,9 @@ C TODO: can this final fitness call be avoided (just for output)?
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
           GOTO 9999
-      ELSEIF (NUMITE .GE. MAXITE .OR.
+      ELSEIF (NUMITE .GE. MAXITE .OR. ! Maximum iteration reached or after correction phase
      &       (NUMITE-ITECOR .GE. OPTITE-1 .AND. ITECOR .NE. 0)) THEN
-          FINOPT = 2
+          FINOPT = 2 ! matched, but not optimal
           FINITE = ITEOPT
           VARVAL = VARCOR
           CONVAL = CONCOR
@@ -152,7 +152,7 @@ C TODO: can this final fitness call be avoided (just for output)?
           GOTO 9999
       ENDIF
 C ----------------------------------------------------------------------
-      NUMITE = NUMITE + 1
+      NUMITE = NUMITE + 1 ! new iteration
 C ----------------------------------------------------------------------
       CALL OGWRIT (3,"")
       WRITE (STR,'("ITERAT=",I5)') NUMITE
@@ -160,14 +160,14 @@ C ----------------------------------------------------------------------
 C ======================================================================
 C GET VALUES AND GRADIENTS
 C ======================================================================
-      IF     (SENOPT .LE. 0) THEN
+      IF     (SENOPT .LE. 0) THEN ! No sensitivity analysis, only optimisation
           CALL OGEVAL (VARVAL, CONVAL, VARDER, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-      ELSEIF (SENOPT .EQ. +1 .OR. SENOPT .EQ. +3) THEN
+      ELSEIF (SENOPT .EQ. +1 .OR. SENOPT .EQ. +3) THEN ! sens. WITH CONSTRAINT CALCULATION
           VARVAL = SENVAR
           CALL OGEVAL (VARVAL, CONVAL, 0, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
-      ELSEIF (SENOPT .EQ. +2 .OR. SENOPT .EQ. +4) THEN
+      ELSEIF (SENOPT .EQ. +2 .OR. SENOPT .EQ. +4) THEN ! sens. WITH CONSTRAINT BIAS
           VARVAL = SENVAR
           DO CON = 1, NUMCON+1
               SCA = CONSCA(CON)
@@ -175,13 +175,14 @@ C ======================================================================
               CONVAL(CON) = SENCON(CON) - SENDEL(CON) / SCA
           ENDDO
       ENDIF
-      IF     (SENOPT .EQ. -1) THEN
+      IF     (SENOPT .EQ. -1) THEN  ! intialisation of sensitivity analysis
           SENVAR = VARVAL
           SENCON = CONVAL
       ENDIF
 C ======================================================================
+C     Do finite-difference check of provided gradients if VARDER=-1 (documented options are 0,1,2,3)
       IF (VARDER .EQ. -1 .AND. SENOPT .LE. 0) THEN
-          CONRED(1:NUMCON+1,:) = CONDER(1:NUMCON+1,:)
+          CONRED(1:NUMCON+1,:) = CONDER(1:NUMCON+1,:) ! CONDER=current constraint derivatives
           CALL OGEVAL (VARVAL, CONVAL, 2, CONDER(1:NUMCON+1,:),
      &                 CALVAL, CALDER)
           WRITE (STR,'("GRADIENT CHECK")')
@@ -219,12 +220,12 @@ C          CONDER(1:NUMCON+1,:) = CONRED(1:NUMCON+1,:)
 C          GOTO 9999
       ENDIF
 C ======================================================================
-      SENDER = CONDER
+      SENDER = CONDER  ! SENDER=derivatives for sensitivity analysis???
       DO VAR = 1,NUMVAR
-          IF (VARTYP(VAR) .NE. 1) CYCLE
+          IF (VARTYP(VAR) .NE. 1) CYCLE ! VARTYP=1 are sensitivity parameters, VARTYP=0 free params
 C          WRITE (STR,*) "VAR=",VAR,VARVAL(VAR)*VARSCA(VAR)
 C          CALL OGWRIT (2,STR)
-          CONDER(1:NUMCON+1,VAR) = 0D0
+          CONDER(1:NUMCON+1,VAR) = 0D0 ! zero derivatives of free parameters???
       ENDDO
 C ======================================================================
       IF (NUMITE .EQ. 1) THEN
@@ -235,16 +236,16 @@ C ======================================================================
       VARREF = VARVAL
       CONREF = CONVAL
 C ======================================================================
-      VARACC = 0D0
+      VARACC = 0D0 ! initialise ITERATION SCALED DISTANCE ACCUMULATED
 C ======================================================================
       COSOLD = COSNEW
-      COSNEW = CONVAL(NUMCON+1)
+      COSNEW = CONVAL(NUMCON+1) ! cost function value
       CALL OGWRIT (3,"")
       WRITE (STR,'("OPTGRA: VALCOS=",D15.8,1X,D15.8)') COSNEW,
      &COSNEW-COSOLD
       CALL OGWRIT (3,STR)
 C ======================================================================
-C CORRECTION PART
+C CONSTRAINTS CORRECTION PART
 C ----------------------------------------------------------------------
       CALL OGCORR (VARACC, FINISH, CONERR,NORERR,CALVAL,CALDER)
 C ----------------------------------------------------------------------
@@ -329,6 +330,7 @@ C ======================================================================
 C OPTIMISATION PART
 C ----------------------------------------------------------------------
  2233 CONTINUE
+      WRITE(LOGLUP, '("OGEXEC 2233")')  ! TMP
 C ----------------------------------------------------------------------
       IF (SENOPT .LT. +3) THEN
       VARSAV = VARMAX
