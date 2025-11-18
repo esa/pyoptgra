@@ -64,8 +64,6 @@ C ----------------------------------------------------------------------
 C ======================================================================
 C GENERAL
 C ----------------------------------------------------------------------
-      WRITE(LOGLUP,'("DBG-OGEVAL: DERVAR=",I3)') DERVAR ! TMP
-
       WRITE (STR,'()')
       CALL OGWRIT (3,STR)
       IF     (DERVAR .EQ. 0) THEN
@@ -113,23 +111,7 @@ C ----------------------------------------------------------------------
       DO VAR = 1, NUMVAR
          VARVEC(VAR) = VALVAR(VAR) * VARSCA(VAR)
       ENDDO
-C ----------------------------------------------------------------------
-C Ensure VALCON (and, if needed, DERCON) start from a clean state.
-C This reproduces the "zero-initialised" behaviour old compilers gave
-C implicitly and avoids using garbage if CALVAL/CALDER leave entries 
-C untouched.
-C ----------------------------------------------------------------------
-      DO CON = 1, NUMCON+1
-         VALCON(CON) = 0D0
-      ENDDO
-
-      IF (DERVAR .NE. 0) THEN
-         DO VAR = 1, NUMVAR
-            DO CON = 1, NUMCON+1
-               DERCON(CON,VAR) = 0D0
-            ENDDO
-         ENDDO
-      ENDIF
+      ! TODO: do we need to initialise CONVEC and CONDER with zeros here?
 C ======================================================================
 C GET RESULTS
 C GET DERIVATIVES IF USER DEFINED
@@ -143,7 +125,6 @@ C ----------------------------------------------------------------------
       ELSEIF (DERVAR .EQ. 3) THEN
          CALL CALVAL (VARVEC, VALCON, 1)
       ENDIF
-      WRITE(LOGLUP,'("DBG-OGEVAL: VALCON(1)=",D22.14)') VALCON(1) ! TMP
 C ======================================================================
       IF (1 .EQ. 2) THEN
       GGG(1,1) = +1D+01
@@ -259,7 +240,6 @@ C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------
       IF (DERVAR .EQ. 0) THEN
-         WRITE(LOGLUP, '("DBG-OGEVAL RETURN ")')  ! TMP
          RETURN
       ELSEIF (DERVAR .EQ. 1 .OR. DERVAR .EQ. -1) THEN
          CALL CALDER (VARVEC, CONVEC, DERCON)
