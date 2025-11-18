@@ -1,8 +1,6 @@
       SUBROUTINE OGOPTI (VARACC, NUMEQU, FINISH, DESNOR, CALVAL)
 C ======================================================================
 C OPTIMISATION PART
-C THIS VERSION OF THE FILE HAS WRITE AND SLEEP COMMANDS TO DEMONSTRATE
-C THE CASE IN LISA THAT CREATES AN INFINITE LOOP.
 C ======================================================================
 C I/O | VARACC           | R*8 | ITERATION SCALED DISTANCE ACCUMULATED
 C ----------------------------------------------------------------------
@@ -223,7 +221,6 @@ C ----------------------------------------------------------------------
       ENDIF
 C ----------------------------------------------------------------------
  3999 CONTINUE
-
 C ----------------------------------------------------------------------
 C MATCHED INEQUALITY CONSTRAINTS + STEEPEST ASCENT VECTOR NORM
 C ----------------------------------------------------------------------
@@ -476,11 +473,10 @@ C ----------------------------------------------------------------------
       CALL OGWRIT (3,STR)
       VARDES = THT * DESPRV + BET * VARDIR
       DESNOR = DSQRT(SUM(VARDES**2))
-
 C ----------------------------------------------------------------------
 C SAFEGUARD: ZERO STEEPEST-ASCENT NORM => TREAT AS CONVERGENCE
 C ----------------------------------------------------------------------
-      ! NOTE: otherwise, DESNOR used in denominator later on will cause 
+      ! NOTE: otherwise, DESNOR used in denominator later on may cause 
       ! NaN issues
       IF (DESNOR .EQ. 0D0) THEN
          WRITE(LOGLUP,'("OGOPTI WARN: ZERO SECOND ORDER CORRECTION")')
@@ -531,9 +527,6 @@ C ----------------------------------------------------------------------
           VARVEC = VARREF + VARDES * VARSTP / DESNOR
           ! TODO: do we need to initialise CONVEC and CONDER with zeros here?
           CALL OGEVAL (VARVEC, CONVEC, 0, CONDER, CALVAL, CALVAL)
-
-          CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
-     &                 VARDES(             1:NUMVAR))
           CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
      &                     VARDES(             1:NUMVAR))
           CONQUA = 2D0 * (CONVEC - CONREF - CONQUA * FAC) / FAC**2

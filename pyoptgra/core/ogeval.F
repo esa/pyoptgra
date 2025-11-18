@@ -1,7 +1,7 @@
       SUBROUTINE OGEVAL (VALVAR, VALCON, DERVAR, DERCON, CALVAL, CALDER)
 C ======================================================================
 C COMPUTES SCALED CONTRAINTS+MERIT AND DERIVATIVES
-C FROM     SCALED VARIABLES
+C FROM SCALED VARIABLES
 C ======================================================================
 C INP | VALVAR(NUMVAR)   | R*8 | VARIABLES VALUE (SCALED, INTERNAL)
 C     |                  |     | -> VALVAR(VAR) = x_var / VARSCA(VAR)

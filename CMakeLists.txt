@@ -12,10 +12,6 @@ message(STATUS "System name: ${CMAKE_SYSTEM_NAME}")
 # compiler setup
 
 enable_language(Fortran)
-# Force debug flags for Fortran, including preprocessed .F files
-# set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0" CACHE STRING "" FORCE)
-# set(CMAKE_Fortran_FLAGS "-g -O0" CACHE STRING "" FORCE)
-
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
