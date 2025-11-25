@@ -1,20 +1,39 @@
       SUBROUTINE OGEVAL (VALVAR, VALCON, DERVAR, DERCON, CALVAL, CALDER)
 C ======================================================================
 C COMPUTES SCALED CONTRAINTS+MERIT AND DERIVATIVES
-C FROM     SCALED VARIABLES
+C FROM SCALED VARIABLES
 C ======================================================================
+C INP | VALVAR(NUMVAR)   | R*8 | VARIABLES VALUE (SCALED, INTERNAL)
+C     |                  |     | -> VALVAR(VAR) = x_var / VARSCA(VAR)
+C ----------------------------------------------------------------------
+C I/O | VALCON(NUMCON+1) | R*8 | CONSTRAINTS VALUE (1:NUMCON)
+C     |                  |     | MERIT       VALUE (NUMCON+1)
+C     |                  |     | -> UNSCALED INSIDE CALVAL/CALDER
+C     |                  |     |    (physical units)
+C     |                  |     | -> SCALED ON EXIT FROM OGEVAL:
+C     |                  |     |    VALCON(CON) = raw_value / CONSCA(CON)
+C ----------------------------------------------------------------------
 C INP | DERVAR           | I*4 | DERIVATIVES COMPUTATION MODE
-C     |                  |     | -> 0: VALUES ONLY
-C     |                  |     | -> 1: USER DEFINED
+C     |                  |     | -> 0: VALUES ONLY (DERCON UNCHANGED)
+C     |                  |     | -> 1: USER DEFINED      (CALL CALDER)
+C     |                  |     | ->-1: USER DEFINED, SPECIAL MODE
 C     |                  |     | -> 2: NUMERIC WITH DOUBLE DIFFERENCING
 C     |                  |     | -> 3: NUMERIC WITH SINGLE DIFFERENCING
 C ----------------------------------------------------------------------
+C OUT | DERCON(NUMCON+1, | R*8 | DERIVATIVES OF SCALED VALCON W.R.T.
+C     |        NUMVAR)   |     | SCALED VALVAR:
+C     |                  |     |    DERCON(CON,VAR) =
+C     |                  |     |    d(VALCON(CON))/d(VALVAR(VAR))
+C     |                  |     | -> SET BY CALDER IF DERVAR=1 OR -1
+C     |                  |     | -> SET BY FINITE DIFF. IF DERVAR=2 OR 3
+C     |                  |     | -> NOT MODIFIED IF DERVAR=0
+C ----------------------------------------------------------------------
 C INP | CALVAL           | EXT | FUNCTION FOR VALUES
-C     |                  |     | -> CALVAL (VALVAR, VALCON)
+C     |                  |     | -> CALVAL (VARVEC, VALCON, IFLAG)
 C     |                  |     | -> INPUT AND OUTPUT NOT SCALED
 C ----------------------------------------------------------------------
 C INP | CALDER           | EXT | FUNCTION FOR VALUES AND DERIVATIVES
-C     |                  |     | -> CALDER (VALVAR, VALCON, DERCON)
+C     |                  |     | -> CALDER (VARVEC, VALCON, DERCON)
 C     |                  |     | -> INPUT AND OUTPUT NOT SCALED
 C ======================================================================
 C SUBROUTINES CALLED: CALVAL, CALDER
@@ -92,6 +111,7 @@ C ----------------------------------------------------------------------
       DO VAR = 1, NUMVAR
          VARVEC(VAR) = VALVAR(VAR) * VARSCA(VAR)
       ENDDO
+      ! TODO: do we need to initialise CONVEC and CONDER with zeros here?
 C ======================================================================
 C GET RESULTS
 C GET DERIVATIVES IF USER DEFINED
@@ -219,7 +239,7 @@ C write pygmo-style log output
 C ======================================================================
 C NO DERIVATIVES
 C ----------------------------------------------------------------------
-      IF     (DERVAR .EQ. 0) THEN
+      IF (DERVAR .EQ. 0) THEN
          RETURN
       ELSEIF (DERVAR .EQ. 1 .OR. DERVAR .EQ. -1) THEN
          CALL CALDER (VARVEC, CONVEC, DERCON)
