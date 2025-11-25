@@ -88,7 +88,7 @@ def _isfinite_bounds(bounds: List[float]) -> List[bool]:
     # define a maximum allowed bound value to consider as finite
     # We need this to avoid infinities in OPTGRA that are caused by very large bounds which are
     # de-factor meant infinite for OPTGRA
-    max_allowed_bound = 1e300  # the largest representable REAL*8 is ~1.798 × 10^308
+    max_allowed_bound = 1e295  # the largest representable REAL*8 is ~1.798 × 10^308
     return [np.isfinite(b) and abs(b) < max_allowed_bound for b in bounds]
 
 
