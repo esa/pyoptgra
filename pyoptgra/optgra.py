@@ -291,7 +291,7 @@ class optgra:
                 problems into inequality constraints for optgra. Note that when also passing
                 constraint priorities, the original constraints of the problem come first, followed
                 by those derived from the lower box bounds, then those from the upper box bounds.
-                Infinite bounds are ignored and not counted.
+                Infinite bounds (i.e. larger than 1e300) are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived
                 from bounds
             merit_function_threshold: optional - convergence threshold for merit
