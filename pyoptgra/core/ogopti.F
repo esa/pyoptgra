@@ -77,8 +77,8 @@ C ----------------------------------------------------------------------
 C      WRITE (STR,'("NUMACT = ",I4)') NUMACT
 C      CALL OGWRIT (3,STR)
       NUMCOR = NUMACT
-      CONCOR = ACTCON
-      NUMACT = 0
+      CONCOR = ACTCON ! ACTCON = list of indices of active constraints
+      NUMACT = 0 ! number of active constraints
       CONACT(1:DES) = 0
 C      DO COR = 1, NUMCOR
 C          CON = CONCOR(COR)
@@ -89,7 +89,8 @@ C          CALL OGWRIT (3,STR)
 C          CALL OGINCL (CON)
 C      ENDDO
 C ======================================================================
- 1100 CONTINUE
+ 1100 CONTINUE ! Begin optimisation iteration
+
 C ======================================================================
 C VECTOR OF STEEPEST ASCENT
 C ----------------------------------------------------------------------
@@ -103,14 +104,14 @@ C ----------------------------------------------------------------------
 C REMOVE PASSIVE INEQUALITY CONSTRAINTS
 C ----------------------------------------------------------------------
       DO ACT = NUMACT, 1, -1
-          CON = ACTCON(ACT)
-          IF (CONVAL(CON) .LE. 1D0) CYCLE
+          CON = ACTCON(ACT) ! CON=index of active constraint in CONVAL
+          IF (CONVAL(CON) .LE. 1D0) CYCLE  
           NAM = CONSTR(CON)
           LEN = CONLEN(CON)
           WRITE (STR,'(I4,5X,1X,A)') CON, NAM(1:LEN)
           CALL OGWRIT (2,STR)
-          CALL OGEXCL (ACT)
-          CONACT(CON) = -1
+          CALL OGEXCL (ACT) ! Exclude constraint ACT from active set
+          CONACT(CON) = -1 ! Mark CON as blocked from inclusion in active set
       ENDDO
 C ----------------------------------------------------------------------
 C INCLUDE VIOLATED INEQUALITY CONSTRAINTS AND SELECT PASSIVE ONES
@@ -118,8 +119,8 @@ C SELECT PASSIVE INEQUALITY CONSTRAINTS
 C ----------------------------------------------------------------------
       DO CON = 1, NUMCON
           IF (CONTYP(CON) .EQ. -2) CYCLE
-          IF     (CONACT(CON) .GT.  0  ) THEN
-          ELSEIF (CONTYP(CON) .EQ.  0  ) THEN
+          IF     (CONACT(CON) .GT.  0  ) THEN ! CON is active, CONACT(CON) is the position of CON in active set
+          ELSEIF (CONTYP(CON) .EQ.  0  ) THEN ! CON in inactive
               CONACT(CON) =  0
           ELSEIF (CONVAL(CON) .LT. -1D0) THEN
               CONACT(CON) =  0
@@ -131,9 +132,9 @@ C ----------------------------------------------------------------------
       ENDDO
 C ======================================================================
       NNN = 1
- 1110 CONTINUE
+ 1110 CONTINUE ! Active set refinement loop
       NNN = NNN + 1
-      IF (NNN .GT. 999) THEN
+      IF (NNN .GT. 999) THEN ! saveguard active set refinement loop to continue forever
           FINISH = 0
           WRITE (STR,*) "NNN=",NNN
           CALL OGWRIT (2,STR) 
@@ -142,8 +143,8 @@ C ======================================================================
 C ======================================================================
 C DERIVATIVES OF MERIT W.R.T. ACTIVE CONSTRAINTS
 C ----------------------------------------------------------------------
-      CALL OGRIGT (-CONRED(COS,1:NUMACT), COSACT)
-      DESNOR = DSQRT(SUM(CONRED(COS,NUMACT+1:NUMVAR)**2))
+      CALL OGRIGT (-CONRED(COS,1:NUMACT), COSACT) ! COSACT=Lagrange multipliers???
+      DESNOR = DSQRT(SUM(CONRED(COS,NUMACT+1:NUMVAR)**2)) ! norm of cost function gradient
 C ----------------------------------------------------------------------
 C CONSTRAINT REMOVAL
 C ----------------------------------------------------------------------
@@ -151,7 +152,7 @@ C ----------------------------------------------------------------------
       EXC = -1D-12
       MAX = EXC
       DO ACT = 1, NUMACT
-          CON = ACTCON(ACT)
+          CON = ACTCON(ACT) ! ACT=index in active set, CON=index of constraint
           IF (CONTYP(CON) .EQ. 0) CYCLE
           VAL = COSACT(ACT)
           FAC = DOT_PRODUCT (CONRED(CON,1:NUMVAR),
@@ -163,6 +164,7 @@ C ----------------------------------------------------------------------
           MAX = VAL
           IND = ACT
       ENDDO
+
 C ----------------------------------------------------------------------
       IF (IND .NE. 0) THEN
           CON = ACTCON(IND)
@@ -171,7 +173,7 @@ C ----------------------------------------------------------------------
           WRITE (STR,'(I4,5X,3(1X,D10.3),1X,A)')
      &           CON,DESNOR,MAX,VARMAX,NAM(1:LEN)
           CALL OGWRIT (3,STR)      
-          CALL OGEXCL (IND)
+          CALL OGEXCL (IND)  ! Exclude constraint IND from active set
           GOTO 1110
       ENDIF
 C ----------------------------------------------------------------------
@@ -279,7 +281,7 @@ C ----------------------------------------------------------------------
          VAL = DOT_PRODUCT (CONRED(CON,NUMACT+1:NUMVAR),
      &                      CONRED(COS,NUMACT+1:NUMVAR))
          IF (VAL .EQ. 0D0) CYCLE
-         VAL = - CONVAL(CON) / VAL * DESNOR
+         VAL = - CONVAL(CON) / VAL * DESNOR    
          IF (VAL .LE. 0D0) CYCLE
          IF (VAL .GE. DIS) CYCLE
          DIS = VAL
@@ -472,6 +474,20 @@ C ----------------------------------------------------------------------
       VARDES = THT * DESPRV + BET * VARDIR
       DESNOR = DSQRT(SUM(VARDES**2))
 C ----------------------------------------------------------------------
+C SAFEGUARD: ZERO STEEPEST-ASCENT NORM => TREAT AS CONVERGENCE
+C ----------------------------------------------------------------------
+      ! NOTE: otherwise, DESNOR used in denominator later on may cause 
+      ! NaN issues
+      IF (DESNOR .EQ. 0D0) THEN
+         WRITE(LOGLUP,'("OGOPTI WARN: ZERO SECOND ORDER CORRECTION")')
+         WRITE(LOGLUP,'("    TREATING AS CONVERGENCE")')
+         FOLDIS = 0D0
+         QUACOR = 0D0
+         COSIMP = 0D0
+         FINISH = 1
+         GOTO 9999
+      ENDIF
+C ----------------------------------------------------------------------
 C MAXIMUM TRAVEL DISTANCE
 C ----------------------------------------------------------------------
       DIS = VARMAX
@@ -509,6 +525,7 @@ C ----------------------------------------------------------------------
       IF     (SENOPT .LE.  0 .OR. NNN .EQ. 1) THEN
           FAC = VARSTP / DESNOR
           VARVEC = VARREF + VARDES * VARSTP / DESNOR
+          ! TODO: do we need to initialise CONVEC and CONDER with zeros here?
           CALL OGEVAL (VARVEC, CONVEC, 0, CONDER, CALVAL, CALVAL)
           CONQUA = MATMUL (CONDER(1:COS,       1:NUMVAR),
      &                     VARDES(             1:NUMVAR))

@@ -13,7 +13,6 @@
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
 import re
-from math import isfinite
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
@@ -85,6 +84,14 @@ def _assert_finite(arr: np.ndarray, name: str):
         raise ValueError(f"Encountered non-finite values in {name} at indices: {np.where(mask)[0]}")
 
 
+def _isfinite_bounds(bounds: List[float]) -> List[bool]:
+    # define a maximum allowed bound value to consider as finite
+    # We need this to avoid infinities in OPTGRA that are caused by very large bounds which are
+    # de-factor meant infinite for OPTGRA
+    max_allowed_bound = 1e295  # the largest representable REAL*8 is ~1.798 × 10^308
+    return [np.isfinite(b) and abs(b) < max_allowed_bound for b in bounds]
+
+
 class optgra:
     """
     This class is a user defined algorithm (UDA) providing a wrapper around OPTGRA, which is written
@@ -113,8 +120,8 @@ class optgra:
     def _constraint_types_from_box_bounds(problem):
         lb, ub = problem.get_bounds()
         # all box-derived constraints are positive
-        finite_lb = sum(isfinite(elem) for elem in lb)
-        finite_ub = sum(isfinite(elem) for elem in ub)
+        finite_lb = sum(_isfinite_bounds(lb))
+        finite_ub = sum(_isfinite_bounds(ub))
         resultTypes = [1] * (finite_lb + finite_ub)
         return resultTypes
 
@@ -149,7 +156,7 @@ class optgra:
             if bounds_to_constraints:
                 # Add (x[i] - lb[i]) for finite lb[i] and (ub[i] - x[i]) for finite ub[i]
                 result = np.concatenate(
-                    [result, (x - lb)[np.isfinite(lb)], (ub - x)[np.isfinite(ub)]]
+                    [result, (x - lb)[_isfinite_bounds(lb)], (ub - x)[_isfinite_bounds(ub)]]
                 )
 
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
@@ -208,11 +215,11 @@ class optgra:
             result = result.tolist()
             if bounds_to_constraints:
                 # lower bound gradients
-                finite_indices = np.isfinite(lb)  # Boolean mask for valid indices
+                finite_indices = _isfinite_bounds(lb)  # Boolean mask for valid indices
                 box_lb_grads = np.eye(nx)[finite_indices]
 
                 # upper bound gradients
-                finite_indices = np.isfinite(ub)  # Boolean mask for valid indices
+                finite_indices = _isfinite_bounds(ub)  # Boolean mask for valid indices
                 box_ub_grads = -1.0 * np.eye(nx)[finite_indices]
 
                 # append box bounds to gradient matrix
@@ -284,7 +291,7 @@ class optgra:
                 problems into inequality constraints for optgra. Note that when also passing
                 constraint priorities, the original constraints of the problem come first, followed
                 by those derived from the lower box bounds, then those from the upper box bounds.
-                Infinite bounds are ignored and not counted.
+                Infinite bounds (i.e. larger than 1e300) are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived
                 from bounds
             merit_function_threshold: optional - convergence threshold for merit

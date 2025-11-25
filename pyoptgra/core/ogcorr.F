@@ -159,7 +159,7 @@ C ----------------------------------------------------------------------
       ENDIF
       NUMACT = 0
       CONACT = 0
-      CONRED(1:NUMCON+1,:) = CONDER(1:NUMCON+1,:)
+      CONRED(1:NUMCON+1,:) = CONDER(1:NUMCON+1,:) ! CONRED=constraint gradient matrix (scaled)
       CONRED(  NUMCON+2,:) = VARDIR
 C ----------------------------------------------------------------------
 C CHECK CONSTRAINTS
