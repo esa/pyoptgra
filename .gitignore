@@ -16,3 +16,4 @@ _skbuild/
 doc/sphinx/_build/
 pyoptgra.egg-info/
 build
+env
