@@ -4,13 +4,17 @@ authors = [
   { name = "Moritz von Looz", email = "moritz.von.looz@esa.int" },
   { name = "Waldemar Martens", email = "waldemar.martens@esa.int" },
 ]
-dependencies = ["pygmo >=2.16.0", "numpy<2.0.0"]
+dependencies = [
+    "pygmo >=2.16.0",
+    "numpy<2.0.0; python_version < '3.12'",
+    "numpy>=2.0.0; python_version >= '3.12'"
+]
 description = "A python-wrapped version of OPTGRA, an algorithm for constrained optimization"
 license = { text = "GPL-3.0 or ESCL-2.4" }
 name = "pyoptgra"
 readme = "README.rst"
 requires-python = ">=3.9"
-version = "1.3.1"
+version = "1.4.1"
 
 [build-system]
 build-backend = "scikit_build_core.build"

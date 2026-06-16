@@ -478,7 +478,7 @@ C ----------------------------------------------------------------------
           FAC = VARVEC(VAR)
           IF (FAC .EQ. 0D0) CYCLE
           DIF = VARVAL(VAR) - VARREF(VAR)
-          SCA = VARMAX * 1D-0
+          SCA = VARMAX
           VAL = (DIF + SCA) / FAC
           FAC = (DIF - SCA) / FAC
           IF (FAC .GT. VAL) VAL = FAC
