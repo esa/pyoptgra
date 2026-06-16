@@ -333,7 +333,6 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
       IF (SENOPT .LT. +3) THEN
       VARSAV = VARMAX
-      VARMAX = VARMAX * 10D-1
       CALL OGOPTI (VARACC, NUMEQU, FINISH, DESNOR, CALVAL)
       VARMAX = VARSAV
       ENDIF
