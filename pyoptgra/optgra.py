@@ -84,12 +84,12 @@ def _replace_nonfinite(arr: np.ndarray, value: Union[float, np.ndarray], name: s
     mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
     if np.any(mask):
         print(f"Ignoring non-finite values in {name} at indices: {np.where(mask)}")
-    if isinstance(value, float):
-        arr[mask] = value
-    elif value.size != arr.size:
-        raise ValueError(f"Encountered size mismatch in variable: {name}")
-    else:  # arr and value are arrays of the same size
-        arr[mask] = value[mask]
+        if isinstance(value, float):
+            arr[mask] = value
+        elif not hasattr(value, "size") or value.size != arr.size:
+            raise ValueError(f"Encountered size mismatch in variable: {name}")
+        else:  # arr and value are arrays of the same size
+            arr[mask] = value[mask]
 
 
 def _assert_finite(arr: np.ndarray, name: str):
@@ -193,8 +193,11 @@ class optgra:
         force_bounds=False,
         khanf: Optional[base_khan_function] = None,
         nan_gradient_strategy: Optional[str] = "fail",
-        last_valid_grad: Optional[np.ndarray] = None,
+        last_valid_grad: Optional[List[Optional[np.ndarray]]] = None,
     ):
+        if last_valid_grad is None:
+            last_valid_grad = [None]
+
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
         f_indices, x_indices = sparsity_pattern.T  # Unpack indices
@@ -203,7 +206,6 @@ class optgra:
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
-            nonlocal last_valid_grad
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
             _assert_finite(x, "decision vector")  # catch nan values
@@ -258,8 +260,8 @@ class optgra:
             if nan_gradient_strategy == "fail":
                 _assert_finite(result, "gradient")  # catch nan values
             elif nan_gradient_strategy == "reuse":
-                _replace_nonfinite(result, last_valid_grad, "gradient")
-                last_valid_grad = deepcopy(result)  # store for next iteration
+                _replace_nonfinite(result, last_valid_grad[0], "gradient")
+                last_valid_grad[0] = deepcopy(result)  # store for next iteration
             elif nan_gradient_strategy == "zero":
                 _replace_nonfinite(result, 0.0, "gradient")
 
@@ -393,7 +395,8 @@ class optgra:
         self.timeout_seconds = timeout_seconds
         self.ignore_nan_fitness = ignore_nan_fitness
         self.nan_gradient_strategy = nan_gradient_strategy
-        self._last_valid_grad = None  # for nan_gradient_strategy = 'reuse'
+        self._last_valid_grad: List[Optional[np.ndarray]] = [None]
+        # for nan_gradient_strategy = 'reuse'
         self._sens_state = None
         self._sens_constraint_types: Union[List[int], None] = None
 
