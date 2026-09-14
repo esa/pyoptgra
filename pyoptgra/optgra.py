@@ -78,6 +78,12 @@ def _get_constraint_violation(
     return violation_norm, num_violations
 
 
+def _replace_nonfinite(arr: np.ndarray, value: float):
+    """Replace nonfinite values in arr with value."""
+    mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
+    arr[mask] = value
+
+
 def _assert_finite(arr: np.ndarray, name: str):
     mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
     if np.any(mask):
@@ -131,6 +137,7 @@ class optgra:
         bounds_to_constraints: bool = True,
         force_bounds: bool = False,
         khanf: Optional[base_khan_function] = None,
+        ignore_nonfinite_fitness: Optional[bool] = False,
     ):
         # get problem parameters
         lb, ub = problem.get_bounds()
@@ -162,7 +169,10 @@ class optgra:
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
             result = np.concatenate([result[1:], result[0:1]])
-            _assert_finite(result, "fitness")  # catch nan values
+            if ignore_nonfinite_fitness:
+                _replace_nonfinite(result, 0.0)
+            else:
+                _assert_finite(result, "fitness")  # catch nan values
 
             return result.tolist()  # return a list
 
@@ -174,6 +184,7 @@ class optgra:
         bounds_to_constraints: bool = True,
         force_bounds=False,
         khanf: Optional[base_khan_function] = None,
+        ignore_nonfinite_gradient: Optional[bool] = False,
     ):
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
@@ -233,8 +244,10 @@ class optgra:
             if khanf:
                 khan_grad = khanf.eval_grad(x)
                 result = result @ khan_grad
-
-            _assert_finite(result, "gradient")  # catch nan values
+            if ignore_nonfinite_gradient:
+                _replace_nonfinite(result, 0.0)
+            else:
+                _assert_finite(result, "gradient")  # catch nan values
 
             return result.tolist()  # return as a list, not ndarray
 
@@ -258,6 +271,8 @@ class optgra:
         optimization_method: int = 2,
         log_level: int = 0,
         timeout_seconds: Optional[float] = None,
+        ignore_nonfinite_fitness: bool = False,
+        ignore_nonfinite_gradient: bool = False,
     ) -> None:
         r"""
         Initialize a wrapper instance for the OPTGRA algorithm.
@@ -291,7 +306,7 @@ class optgra:
                 problems into inequality constraints for optgra. Note that when also passing
                 constraint priorities, the original constraints of the problem come first, followed
                 by those derived from the lower box bounds, then those from the upper box bounds.
-                Infinite bounds (i.e. larger than 1e300) are ignored and not counted.
+                Infinite bounds (i.e. larger than 1e295) are ignored and not counted.
             bound_constraints_tolerance: optional - constraint tolerance for the constraints derived
                 from bounds
             merit_function_threshold: optional - convergence threshold for merit
@@ -327,6 +342,10 @@ class optgra:
             timeout_seconds: Activate timeout of the optimization process. If given, the
                 optimization will be launched in a separate process and killed if timeout is
                 exceeded. By default None
+            ignore_nonfinite_fitness: ignore infinite or nan fitness values returned from the
+                problem by setting them to zero. By default False
+            ignore_nonfinite_gradient: ignore infinite or nan gradient values returned from the
+                problem by setting them to zero. By default False
 
         Raises:
 
@@ -356,6 +375,8 @@ class optgra:
         self.log_level = log_level
         self.verbosity = 0  # by default no pygmo-style output
         self.timeout_seconds = timeout_seconds
+        self.ignore_nonfinite_fitness = ignore_nonfinite_fitness
+        self.ignore_nonfinite_gradient = ignore_nonfinite_gradient
         self._sens_state = None
         self._sens_constraint_types: Union[List[int], None] = None
 
@@ -530,13 +551,21 @@ class optgra:
             khanf = None
 
         fitness_func = optgra._wrap_fitness_func(
-            problem, self.bounds_to_constraints, self.force_bounds, khanf
+            problem,
+            self.bounds_to_constraints,
+            self.force_bounds,
+            khanf,
+            self.ignore_nonfinite_fitness,
         )
         grad_func = None
         derivatives_computation = 2
         if problem.has_gradient():
             grad_func = optgra._wrap_gradient_func(
-                problem, self.bounds_to_constraints, self.force_bounds, khanf
+                problem,
+                self.bounds_to_constraints,
+                self.force_bounds,
+                khanf,
+                self.ignore_nonfinite_gradient,
             )
             derivatives_computation = 1
 
