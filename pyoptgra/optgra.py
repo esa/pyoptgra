@@ -78,9 +78,11 @@ def _get_constraint_violation(
     return violation_norm, num_violations
 
 
-def _replace_nonfinite(arr: np.ndarray, value: float):
+def _replace_nonfinite(arr: np.ndarray, value: float, name: str):
     """Replace nonfinite values in arr with value."""
     mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
+    if np.any(mask):
+        print(f"Ignoring non-finite values in {name} at indices: {np.where(mask)[0]}")
     arr[mask] = value
 
 
@@ -93,7 +95,7 @@ def _assert_finite(arr: np.ndarray, name: str):
 def _isfinite_bounds(bounds: List[float]) -> List[bool]:
     # define a maximum allowed bound value to consider as finite
     # We need this to avoid infinities in OPTGRA that are caused by very large bounds which are
-    # de-factor meant infinite for OPTGRA
+    # de-facto meant infinite for OPTGRA
     max_allowed_bound = 1e295  # the largest representable REAL*8 is ~1.798 × 10^308
     return [np.isfinite(b) and abs(b) < max_allowed_bound for b in bounds]
 
@@ -170,7 +172,7 @@ class optgra:
             # equivalent to rotating in a dequeue
             result = np.concatenate([result[1:], result[0:1]])
             if ignore_nonfinite_fitness:
-                _replace_nonfinite(result, 0.0)
+                _replace_nonfinite(result, 0.0, "fitness")
             else:
                 _assert_finite(result, "fitness")  # catch nan values
 
@@ -245,7 +247,7 @@ class optgra:
                 khan_grad = khanf.eval_grad(x)
                 result = result @ khan_grad
             if ignore_nonfinite_gradient:
-                _replace_nonfinite(result, 0.0)
+                _replace_nonfinite(result, 0.0, "gradient")
             else:
                 _assert_finite(result, "gradient")  # catch nan values
 
