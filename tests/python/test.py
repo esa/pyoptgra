@@ -859,7 +859,7 @@ class optgra_test(unittest.TestCase):
         with self.assertRaises(ValueError):
             fitness([0.5])
         fitness = pyoptgra.optgra._wrap_fitness_func(
-            prob, bounds_to_constraints=False, ignore_nonfinite_fitness=True
+            prob, bounds_to_constraints=False, ignore_nan_fitness=True
         )
         self.assertEqual(fitness([0.5]), [1.0, 0.0])
 
@@ -867,7 +867,7 @@ class optgra_test(unittest.TestCase):
         with self.assertRaises(ValueError):
             gradient([0.5])
         gradient = pyoptgra.optgra._wrap_gradient_func(
-            prob, bounds_to_constraints=False, ignore_nonfinite_gradient=True
+            prob, bounds_to_constraints=False, nan_gradient_strategy="zero"
         )
         self.assertEqual(gradient([0.5]), [[2.0], [0.0]])
 

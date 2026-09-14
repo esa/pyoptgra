@@ -14,6 +14,7 @@
 
 import re
 from typing import Any, List, Optional, Tuple, Union
+from copy import deepcopy
 
 import numpy as np
 from pygmo import s_policy, select_best
@@ -78,18 +79,23 @@ def _get_constraint_violation(
     return violation_norm, num_violations
 
 
-def _replace_nonfinite(arr: np.ndarray, value: float, name: str):
+def _replace_nonfinite(arr: np.ndarray, value: Union[float, np.ndarray], name: str):
     """Replace nonfinite values in arr with value."""
     mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
     if np.any(mask):
-        print(f"Ignoring non-finite values in {name} at indices: {np.where(mask)[0]}")
-    arr[mask] = value
+        print(f"Ignoring non-finite values in {name} at indices: {np.where(mask)}")
+    if isinstance(value, float):
+        arr[mask] = value
+    elif value.size != arr.size:
+        raise ValueError(f"Encountered size mismatch in variable: {name}")
+    else:  # arr and value are arrays of the same size
+        arr[mask] = value[mask]
 
 
 def _assert_finite(arr: np.ndarray, name: str):
     mask = ~np.isfinite(arr)  # True for NaN, Inf, -Inf
     if np.any(mask):
-        raise ValueError(f"Encountered non-finite values in {name} at indices: {np.where(mask)[0]}")
+        raise ValueError(f"Encountered non-finite values in {name} at indices: {np.where(mask)}")
 
 
 def _isfinite_bounds(bounds: List[float]) -> List[bool]:
@@ -139,7 +145,7 @@ class optgra:
         bounds_to_constraints: bool = True,
         force_bounds: bool = False,
         khanf: Optional[base_khan_function] = None,
-        ignore_nonfinite_fitness: Optional[bool] = False,
+        ignore_nan_fitness: Optional[bool] = False,
     ):
         # get problem parameters
         lb, ub = problem.get_bounds()
@@ -171,7 +177,7 @@ class optgra:
             # reorder constraint order, optgra expects the merit function last, pagmo has it first
             # equivalent to rotating in a dequeue
             result = np.concatenate([result[1:], result[0:1]])
-            if ignore_nonfinite_fitness:
+            if ignore_nan_fitness:
                 _replace_nonfinite(result, 0.0, "fitness")
             else:
                 _assert_finite(result, "fitness")  # catch nan values
@@ -186,7 +192,8 @@ class optgra:
         bounds_to_constraints: bool = True,
         force_bounds=False,
         khanf: Optional[base_khan_function] = None,
-        ignore_nonfinite_gradient: Optional[bool] = False,
+        nan_gradient_strategy: Optional[str] = "fail",
+        last_valid_grad: Optional[np.ndarray] = None,
     ):
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
@@ -246,10 +253,14 @@ class optgra:
             if khanf:
                 khan_grad = khanf.eval_grad(x)
                 result = result @ khan_grad
-            if ignore_nonfinite_gradient:
-                _replace_nonfinite(result, 0.0, "gradient")
-            else:
+
+            if nan_gradient_strategy == "fail":
                 _assert_finite(result, "gradient")  # catch nan values
+            elif nan_gradient_strategy == "reuse":
+                _replace_nonfinite(result, last_valid_grad, "gradient")
+                last_valid_grad = deepcopy(result)  # store for next iteration
+            elif nan_gradient_strategy == "zero":
+                _replace_nonfinite(result, 0.0, "gradient")
 
             return result.tolist()  # return as a list, not ndarray
 
@@ -273,8 +284,8 @@ class optgra:
         optimization_method: int = 2,
         log_level: int = 0,
         timeout_seconds: Optional[float] = None,
-        ignore_nonfinite_fitness: bool = False,
-        ignore_nonfinite_gradient: bool = False,
+        ignore_nan_fitness: bool = False,
+        nan_gradient_strategy: str = "fail",
     ) -> None:
         r"""
         Initialize a wrapper instance for the OPTGRA algorithm.
@@ -344,10 +355,12 @@ class optgra:
             timeout_seconds: Activate timeout of the optimization process. If given, the
                 optimization will be launched in a separate process and killed if timeout is
                 exceeded. By default None
-            ignore_nonfinite_fitness: ignore infinite or nan fitness values returned from the
+            ignore_nan_fitness: ignore infinite or nan fitness values returned from the
                 problem by setting them to zero. By default False
-            ignore_nonfinite_gradient: ignore infinite or nan gradient values returned from the
-                problem by setting them to zero. By default False
+            nan_gradient_strategy: Can be one of the following:
+                'fail': raise an exception if non-finite gradient entries are encountered (default)
+                'reuse': replaces non-finite entries with last stored valid gradient information
+                'zero': replaces non-finite entries with zeros
 
         Raises:
 
@@ -377,8 +390,9 @@ class optgra:
         self.log_level = log_level
         self.verbosity = 0  # by default no pygmo-style output
         self.timeout_seconds = timeout_seconds
-        self.ignore_nonfinite_fitness = ignore_nonfinite_fitness
-        self.ignore_nonfinite_gradient = ignore_nonfinite_gradient
+        self.ignore_nan_fitness = ignore_nan_fitness
+        self.nan_gradient_strategy = nan_gradient_strategy
+        self._last_valid_grad = None  # for nan_gradient_strategy = 'reuse'
         self._sens_state = None
         self._sens_constraint_types: Union[List[int], None] = None
 
@@ -421,6 +435,9 @@ class optgra:
                 + str(perturbation_for_snd_order_derivatives)
                 + " is invalid for perturbation_for_snd_order_derivatives, must be non-negative."
             )
+
+        if nan_gradient_strategy not in ["fail", "reuse", "zero"]:
+            raise ValueError("nan_gradient_strategy must be one of 'fail', 'reuse' or 'zero'")
 
         # dictionary to store last optimisation result for get_extra_info()
         self.__last_result: dict[str, Any] = {}
@@ -557,7 +574,7 @@ class optgra:
             self.bounds_to_constraints,
             self.force_bounds,
             khanf,
-            self.ignore_nonfinite_fitness,
+            self.ignore_nan_fitness,
         )
         grad_func = None
         derivatives_computation = 2
@@ -567,7 +584,8 @@ class optgra:
                 self.bounds_to_constraints,
                 self.force_bounds,
                 khanf,
-                self.ignore_nonfinite_gradient,
+                self.nan_gradient_strategy,
+                self._last_valid_grad,
             )
             derivatives_computation = 1
 
