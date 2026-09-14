@@ -845,7 +845,15 @@ class optgra_test(unittest.TestCase):
             def has_gradient(self):
                 return True
 
+            def get_nic(self):
+                return 1
+
         prob = pygmo.problem(_nonfinite_problem())
+        self.assertEqual(prob.get_nf(), 2)
+        self.assertEqual(prob.get_nx(), 1)
+        np.testing.assert_array_equal(prob.fitness([0.5]), [np.nan, 1.0])
+        np.testing.assert_array_equal(prob.gradient([0.5]), [np.inf, 2.0])
+        np.testing.assert_array_equal(prob.gradient_sparsity(), [[0, 0], [1, 0]])
 
         fitness = pyoptgra.optgra._wrap_fitness_func(prob, bounds_to_constraints=False)
         with self.assertRaises(ValueError):
@@ -853,7 +861,7 @@ class optgra_test(unittest.TestCase):
         fitness = pyoptgra.optgra._wrap_fitness_func(
             prob, bounds_to_constraints=False, ignore_nonfinite_fitness=True
         )
-        self.assertEqual(fitness([0.5]), [0.0, 1.0])
+        self.assertEqual(fitness([0.5]), [1.0, 0.0])
 
         gradient = pyoptgra.optgra._wrap_gradient_func(prob, bounds_to_constraints=False)
         with self.assertRaises(ValueError):
@@ -861,7 +869,7 @@ class optgra_test(unittest.TestCase):
         gradient = pyoptgra.optgra._wrap_gradient_func(
             prob, bounds_to_constraints=False, ignore_nonfinite_gradient=True
         )
-        self.assertEqual(gradient([0.5]), [[0.0], [2.0]])
+        self.assertEqual(gradient([0.5]), [[2.0], [0.0]])
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
