@@ -203,6 +203,7 @@ class optgra:
         shape = (problem.get_nf(), problem.get_nx())
 
         def wrapped_gradient(x):
+            nonlocal last_valid_grad
             # we are using vectorisation internally -> convert to ndarray
             x = np.asarray(x, dtype=np.float64)
             _assert_finite(x, "decision vector")  # catch nan values
