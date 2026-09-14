@@ -196,7 +196,7 @@ class optgra:
         last_valid_grad: Optional[List[Optional[np.ndarray]]] = None,
     ):
         if last_valid_grad is None:
-            last_valid_grad = [None]
+            last_valid_grad = [None]  # cache must be a mutable holder
 
         # get the sparsity pattern to index the sparse gradients
         sparsity_pattern = problem.gradient_sparsity()
