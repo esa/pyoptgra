@@ -871,6 +871,35 @@ class optgra_test(unittest.TestCase):
         )
         self.assertEqual(gradient([0.5]), [[2.0], [0.0]])
 
+        class _reuse_gradient_problem(object):
+            def __init__(self):
+                self.gradient_calls = 0
+
+            def get_bounds(self):
+                return ([0], [1])
+
+            def fitness(self, x):
+                return [1.0, 2.0]
+
+            def gradient(self, x):
+                self.gradient_calls += 1
+                if self.gradient_calls == 1:
+                    return [3.0, 4.0]
+                return [np.nan, 5.0]
+
+            def has_gradient(self):
+                return True
+
+            def get_nic(self):
+                return 1
+
+        reuse_prob = pygmo.problem(_reuse_gradient_problem())
+        reuse_gradient = pyoptgra.optgra._wrap_gradient_func(
+            reuse_prob, bounds_to_constraints=False, nan_gradient_strategy="reuse"
+        )
+        self.assertEqual(reuse_gradient([0.5]), [[4.0], [3.0]])
+        self.assertEqual(reuse_gradient([0.5]), [[5.0], [3.0]])
+
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
         self.assertEqual(algo.get_name(), "Optgra")
