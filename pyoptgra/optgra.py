@@ -12,8 +12,8 @@
 # file, you can obtain them at https://www.gnu.org/licenses/gpl-3.0.txt
 # and https://essr.esa.int/license/european-space-agency-community-license-v2-4-weak-copyleft
 
-from copy import deepcopy
 import re
+from copy import deepcopy
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
