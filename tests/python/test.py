@@ -831,6 +831,11 @@ class optgra_test(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     fun(lb, ub, unity_gradient)
 
+                lb_at_zero = [-10, -np.inf]
+                ub_at_zero = [np.inf, np.inf]
+                with self.assertRaises(ValueError):
+                    fun(lb_at_zero, ub_at_zero, unity_gradient)
+
     def ignore_nonfinite_test(self):
         class _nonfinite_problem(object):
             def get_bounds(self):
@@ -899,10 +904,6 @@ class optgra_test(unittest.TestCase):
         )
         self.assertEqual(reuse_gradient([0.5]), [[4.0], [3.0]])
         self.assertEqual(reuse_gradient([0.5]), [[5.0], [3.0]])
-                lb_at_zero = [-10, -np.inf]
-                ub_at_zero = [np.inf, np.inf]
-                with self.assertRaises(ValueError):
-                    fun(lb_at_zero, ub_at_zero, unity_gradient)
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
