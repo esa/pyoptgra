@@ -826,7 +826,7 @@ class optgra_test(unittest.TestCase):
                     dxog_dx0 = kfun.eval_grad(xmid)
                     np.testing.assert_allclose(dxog_dx0, np.eye(5), atol=1e-10)
 
-                # one-sided bound is not supported
+                # one-sided bound is not supported, including at index zero
                 ub = [10, 30, np.inf, -np.inf, np.inf]
                 with self.assertRaises(ValueError):
                     fun(lb, ub, unity_gradient)
@@ -899,6 +899,10 @@ class optgra_test(unittest.TestCase):
         )
         self.assertEqual(reuse_gradient([0.5]), [[4.0], [3.0]])
         self.assertEqual(reuse_gradient([0.5]), [[5.0], [3.0]])
+                lb_at_zero = [-10, -np.inf]
+                ub_at_zero = [np.inf, np.inf]
+                with self.assertRaises(ValueError):
+                    fun(lb_at_zero, ub_at_zero, unity_gradient)
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())

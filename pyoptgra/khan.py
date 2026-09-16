@@ -60,7 +60,7 @@ class base_khan_function:
 
         # we only support cases where both lower and upper bounds are finite if given
         check = np.where(finite_lb != finite_ub)[0]
-        if any(check):
+        if check.size:
             raise ValueError(
                 "When using Khan bounds, both lower and upper bound for bounded parameters "
                 "must be finite."
