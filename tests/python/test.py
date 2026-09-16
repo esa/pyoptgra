@@ -169,6 +169,7 @@ class optgra_test(unittest.TestCase):
         self.force_bounds_test()
         self.khan_bounds_test()
         self.khan_function_test()
+        self.ignore_nonfinite_test()
         self.force_bounds_fitness_test()
         self.force_bounds_gradient_test()
         self.get_name_test()
@@ -834,6 +835,75 @@ class optgra_test(unittest.TestCase):
                 ub_at_zero = [np.inf, np.inf]
                 with self.assertRaises(ValueError):
                     fun(lb_at_zero, ub_at_zero, unity_gradient)
+
+    def ignore_nonfinite_test(self):
+        class _nonfinite_problem(object):
+            def get_bounds(self):
+                return ([0], [1])
+
+            def fitness(self, x):
+                return [np.nan, 1.0]
+
+            def gradient(self, x):
+                return [np.inf, 2.0]
+
+            def has_gradient(self):
+                return True
+
+            def get_nic(self):
+                return 1
+
+        prob = pygmo.problem(_nonfinite_problem())
+        self.assertEqual(prob.get_nf(), 2)
+        self.assertEqual(prob.get_nx(), 1)
+        np.testing.assert_array_equal(prob.fitness([0.5]), [np.nan, 1.0])
+        np.testing.assert_array_equal(prob.gradient([0.5]), [np.inf, 2.0])
+        np.testing.assert_array_equal(prob.gradient_sparsity(), [[0, 0], [1, 0]])
+
+        fitness = pyoptgra.optgra._wrap_fitness_func(prob, bounds_to_constraints=False)
+        with self.assertRaises(ValueError):
+            fitness([0.5])
+        fitness = pyoptgra.optgra._wrap_fitness_func(
+            prob, bounds_to_constraints=False, ignore_nan_fitness=True
+        )
+        self.assertEqual(fitness([0.5]), [1.0, 0.0])
+
+        gradient = pyoptgra.optgra._wrap_gradient_func(prob, bounds_to_constraints=False)
+        with self.assertRaises(ValueError):
+            gradient([0.5])
+        gradient = pyoptgra.optgra._wrap_gradient_func(
+            prob, bounds_to_constraints=False, nan_gradient_strategy="zero"
+        )
+        self.assertEqual(gradient([0.5]), [[2.0], [0.0]])
+
+        class _reuse_gradient_problem(object):
+            def __init__(self):
+                self.gradient_calls = 0
+
+            def get_bounds(self):
+                return ([0], [1])
+
+            def fitness(self, x):
+                return [1.0, 2.0]
+
+            def gradient(self, x):
+                self.gradient_calls += 1
+                if self.gradient_calls == 1:
+                    return [3.0, 4.0]
+                return [np.nan, 5.0]
+
+            def has_gradient(self):
+                return True
+
+            def get_nic(self):
+                return 1
+
+        reuse_prob = pygmo.problem(_reuse_gradient_problem())
+        reuse_gradient = pyoptgra.optgra._wrap_gradient_func(
+            reuse_prob, bounds_to_constraints=False, nan_gradient_strategy="reuse"
+        )
+        self.assertEqual(reuse_gradient([0.5]), [[4.0], [3.0]])
+        self.assertEqual(reuse_gradient([0.5]), [[5.0], [3.0]])
 
     def get_name_test(self):
         algo = pygmo.algorithm(pyoptgra.optgra())
